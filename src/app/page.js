@@ -266,6 +266,7 @@ export default function Dashboard() {
               value={metrics.lowStockCount.toLocaleString()}
               context="Items with ≤ 5 units left"
               status={metrics.lowStockCount > 0 ? 'danger' : 'success'}
+              onClick={() => router.push('/products?filter=low-stock')}
             />
           </div>
           <div className="col-3">

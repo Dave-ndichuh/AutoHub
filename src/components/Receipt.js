@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }) {
-  if (!transaction) return null;
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!transaction || !mounted) return null;
 
   // Extract dynamic metadata
   const trxDate = transaction.CREATED_AT ? new Date(transaction.CREATED_AT) : new Date();
@@ -19,7 +26,7 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
   const isCredit = transaction.IS_CREDIT;
   const creditDueDate = transaction.CREDIT_DUE_DATE;
 
-  return (
+  const receiptContent = (
     <div className="receipt-print-area">
       {/* 1. Brand & Header Block */}
       <div className="receipt-header">
@@ -132,11 +139,7 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
       <style jsx global>{`
         /* SCREEN PREVIEW - Hides receipt unless actively debugging */
         .receipt-print-area {
-          position: absolute;
-          left: -9999px;
-          top: -9999px;
-          visibility: hidden;
-          display: block; 
+          display: none; 
         }
 
         /* PRINT STYLES - Thermal specific constraints */
@@ -146,8 +149,9 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
             size: auto;
           }
 
-          body * {
-            visibility: hidden;
+          /* Completely hide the main application to prevent blank pages */
+          body > *:not(.receipt-print-area) {
+            display: none !important;
           }
           
           body {
@@ -155,17 +159,9 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
             margin: 0;
             padding: 0;
           }
-
-          .receipt-print-area, .receipt-print-area * {
-            visibility: visible;
-          }
           
           .receipt-print-area {
             display: block !important;
-            position: absolute;
-            left: 0;
-            top: 0;
-            /* 80mm max width, degrades natively to 58mm via CSS */
             width: 80mm; 
             max-width: 100%;
             padding: 2mm 4mm;
@@ -294,8 +290,9 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
             font-weight: 600;
             font-size: 8pt;
           }
-        }
       `}</style>
     </div>
   );
+
+  return createPortal(receiptContent, document.body);
 }

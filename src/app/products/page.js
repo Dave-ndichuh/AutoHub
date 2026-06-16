@@ -1,11 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit, Trash2, Search, X, Image as ImageIcon } from 'lucide-react';
 import { UploadButton } from '@/utils/uploadthing';
+import { useSearchParams, useRouter } from 'next/navigation';
 
-export default function ProductsPage() {
+function ProductsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const filterParam = searchParams.get('filter');
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
@@ -115,10 +120,13 @@ export default function ProductsPage() {
     fetchProducts();
   };
 
-  const filteredProducts = products.filter(p => 
-    p.NAME?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.PRODUCT_CODE?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = products.filter(p => {
+    const matchesSearch = p.NAME?.toLowerCase().includes(searchTerm.toLowerCase()) || p.PRODUCT_CODE?.toLowerCase().includes(searchTerm.toLowerCase());
+    if (filterParam === 'low-stock') {
+      return matchesSearch && p.ON_HAND <= (p.REORDER_THRESHOLD || 5);
+    }
+    return matchesSearch;
+  });
 
   return (
     <div className="animate-fade-in">
@@ -134,6 +142,14 @@ export default function ProductsPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+        
+        {filterParam === 'low-stock' && (
+          <div style={{ padding: '0.5rem 1rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+             Showing Low Stock Items
+             <button onClick={() => router.push('/products')} style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', display: 'flex', padding: 0 }}><X size={16}/></button>
+          </div>
+        )}
+
         <button className="btn btn-primary" onClick={() => openModal()}>
           <Plus size={18} />
           Add Product
@@ -364,5 +380,13 @@ export default function ProductsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Loading products...</div>}>
+      <ProductsContent />
+    </Suspense>
   );
 }
