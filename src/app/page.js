@@ -7,6 +7,7 @@ import { TrendingUp, DollarSign, Activity, ShoppingCart, PackageOpen, Tag, BarCh
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import MetricCard from '@/components/dashboard/MetricCard';
 import InsightCard from '@/components/dashboard/InsightCard';
+import CreditSalesTable from '@/components/dashboard/CreditSalesTable';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -361,6 +362,12 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Row 4: Active Credit Sales */}
+      <div>
+        <h2 className="heading-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Outstanding Credit Sales</h2>
+        <CreditSalesTable />
       </div>
 
     </div>

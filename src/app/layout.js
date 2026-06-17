@@ -3,6 +3,7 @@ import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
 import { ThemeProvider } from '@/context/ThemeContext';
 import AuthProvider from '@/components/AuthGuard';
+import NotificationManager from '@/components/NotificationManager';
 
 export const metadata = {
   title: 'Auto Spare Parts Management',
@@ -15,15 +16,17 @@ export default function RootLayout({ children }) {
       <body>
         <ThemeProvider>
           <AuthProvider>
-            <div className="app-layout">
-              <Sidebar />
-              <div className="main-content">
-                <Topbar />
-                <main className="page-content">
-                  {children}
-                </main>
+            <NotificationManager>
+              <div className="app-layout">
+                <Sidebar />
+                <div className="main-content">
+                  <Topbar />
+                  <main className="page-content">
+                    {children}
+                  </main>
+                </div>
               </div>
-            </div>
+            </NotificationManager>
           </AuthProvider>
         </ThemeProvider>
       </body>

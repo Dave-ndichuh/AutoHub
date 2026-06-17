@@ -1,21 +1,26 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Search, Printer, Calendar } from 'lucide-react';
+import { Search, Printer, Calendar, X, Eye } from 'lucide-react';
 import Receipt from '@/components/Receipt';
 import { useAuth } from '@/components/AuthGuard';
+import { useSearchParams } from 'next/navigation';
 
-export default function TransactionsPage() {
+function TransactionsContent() {
+  const searchParams = useSearchParams();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Filters
-  const [searchId, setSearchId] = useState('');
+  const [searchId, setSearchId] = useState(searchParams.get('searchId') || '');
   const [searchDate, setSearchDate] = useState('');
   
   // Print State
   const [printData, setPrintData] = useState(null);
+  
+  // Modal State
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
   
   const { role, employeeId } = useAuth();
 
@@ -164,9 +169,17 @@ export default function TransactionsPage() {
                     {(trans.customer || trans.credit_customer) ? `${(trans.customer || trans.credit_customer).FIRST_NAME} ${(trans.customer || trans.credit_customer).LAST_NAME}` : 'Walk-in'}
                   </td>
                   <td>
-                    <span className="badge badge-success">
+                    <button 
+                      className="badge badge-success"
+                      style={{ border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', transition: 'transform 0.1s' }}
+                      onClick={() => setSelectedTransaction(trans)}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                      title="View Items"
+                    >
                       {trans.transaction_details?.reduce((acc, d) => acc + d.QTY, 0) || 0} items
-                    </span>
+                      <Eye size={12} />
+                    </button>
                   </td>
                   <td className="text-muted">
                     {trans.PAYMENT_METHOD}
@@ -192,7 +205,7 @@ export default function TransactionsPage() {
         </table>
       </div>
 
-      {printData && (
+    {printData && (
         <Receipt 
           transaction={printData.transaction} 
           cart={printData.cart} 
@@ -201,6 +214,74 @@ export default function TransactionsPage() {
           grandTotal={printData.transaction.ADJUSTED_TOTAL || printData.grandTotal} 
         />
       )}
+
+      {/* Transaction Details Modal */}
+      {selectedTransaction && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '2rem' }}>
+          <div className="glass" style={{ width: '100%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+              <div>
+                <h3 className="heading-2" style={{ margin: 0 }}>Transaction Details</h3>
+                <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>TRX-{selectedTransaction.TRANS_ID} • {new Date(selectedTransaction.CREATED_AT).toLocaleString()}</div>
+              </div>
+              <button onClick={() => setSelectedTransaction(null)} style={{ background: 'transparent', border: 'none', color: 'var(--muted-foreground)', cursor: 'pointer', display: 'flex' }}><X size={20} /></button>
+            </div>
+            
+            <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1 }}>
+              <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
+                    <th style={{ paddingBottom: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 500 }}>Item Name</th>
+                    <th style={{ paddingBottom: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 500, textAlign: 'center' }}>Qty</th>
+                    <th style={{ paddingBottom: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 500, textAlign: 'right' }}>Unit Price</th>
+                    <th style={{ paddingBottom: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 500, textAlign: 'right' }}>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedTransaction.transaction_details?.map((detail, idx) => (
+                    <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '1rem 0', fontWeight: 500 }}>{detail.product?.NAME || 'Unknown Part'}</td>
+                      <td style={{ padding: '1rem 0', textAlign: 'center' }}>{detail.QTY}</td>
+                      <td style={{ padding: '1rem 0', textAlign: 'right' }}>Ksh {Number(detail.UNIT_PRICE).toLocaleString()}</td>
+                      <td style={{ padding: '1rem 0', textAlign: 'right', fontWeight: 600 }}>Ksh {(Number(detail.QTY) * Number(detail.UNIT_PRICE)).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              
+              <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '250px', color: 'var(--muted-foreground)' }}>
+                  <span>Subtotal:</span>
+                  <span>Ksh {Number(selectedTransaction.SUBTOTAL).toLocaleString()}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '250px', color: 'var(--muted-foreground)' }}>
+                  <span>VAT ({selectedTransaction.TAX_RATE}%):</span>
+                  <span>Ksh {Number(selectedTransaction.TAX_AMOUNT).toLocaleString()}</span>
+                </div>
+                {Number(selectedTransaction.DISCOUNT_AMOUNT) !== 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '250px', color: Number(selectedTransaction.DISCOUNT_AMOUNT) > 0 ? '#10b981' : '#ef4444' }}>
+                    <span>{Number(selectedTransaction.DISCOUNT_AMOUNT) > 0 ? 'Discount:' : 'Surcharge:'}</span>
+                    <span>Ksh {Math.abs(Number(selectedTransaction.DISCOUNT_AMOUNT)).toLocaleString()}</span>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '250px', fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
+                  <span>Total:</span>
+                  <span>Ksh {(selectedTransaction.ADJUSTED_TOTAL || selectedTransaction.GRAND_TOTAL).toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
+  );
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Loading transactions...</div>}>
+      <TransactionsContent />
+    </Suspense>
   );
 }
