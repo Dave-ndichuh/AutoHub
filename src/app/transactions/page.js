@@ -6,6 +6,7 @@ import { Search, Printer, Calendar, X, Eye } from 'lucide-react';
 import Receipt from '@/components/Receipt';
 import { useAuth } from '@/components/AuthGuard';
 import { useSearchParams } from 'next/navigation';
+import { createPortal } from 'react-dom';
 
 function TransactionsContent() {
   const searchParams = useSearchParams();
@@ -216,9 +217,16 @@ function TransactionsContent() {
       )}
 
       {/* Transaction Details Modal */}
-      {selectedTransaction && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '2rem' }}>
-          <div className="glass" style={{ width: '100%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
+      {selectedTransaction && createPortal(
+        <div 
+          onClick={() => setSelectedTransaction(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '2rem' }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="glass" 
+            style={{ width: '100%', maxWidth: '600px', maxHeight: '80vh', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}
+          >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
               <div>
                 <h3 className="heading-2" style={{ margin: 0 }}>Transaction Details</h3>
@@ -271,7 +279,8 @@ function TransactionsContent() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
