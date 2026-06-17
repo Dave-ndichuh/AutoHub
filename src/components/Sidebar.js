@@ -107,10 +107,17 @@ export default function Sidebar() {
       </nav>
 
       <div style={{ padding: '1.5rem', borderTop: '1px solid var(--border)' }}>
-        <button className="nav-item" onClick={handleLogout} style={{ width: '100%', justifyContent: 'flex-start', background: 'none', border: 'none', cursor: 'pointer' }}>
+        <button className="nav-item" onClick={handleLogout} style={{ width: '100%', justifyContent: 'flex-start', background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
           <LogOut size={20} />
           <span>Logout</span>
         </button>
+      </div>
+
+      <div style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', color: 'var(--muted-foreground)', textAlign: 'center', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+        <span>&copy; {new Date().getFullYear()} Jobea Autos</span>
+        <span>
+          System by: <a href="https://machariandichu.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>Nexus Solutions</a>
+        </span>
       </div>
     </aside>
   );
