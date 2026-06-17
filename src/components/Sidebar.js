@@ -38,6 +38,26 @@ export default function Sidebar() {
     document.body.classList.remove('sidebar-open');
   };
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (document.body.classList.contains('sidebar-open')) {
+        const sidebar = document.querySelector('.sidebar');
+        const toggleBtn = document.querySelector('.mobile-menu-btn');
+        if (
+          sidebar && !sidebar.contains(e.target) && 
+          (!toggleBtn || !toggleBtn.contains(e.target))
+        ) {
+          document.body.classList.remove('sidebar-open');
+        }
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   let navItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Point of Sale', path: '/pos', icon: ShoppingCart },
