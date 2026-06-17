@@ -25,8 +25,7 @@ export default function Sidebar() {
   const router = useRouter();
   const { role } = useAuth();
 
-  // Hide sidebar on login pages
-  if (pathname === '/login' || pathname === '/employee-login') return null;
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -68,6 +67,7 @@ export default function Sidebar() {
     { name: 'Services', path: '/services', icon: Wrench },
     { name: 'Reports', path: '/reports', icon: BarChart3 },
     { name: 'Employees', path: '/employees', icon: Users },
+    { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
   if (role === 'employee') {
@@ -78,6 +78,9 @@ export default function Sidebar() {
       { name: 'Services', path: '/services', icon: Wrench },
     ];
   }
+
+  // Hide sidebar on login pages
+  if (pathname === '/login' || pathname === '/employee-login') return null;
 
   return (
     <aside className="sidebar glass-panel">
