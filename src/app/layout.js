@@ -8,6 +8,11 @@ import NotificationManager from '@/components/NotificationManager';
 export const metadata = {
   title: 'Auto Spare Parts Management',
   description: 'Premium Point of Sale and Inventory Management System',
+  manifest: '/manifest.json',
+};
+
+export const viewport = {
+  themeColor: '#0f172a',
 };
 
 export default function RootLayout({ children }) {
