@@ -40,6 +40,17 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
         }}>
           INVOICE
         </h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '10px' }}>
+          <img src="/logo.png" alt="Jobea Auto Spares" style={{ height: '40px', objectFit: 'contain' }} />
+          <h2 style={{ 
+            fontSize: '24px', 
+            fontWeight: 600, 
+            color: '#4a5568', 
+            margin: 0
+          }}>
+            Jobea Auto Spares
+          </h2>
+        </div>
       </div>
 
       {/* Invoice Details */}
@@ -145,9 +156,7 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
           <div style={{ marginBottom: '30px' }}>
             <h4 style={{ fontWeight: 600, color: '#243c64', margin: '0 0 8px 0', fontSize: '14px' }}>Terms & Conditions</h4>
             <p style={{ margin: 0, fontSize: '13px', color: '#4a5568', lineHeight: '1.5' }}>
-              All invoices are due upon receipt unless otherwise specified. 
-              Returns are accepted within 7 days with original receipt and 
-              packaging. Electrical parts are non-returnable.
+              This is a standalone invoice. Stock is not deducted or reserved until full payment is received. Goods remain the property of Jobea Auto Spares until the invoice is settled in full.
             </p>
           </div>
 
