@@ -325,18 +325,29 @@ export default function ServicesPage() {
       </div>
 
       {showModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 9999, padding: '5rem 2rem 2rem 2rem', overflowY: 'auto' }}>
+        <div style={{ 
+          position: 'fixed', 
+          inset: 0, 
+          background: 'rgba(0,0,0,0.6)', 
+          backdropFilter: 'blur(4px)', 
+          display: 'flex', 
+          alignItems: role === 'employee' ? 'center' : 'flex-start', 
+          justifyContent: 'center', 
+          zIndex: 9999, 
+          padding: role === 'employee' ? '1rem' : '5rem 2rem 2rem 2rem', 
+          overflowY: 'auto' 
+        }}>
           
           {role === 'employee' ? (
             // EMPLOYEE SIMPLIFIED OVERLAY
-            <div className="glass" style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', background: 'var(--background)', marginBottom: '4rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-                <h3 className="heading-2" style={{ margin: 0 }}>Service Assignment</h3>
+            <div className="glass" style={{ width: '100%', maxWidth: '550px', display: 'flex', flexDirection: 'column', background: 'var(--background)', borderRadius: '16px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border)' }}>
+                <h3 className="heading-2" style={{ margin: 0, fontSize: '1.25rem' }}>Service Assignment</h3>
                 <button onClick={() => setShowModal(false)}><X size={20} className="text-muted" /></button>
               </div>
               
-              <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ padding: '1rem', background: 'var(--card)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+              <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div style={{ padding: '0.75rem 1rem', background: 'var(--card)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
                   <div style={{ fontWeight: 600, color: 'var(--primary)', marginBottom: '0.25rem' }}>{formData.SERVICE_CODE} - {formData.SERVICE_TYPE}</div>
                   <div className="text-muted" style={{ fontSize: '0.875rem' }}>
                     {formData.DESCRIPTION || 'No description provided.'}
@@ -344,7 +355,7 @@ export default function ServicesPage() {
                 </div>
 
                 <form id="employeeServiceForm" onSubmit={saveService}>
-                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                     <div style={{ flex: 1 }}>
                       <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Update Status</label>
                       <select className="input" value={formData.STATUS} onChange={e => setFormData({...formData, STATUS: e.target.value})} style={{ background: 'var(--card)' }}>
@@ -357,18 +368,18 @@ export default function ServicesPage() {
 
                   <div>
                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Service Notes / Mechanic Log</label>
-                    <textarea className="input" rows={3} value={formData.NOTES} onChange={e => setFormData({...formData, NOTES: e.target.value})} style={{ resize: 'vertical' }} />
+                    <textarea className="input" rows={2} value={formData.NOTES} onChange={e => setFormData({...formData, NOTES: e.target.value})} style={{ resize: 'none' }} />
                   </div>
                 </form>
 
                 {/* Parts Section for Employees */}
                 {editingId && (
-                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
-                    <h4 style={{ fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <Settings size={18} /> Parts Used
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                    <h4 style={{ fontWeight: 600, color: 'var(--primary)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem' }}>
+                      <Settings size={16} /> Parts Used
                     </h4>
                     
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', marginBottom: '0.75rem' }}>
                       <div style={{ flex: 2 }}>
                         <select className="input" value={selectedProduct} onChange={e => setSelectedProduct(e.target.value)} style={{ background: 'var(--card)' }}>
                           <option value="" disabled>Select a part from inventory...</option>
@@ -383,32 +394,34 @@ export default function ServicesPage() {
                       </button>
                     </div>
 
-                    <table className="table" style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
-                      <tbody>
-                        {serviceDetails.length === 0 ? (
-                          <tr><td colSpan="3" style={{ textAlign: 'center', color: 'var(--muted-foreground)', padding: '1rem' }}>No parts added yet.</td></tr>
-                        ) : (
-                          serviceDetails.map(detail => (
-                            <tr key={detail.DETAIL_ID}>
-                              <td>{detail.product?.NAME}</td>
-                              <td>Qty: {detail.QTY}</td>
-                              <td style={{ textAlign: 'right' }}>
-                                <button type="button" onClick={() => removePart(detail.DETAIL_ID)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
-                                  <X size={16} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
+                    <div style={{ maxHeight: '120px', overflowY: 'auto' }}>
+                      <table className="table" style={{ fontSize: '0.875rem', marginTop: '0' }}>
+                        <tbody>
+                          {serviceDetails.length === 0 ? (
+                            <tr><td colSpan="3" style={{ textAlign: 'center', color: 'var(--muted-foreground)', padding: '0.5rem' }}>No parts added yet.</td></tr>
+                          ) : (
+                            serviceDetails.map(detail => (
+                              <tr key={detail.DETAIL_ID}>
+                                <td style={{ padding: '0.5rem' }}>{detail.product?.NAME}</td>
+                                <td style={{ padding: '0.5rem' }}>Qty: {detail.QTY}</td>
+                                <td style={{ textAlign: 'right', padding: '0.5rem' }}>
+                                  <button type="button" onClick={() => removePart(detail.DETAIL_ID)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                                    <X size={14} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1.5rem', borderTop: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1rem 1.5rem', borderTop: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px' }}>
                 <button type="button" className="btn btn-secondary" style={{ marginRight: '1rem' }} onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" form="employeeServiceForm" className="btn btn-primary" style={{ padding: '0.75rem 2.5rem' }}>Save Updates</button>
+                <button type="submit" form="employeeServiceForm" className="btn btn-primary" style={{ padding: '0.5rem 2rem' }}>Save Updates</button>
               </div>
             </div>
           ) : (
