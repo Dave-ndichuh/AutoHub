@@ -73,6 +73,7 @@ export default function Dashboard() {
             )
           `)
           .gte('CREATED_AT', firstDayOfMonth)
+          .or('IS_CREDIT.eq.false,IS_SETTLED.eq.true')
           .order('CREATED_AT', { ascending: true }); // Ascending helps with trend chart
 
         let tSales = 0;

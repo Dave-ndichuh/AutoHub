@@ -71,7 +71,8 @@ export default function ReportsPage() {
         )
       `)
       .gte('CREATED_AT', startDateTime)
-      .lte('CREATED_AT', endDateTime);
+      .lte('CREATED_AT', endDateTime)
+      .or('IS_CREDIT.eq.false,IS_SETTLED.eq.true');
 
     // 2. Fetch All Products (for dead stock and total stock value)
     const { data: prodData } = await supabase
