@@ -307,14 +307,14 @@ export default function EmployeeLoginPage() {
           <div className="hud-circle-3" />
         </div>
         
-        <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
           <div style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s ease' }}>
             <img src="/logo.png" alt="Jobea Auto Logo" style={{ height: '76px', objectFit: 'contain', filter: 'drop-shadow(0 6px 16px rgba(16, 185, 129, 0.2))', opacity: 0.95, transition: 'all 0.3s ease', transform: 'translateZ(0)' }} />
           </div>
           <h1 style={{ fontSize: '3.5rem', fontWeight: 800, lineHeight: 1.1, marginBottom: '1rem', letterSpacing: '-0.02em' }}>
             Staff Access<br/>Terminal
           </h1>
-          <p style={{ fontSize: '1.25rem', color: '#94a3b8', maxWidth: '400px', lineHeight: 1.6 }}>
+          <p style={{ fontSize: '1.25rem', color: '#94a3b8', maxWidth: '400px', lineHeight: 1.6, margin: '0 auto' }}>
             Tap your PIN to access the POS and Service Center.
           </p>
         </div>
