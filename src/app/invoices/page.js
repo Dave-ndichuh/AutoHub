@@ -281,6 +281,13 @@ export default function InvoicesPage() {
       {/* Hide main UI when printing */}
       <style jsx global>{`
         @media print {
+          @page {
+            margin: 0;
+          }
+          body {
+            margin: 0;
+            -webkit-print-color-adjust: exact;
+          }
           body * {
             visibility: hidden;
           }
