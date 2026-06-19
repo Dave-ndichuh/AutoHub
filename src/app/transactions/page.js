@@ -23,6 +23,10 @@ function TransactionsContent() {
   // Modal State
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
+  
   const { role, employeeId } = useAuth();
 
   // Auto-trigger print when printData is fully rendered
@@ -79,6 +83,17 @@ function TransactionsContent() {
 
     return matchesId && matchesDate;
   });
+
+  // Pagination Logic
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchId, searchDate]);
+
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const currentItems = filteredTransactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handlePrint = (trans) => {
     const cartItems = trans.transaction_details?.map(d => ({
@@ -151,12 +166,12 @@ function TransactionsContent() {
               <tr>
                 <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>Loading transactions...</td>
               </tr>
-            ) : filteredTransactions.length === 0 ? (
+            ) : currentItems.length === 0 ? (
               <tr>
                 <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>No transactions match the filters.</td>
               </tr>
             ) : (
-              filteredTransactions.map((trans) => (
+              currentItems.map((trans) => (
                 <tr key={trans.TRANS_ID}>
                   <td>
                     <span className="badge badge-warning">TRX-{trans.TRANS_ID}</span>
@@ -204,6 +219,29 @@ function TransactionsContent() {
             )}
           </tbody>
         </table>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderTop: '1px solid var(--border)' }}>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
+            <span className="text-muted" style={{ fontWeight: 500, fontSize: '0.875rem' }}>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
     {printData && (
