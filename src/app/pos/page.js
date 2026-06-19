@@ -59,7 +59,7 @@ export default function POSPage() {
   
   // New Customer State
   const [showAddCustomer, setShowAddCustomer] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ FIRST_NAME: '', LAST_NAME: '', PHONE: '', EMAIL: '', ADDRESS: '' });
+  const [newCustomer, setNewCustomer] = useState({ FIRST_NAME: '', LAST_NAME: '', PHONE_NUMBER: '', EMAIL: '', ADDRESS: '' });
   const [savingCustomer, setSavingCustomer] = useState(false);
 
   const [lastTransaction, setLastTransaction] = useState(null);
@@ -328,7 +328,7 @@ export default function POSPage() {
       setCustomers([...customers, data]);
       setCreditCustomerId(String(data.CUST_ID));
       setShowAddCustomer(false);
-      setNewCustomer({ FIRST_NAME: '', LAST_NAME: '', PHONE: '', EMAIL: '', ADDRESS: '' });
+      setNewCustomer({ FIRST_NAME: '', LAST_NAME: '', PHONE_NUMBER: '', EMAIL: '', ADDRESS: '' });
     } catch (error) {
       alert("Failed to save customer: " + error.message);
     } finally {
@@ -815,7 +815,7 @@ export default function POSPage() {
                     <input type="text" className="input" placeholder="First Name *" value={newCustomer.FIRST_NAME} onChange={e => setNewCustomer({...newCustomer, FIRST_NAME: e.target.value})} style={{ flex: 1, padding: '0.5rem' }} />
                     <input type="text" className="input" placeholder="Last Name *" value={newCustomer.LAST_NAME} onChange={e => setNewCustomer({...newCustomer, LAST_NAME: e.target.value})} style={{ flex: 1, padding: '0.5rem' }} />
                   </div>
-                  <input type="text" className="input" placeholder="Phone Number" value={newCustomer.PHONE} onChange={e => setNewCustomer({...newCustomer, PHONE: e.target.value})} style={{ padding: '0.5rem' }} />
+                  <input type="text" className="input" placeholder="Phone Number" value={newCustomer.PHONE_NUMBER} onChange={e => setNewCustomer({...newCustomer, PHONE_NUMBER: e.target.value})} style={{ padding: '0.5rem' }} />
                   <button className="btn btn-secondary" onClick={handleSaveCustomer} disabled={savingCustomer} style={{ padding: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none' }}>
                     {savingCustomer ? 'Saving...' : 'Save & Select Customer'}
                   </button>
