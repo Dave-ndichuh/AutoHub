@@ -173,7 +173,6 @@ export default function InvoicesPage() {
       EMPLOYEE_ID: employeeId || inv.EMPLOYEE_ID,
       SUBTOTAL: inv.SUBTOTAL,
       TAX_AMOUNT: inv.TAX_AMOUNT,
-      DISCOUNT: 0,
       GRAND_TOTAL: inv.GRAND_TOTAL,
       PAYMENT_METHOD: 'Invoice Settlement',
       IS_CREDIT: false,
