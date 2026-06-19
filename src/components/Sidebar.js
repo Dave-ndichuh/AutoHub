@@ -4,16 +4,23 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
+  ShoppingCart, 
   Users, 
   Package, 
-  ShoppingCart, 
-  Truck, 
   FileText, 
-  Settings,
-  LogOut,
-  BarChart3,
-  Wrench,
-  ShieldAlert
+  Settings, 
+  LogOut, 
+  FileBarChart, 
+  Receipt, 
+  Wrench, 
+  Menu, 
+  X, 
+  Car, 
+  Info, 
+  ShieldAlert, 
+  FileSpreadsheet,
+  Truck,
+  BarChart3
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -62,6 +69,7 @@ export default function Sidebar() {
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Point of Sale', path: '/pos', icon: ShoppingCart },
     { name: 'Products', path: '/products', icon: Package },
+    { name: 'Invoices', path: '/invoices', icon: FileSpreadsheet },
     { name: 'Customers', path: '/customers', icon: Users },
     { name: 'Suppliers', path: '/suppliers', icon: Truck },
     { name: 'Transactions', path: '/transactions', icon: FileText },
@@ -75,6 +83,7 @@ export default function Sidebar() {
   if (role === 'employee') {
     navItems = [
       { name: 'Point of Sale', path: '/pos', icon: ShoppingCart },
+      { name: 'Invoices', path: '/invoices', icon: FileSpreadsheet },
       { name: 'Customers', path: '/customers', icon: Users },
       { name: 'Transactions', path: '/transactions', icon: FileText },
       { name: 'Services', path: '/services', icon: Wrench },
