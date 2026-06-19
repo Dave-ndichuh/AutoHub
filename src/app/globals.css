@@ -461,21 +461,30 @@ button {
   @page {
     margin: 0;
   }
+  
+  /* Hide application shell elements during any print */
+  .sidebar, .topbar, .mobile-menu-btn {
+    display: none !important;
+  }
+
+  /* When printing invoice, hide the POS UI elements completely to prevent blank pages */
+  body.printing-invoice .left-panel,
+  body.printing-invoice .cart-panel,
+  body.printing-invoice .mobile-cart-fab,
+  body.printing-invoice .pos-wrapper > div:not(#print-invoice-area) {
+    display: none !important;
+  }
+
   body.printing-invoice {
     margin: 0;
     -webkit-print-color-adjust: exact;
+    background: white !important;
   }
-  body.printing-invoice * {
-    visibility: hidden;
-  }
-  body.printing-invoice #print-invoice-area, 
-  body.printing-invoice #print-invoice-area * {
-    visibility: visible;
-  }
+  
   body.printing-invoice #print-invoice-area {
-    position: absolute;
-    left: 0;
-    top: 0;
+    display: block !important;
+    position: relative !important;
     width: 100%;
+    background: white;
   }
 }

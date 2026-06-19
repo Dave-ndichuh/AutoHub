@@ -57,6 +57,11 @@ export default function POSPage() {
   // Adjustments
   const [discountAmount, setDiscountAmount] = useState(''); // positive is discount, negative is surcharge
   
+  // New Customer State
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const [newCustomer, setNewCustomer] = useState({ FIRST_NAME: '', LAST_NAME: '', PHONE: '', EMAIL: '', ADDRESS: '' });
+  const [savingCustomer, setSavingCustomer] = useState(false);
+
   const [lastTransaction, setLastTransaction] = useState(null);
   const [printData, setPrintData] = useState(null);
   const [printInvoiceData, setPrintInvoiceData] = useState(null);
@@ -310,6 +315,27 @@ export default function POSPage() {
 
   const removeFromCart = (id) => setCart(prev => prev.filter(item => item.PRODUCT_ID !== id));
 
+  const handleSaveCustomer = async (e) => {
+    e.preventDefault(); // Prevent form submission if triggered inside a form
+    if (!newCustomer.FIRST_NAME || !newCustomer.LAST_NAME) {
+      alert("First and Last name are required.");
+      return;
+    }
+    setSavingCustomer(true);
+    try {
+      const { data, error } = await supabase.from('customer').insert([newCustomer]).select().single();
+      if (error) throw error;
+      setCustomers([...customers, data]);
+      setCreditCustomerId(String(data.CUST_ID));
+      setShowAddCustomer(false);
+      setNewCustomer({ FIRST_NAME: '', LAST_NAME: '', PHONE: '', EMAIL: '', ADDRESS: '' });
+    } catch (error) {
+      alert("Failed to save customer: " + error.message);
+    } finally {
+      setSavingCustomer(false);
+    }
+  };
+
   // Calculations
   const subtotal = cart.reduce((acc, item) => acc + (item.PRICE * item.quantity), 0);
   const totalBeforeDiscount = subtotal;
@@ -391,6 +417,7 @@ export default function POSPage() {
         setDiscountAmount('');
         setIsMobileCartOpen(false);
         setCreditCustomerId('');
+        setShowAddCustomer(false);
         setCreditTerms('');
         setPaymentMethod('Cash');
         return;
@@ -473,6 +500,7 @@ export default function POSPage() {
       setHybridCash('');
       setHybridMpesa('');
       setCreditCustomerId('');
+      setShowAddCustomer(false);
       setCreditDueDate('');
       setCreditTerms('');
       setDiscountAmount('');
@@ -761,12 +789,43 @@ export default function POSPage() {
 
           {(paymentMethod === 'Credit' || paymentMethod === 'Invoice') && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.25rem' }}>
-              <select className="input" style={{ padding: '0.75rem' }} value={creditCustomerId} onChange={e => setCreditCustomerId(e.target.value)}>
+              <select 
+                className="input" 
+                style={{ padding: '0.75rem' }} 
+                value={showAddCustomer ? 'new' : creditCustomerId} 
+                onChange={e => {
+                  if (e.target.value === 'new') {
+                    setShowAddCustomer(true);
+                    setCreditCustomerId('');
+                  } else {
+                    setShowAddCustomer(false);
+                    setCreditCustomerId(e.target.value);
+                  }
+                }}
+              >
                 <option value="" disabled>Select Customer...</option>
+                <option value="new" style={{ fontWeight: 600, color: 'var(--primary)' }}>+ Add New Customer...</option>
                 {customers.map(c => <option key={c.CUST_ID} value={c.CUST_ID}>{c.FIRST_NAME} {c.LAST_NAME}</option>)}
               </select>
+
+              {showAddCustomer && (
+                <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '1px solid var(--border)' }}>
+                  <h5 style={{ margin: 0, fontSize: '0.875rem', color: 'var(--primary)' }}>New Customer Details</h5>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input type="text" className="input" placeholder="First Name *" value={newCustomer.FIRST_NAME} onChange={e => setNewCustomer({...newCustomer, FIRST_NAME: e.target.value})} style={{ flex: 1, padding: '0.5rem' }} />
+                    <input type="text" className="input" placeholder="Last Name *" value={newCustomer.LAST_NAME} onChange={e => setNewCustomer({...newCustomer, LAST_NAME: e.target.value})} style={{ flex: 1, padding: '0.5rem' }} />
+                  </div>
+                  <input type="text" className="input" placeholder="Phone Number" value={newCustomer.PHONE} onChange={e => setNewCustomer({...newCustomer, PHONE: e.target.value})} style={{ padding: '0.5rem' }} />
+                  <button className="btn btn-secondary" onClick={handleSaveCustomer} disabled={savingCustomer} style={{ padding: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none' }}>
+                    {savingCustomer ? 'Saving...' : 'Save & Select Customer'}
+                  </button>
+                  <button className="btn" onClick={() => setShowAddCustomer(false)} style={{ padding: '0.25rem', background: 'transparent', color: 'var(--muted-foreground)', fontSize: '0.8rem', border: 'none' }}>
+                    Cancel
+                  </button>
+                </div>
+              )}
               
-              {paymentMethod === 'Credit' && (
+              {paymentMethod === 'Credit' && !showAddCustomer && (
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', display: 'block', marginBottom: '0.25rem' }}>Due Date</label>
