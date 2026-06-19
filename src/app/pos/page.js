@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
-import { Search, Plus, Minus, Trash2, CreditCard, Loader2, ShoppingCart, Smartphone, ArrowLeft, Tag, Layers, User as UserIcon, Calendar, X, ChevronDown, ShoppingBag, Image as ImageIcon } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, CreditCard, Loader2, ShoppingCart, Smartphone, ArrowLeft, Tag, Layers, User as UserIcon, Calendar, X, ChevronDown, ShoppingBag, Image as ImageIcon, FileText } from 'lucide-react';
 import Receipt from '@/components/Receipt';
+import InvoicePrint from '@/components/InvoicePrint';
 import { useAuth } from '@/components/AuthGuard';
 import { logAction } from '@/lib/logger';
 
@@ -58,19 +59,21 @@ export default function POSPage() {
   
   const [lastTransaction, setLastTransaction] = useState(null);
   const [printData, setPrintData] = useState(null);
+  const [printInvoiceData, setPrintInvoiceData] = useState(null);
   const { employeeId } = useAuth();
   
   const [isMobile, setIsMobile] = useState(false);
 
-  // Auto-trigger print when printData is fully rendered
+  // Auto-trigger print when printData or printInvoiceData is fully rendered
   useEffect(() => {
-    if (printData) {
+    if (printData || printInvoiceData) {
       const timer = setTimeout(() => {
         window.print();
+        if (printInvoiceData) setPrintInvoiceData(null);
       }, 200);
       return () => clearTimeout(timer);
     }
-  }, [printData]);
+  }, [printData, printInvoiceData]);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 1024);
@@ -317,12 +320,12 @@ export default function POSPage() {
       return;
     }
 
-    if (paymentMethod === 'Credit') {
+    if (paymentMethod === 'Credit' || paymentMethod === 'Invoice') {
       if (!creditCustomerId) {
-        alert("Please select a customer for this Credit Sale.");
+        alert(`Please select a customer for this ${paymentMethod === 'Credit' ? 'Credit Sale' : 'Invoice'}.`);
         return;
       }
-      if (!creditDueDate) {
+      if (paymentMethod === 'Credit' && !creditDueDate) {
         alert("Please select a Due Date for this Credit Sale.");
         return;
       }
@@ -331,6 +334,58 @@ export default function POSPage() {
     setCheckingOut(true);
 
     try {
+      if (paymentMethod === 'Invoice') {
+        const selectedCustomer = customers.find(c => c.CUST_ID === parseInt(creditCustomerId));
+        
+        const { data: invData, error: invError } = await supabase.from('invoice').insert([{
+          CUSTOMER_NAME: selectedCustomer ? `${selectedCustomer.FIRST_NAME} ${selectedCustomer.LAST_NAME}` : 'Walk-in',
+          CUSTOMER_PHONE: selectedCustomer?.PHONE || '',
+          CUSTOMER_ADDRESS: selectedCustomer?.ADDRESS || '',
+          CUSTOMER_EMAIL: selectedCustomer?.EMAIL || '',
+          NOTES: creditTerms || 'Generated from POS',
+          SUBTOTAL: subtotal,
+          TAX_AMOUNT: 0,
+          GRAND_TOTAL: totalBeforeDiscount, // Applying POS discounts to invoices can be tricky, we'll just log it in notes or pass it
+          STATUS: 'Pending',
+          EMPLOYEE_ID: employeeId
+        }]).select().single();
+
+        if (invError) throw invError;
+
+        const details = cart.map(item => ({
+          INVOICE_ID: invData.INVOICE_ID,
+          PRODUCT_ID: item.PRODUCT_ID,
+          DESCRIPTION: item.NAME,
+          QTY: item.quantity,
+          UNIT_PRICE: item.PRICE,
+          TOTAL_PRICE: item.PRICE * item.quantity
+        }));
+
+        await supabase.from('invoice_details').insert(details);
+
+        await logAction({
+          action: 'Created POS Invoice',
+          details: `Invoice #${invData.INVOICE_ID} created via POS for Ksh. ${subtotal.toLocaleString()}`,
+          severity: 'info',
+          employeeId: employeeId
+        });
+
+        alert(`Success! Invoice #${invData.INVOICE_ID} created.`);
+        
+        setPrintInvoiceData({
+          ...invData,
+          invoice_details: details
+        });
+
+        setCart([]);
+        setDiscountAmount('');
+        setIsMobileCartOpen(false);
+        setCreditCustomerId('');
+        setCreditTerms('');
+        setPaymentMethod('Cash');
+        return;
+      }
+
       // Setup payload based on method
       let cashAmt = 0;
       let mpesaAmt = 0;
@@ -666,11 +721,12 @@ export default function POSPage() {
           </div>
           
           {/* Payment Method Selector */}
-          <div className="btn-group-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
+          <div className="btn-group-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '0.5rem', marginBottom: '1.25rem' }}>
             <button className={`btn ${paymentMethod === 'Cash' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('Cash')} style={{ padding: '0.75rem' }}>Cash</button>
             <button className={`btn ${paymentMethod === 'M-Pesa' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('M-Pesa')} style={{ padding: '0.75rem', backgroundColor: paymentMethod === 'M-Pesa' ? '#25D366' : '', color: paymentMethod === 'M-Pesa' ? '#fff' : '' }}>M-Pesa</button>
             <button className={`btn ${paymentMethod === 'Hybrid' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('Hybrid')} style={{ padding: '0.75rem' }}>Hybrid</button>
-            <button className={`btn ${paymentMethod === 'Credit' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('Credit')} style={{ padding: '0.75rem', backgroundColor: paymentMethod === 'Credit' ? '#f59e0b' : '', color: paymentMethod === 'Credit' ? '#fff' : '' }}>Credit Sale</button>
+            <button className={`btn ${paymentMethod === 'Credit' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('Credit')} style={{ padding: '0.75rem', backgroundColor: paymentMethod === 'Credit' ? '#f59e0b' : '', color: paymentMethod === 'Credit' ? '#fff' : '' }}>Credit</button>
+            <button className={`btn ${paymentMethod === 'Invoice' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('Invoice')} style={{ padding: '0.75rem', backgroundColor: paymentMethod === 'Invoice' ? '#8b5cf6' : '', color: paymentMethod === 'Invoice' ? '#fff' : '' }}>Invoice</button>
           </div>
 
           {/* Conditional Inputs based on Method */}
@@ -691,18 +747,21 @@ export default function POSPage() {
             </div>
           )}
 
-          {paymentMethod === 'Credit' && (
+          {(paymentMethod === 'Credit' || paymentMethod === 'Invoice') && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.25rem' }}>
               <select className="input" style={{ padding: '0.75rem' }} value={creditCustomerId} onChange={e => setCreditCustomerId(e.target.value)}>
                 <option value="" disabled>Select Customer...</option>
                 {customers.map(c => <option key={c.CUST_ID} value={c.CUST_ID}>{c.FIRST_NAME} {c.LAST_NAME}</option>)}
               </select>
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', display: 'block', marginBottom: '0.25rem' }}>Due Date</label>
-                  <input type="date" className="input" style={{ padding: '0.75rem' }} value={creditDueDate} onChange={e => setCreditDueDate(e.target.value)} />
+              
+              {paymentMethod === 'Credit' && (
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', display: 'block', marginBottom: '0.25rem' }}>Due Date</label>
+                    <input type="date" className="input" style={{ padding: '0.75rem' }} value={creditDueDate} onChange={e => setCreditDueDate(e.target.value)} />
+                  </div>
                 </div>
-              </div>
+              )}
               <input type="text" className="input" style={{ padding: '0.75rem' }} placeholder="Terms / Notes..." value={creditTerms} onChange={e => setCreditTerms(e.target.value)} />
             </div>
           )}
@@ -718,7 +777,7 @@ export default function POSPage() {
               padding: '1.125rem', 
               fontSize: '1.125rem', 
               fontWeight: 700,
-              backgroundColor: paymentMethod === 'M-Pesa' ? '#25D366' : paymentMethod === 'Credit' ? '#f59e0b' : 'var(--primary)',
+              backgroundColor: paymentMethod === 'M-Pesa' ? '#25D366' : paymentMethod === 'Credit' ? '#f59e0b' : paymentMethod === 'Invoice' ? '#8b5cf6' : 'var(--primary)',
               transition: 'background-color 0.2s, transform 0.1s',
               color: '#fff'
             }}
@@ -727,8 +786,9 @@ export default function POSPage() {
           >
             {checkingOut ? <Loader2 size={20} className="animate-spin" /> : 
              paymentMethod === 'M-Pesa' ? <Smartphone size={20} /> : 
-             paymentMethod === 'Credit' ? <Calendar size={20} /> : <CreditCard size={20} />}
-            {checkingOut ? 'Processing...' : paymentMethod === 'Credit' ? 'Log Credit Sale' : `Pay Ksh. ${grandTotal.toLocaleString()}`}
+             paymentMethod === 'Credit' ? <Calendar size={20} /> : 
+             paymentMethod === 'Invoice' ? <FileText size={20} /> : <CreditCard size={20} />}
+            {checkingOut ? 'Processing...' : paymentMethod === 'Credit' ? 'Log Credit Sale' : paymentMethod === 'Invoice' ? 'Generate & Print Invoice' : `Pay Ksh. ${grandTotal.toLocaleString()}`}
           </button>
         </div>
           </motion.div>
@@ -770,6 +830,10 @@ export default function POSPage() {
           subtotal={printData.subtotal} 
           grandTotal={printData.grandTotal} 
         />
+      )}
+
+      {printInvoiceData && (
+        <InvoicePrint invoice={printInvoiceData} items={printInvoiceData.invoice_details} />
       )}
     </div>
   );
