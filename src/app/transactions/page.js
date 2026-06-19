@@ -270,6 +270,7 @@ function TransactionsContent() {
                       </div>
                     )}
                   </td>
+                  <td>
                     <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                       {(!trans.IS_SETTLED && trans.PAYMENT_METHOD === 'Pending Payment') && role !== 'employee' && (
                         <button className="btn btn-primary" style={{ padding: '0.5rem', background: '#10b981' }} title="Settle Payment" onClick={() => openSettleModal(trans)}>
