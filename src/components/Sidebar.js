@@ -96,7 +96,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar glass-panel">
       <div className="sidebar-header" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'center' }}>
-        <img src="/logo.png" alt="Jobea Auto Logo" style={{ height: '48px', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(16, 185, 129, 0.1))', opacity: 0.95, transition: 'all 0.3s ease' }} />
+        <img src="/logo.png" alt="Jobea Auto Logo" style={{ height: '48px', borderRadius: '12px', objectFit: 'contain', filter: 'drop-shadow(0 2px 4px rgba(16, 185, 129, 0.1))', opacity: 0.95, transition: 'all 0.3s ease' }} />
       </div>
       
       <nav className="sidebar-nav">

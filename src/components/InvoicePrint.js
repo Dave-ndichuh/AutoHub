@@ -32,7 +32,7 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '10px' }}>
-          <img src="/logo.png" alt="Jobea Auto Spares" style={{ height: '40px', objectFit: 'contain' }} />
+          <img src="/logo.png" alt="Jobea Auto Spares" style={{ height: '40px', borderRadius: '8px', objectFit: 'contain' }} />
           <h2 style={{ 
             fontSize: '24px', 
             fontWeight: 600, 
