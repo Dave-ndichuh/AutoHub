@@ -8,20 +8,25 @@ const supabaseAdmin = createClient(
 
 export async function POST(request) {
   try {
-    const { username } = await request.json();
-    if (!username) return NextResponse.json({ error: 'Username required' }, { status: 400 });
+    const { pin } = await request.json();
+    if (!pin) return NextResponse.json({ error: 'PIN required' }, { status: 400 });
 
     const { data, error } = await supabaseAdmin
       .from('employee')
-      .select('EMAIL')
-      .ilike('USERNAME', username.trim())
+      .select('EMAIL, FIRST_NAME, LAST_NAME, EMPLOYEE_ID')
+      .eq('PIN', pin)
       .maybeSingle();
 
     if (error || !data) {
-      return NextResponse.json({ error: 'Invalid Username or PIN.' }, { status: 404 });
+      return NextResponse.json({ error: 'Invalid PIN.' }, { status: 404 });
     }
 
-    return NextResponse.json({ email: data.EMAIL });
+    return NextResponse.json({ 
+      email: data.EMAIL,
+      firstName: data.FIRST_NAME,
+      lastName: data.LAST_NAME,
+      employeeId: data.EMPLOYEE_ID
+    });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

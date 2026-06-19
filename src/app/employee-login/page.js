@@ -9,7 +9,6 @@ import InstallPrompt from '@/components/InstallPrompt';
 import { logAction } from '@/lib/logger';
 
 export default function EmployeeLoginPage() {
-  const [username, setUsername] = useState('');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -28,8 +27,8 @@ export default function EmployeeLoginPage() {
 
   const handleEmployeeLogin = async (e) => {
     e?.preventDefault();
-    if (!username || !pin) {
-      setError('Please enter both Username and PIN.');
+    if (!pin) {
+      setError('Please enter your PIN.');
       return;
     }
 
@@ -39,12 +38,12 @@ export default function EmployeeLoginPage() {
       const res = await fetch('/api/auth/lookup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username })
+        body: JSON.stringify({ pin })
       });
       const data = await res.json();
 
       if (!res.ok || !data.email) {
-        throw new Error(data.error || 'Invalid Username or PIN.');
+        throw new Error(data.error || 'Invalid PIN.');
       }
 
       const { error: authError } = await supabase.auth.signInWithPassword({
@@ -53,7 +52,7 @@ export default function EmployeeLoginPage() {
       });
 
       if (authError) {
-        throw new Error('Invalid Username or PIN.');
+        throw new Error('Invalid PIN.');
       }
 
       await logAction({
@@ -316,7 +315,7 @@ export default function EmployeeLoginPage() {
             Staff Access<br/>Terminal
           </h1>
           <p style={{ fontSize: '1.25rem', color: '#94a3b8', maxWidth: '400px', lineHeight: 1.6 }}>
-            Enter your unique username and tap your PIN to access the POS and Service Center.
+            Tap your PIN to access the POS and Service Center.
           </p>
         </div>
       </div>
@@ -335,26 +334,6 @@ export default function EmployeeLoginPage() {
         )}
 
         <form onSubmit={handleEmployeeLogin}>
-          <div style={{ marginBottom: '2.5rem' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.75rem', color: 'var(--foreground)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Employee Username
-            </label>
-            <div style={{ position: 'relative' }}>
-              <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }}>
-                <User size={20} />
-              </div>
-              <input
-                type="text"
-                className="input"
-                style={{ paddingLeft: '3rem', height: '56px', fontSize: '1.125rem', borderRadius: '12px', background: 'var(--background)' }}
-                placeholder="e.g. Dmacharia"
-                value={username}
-                onChange={(e) => { setUsername(e.target.value); setError(null); }}
-                required
-              />
-            </div>
-          </div>
-
           <div style={{ marginBottom: '1rem' }}>
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '1.5rem', color: 'var(--foreground)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'center' }}>
               Enter PIN
