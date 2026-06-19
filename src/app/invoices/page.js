@@ -101,8 +101,8 @@ export default function InvoicesPage() {
 
   const calculateTotals = () => {
     const subtotal = invoiceItems.reduce((acc, i) => acc + i.TOTAL_PRICE, 0);
-    const tax = subtotal * 0.16; // 16% VAT
-    const grandTotal = subtotal + tax;
+    const tax = 0; // Prices are tax-inclusive
+    const grandTotal = subtotal;
     return { subtotal, tax, grandTotal };
   };
 
@@ -469,10 +469,6 @@ export default function InvoicesPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>
                     <span>Subtotal:</span>
                     <span>Ksh {calculateTotals().subtotal.toLocaleString()}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>
-                    <span>Tax (16%):</span>
-                    <span>Ksh {calculateTotals().tax.toLocaleString()}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.5rem', borderTop: '1px dashed var(--border)', fontWeight: 700, fontSize: '1.125rem', color: 'var(--primary)' }}>
                     <span>Grand Total:</span>

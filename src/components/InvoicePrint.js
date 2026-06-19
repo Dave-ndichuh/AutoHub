@@ -172,14 +172,9 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
         {/* Right Side: Totals and Signature */}
         <div style={{ width: '40%' }}>
           <div style={{ marginBottom: '40px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 16px', borderBottom: '1px solid #243c64', marginBottom: '12px' }}>
               <span style={{ fontWeight: 600, color: '#243c64', fontSize: '14px' }}>Sub-total :</span>
               <span style={{ fontWeight: 700, color: '#243c64', fontSize: '14px' }}>Ksh {invoice.SUBTOTAL?.toLocaleString()}</span>
-            </div>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 16px', borderBottom: '1px solid #243c64', marginBottom: '12px' }}>
-              <span style={{ fontWeight: 600, color: '#243c64', fontSize: '14px' }}>Tax :</span>
-              <span style={{ fontWeight: 700, color: '#243c64', fontSize: '14px' }}>Ksh {invoice.TAX_AMOUNT?.toLocaleString()}</span>
             </div>
 
             <div style={{ 
