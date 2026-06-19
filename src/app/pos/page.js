@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Search, Plus, Minus, Trash2, CreditCard, Loader2, ShoppingCart, Smartphone, ArrowLeft, Tag, Layers, User as UserIcon, Calendar, X, ChevronDown, ShoppingBag, Image as ImageIcon } from 'lucide-react';
 import Receipt from '@/components/Receipt';
 import { useAuth } from '@/components/AuthGuard';
+import { logAction } from '@/lib/logger';
 
 const categoryGradients = [
   'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', // Blue
@@ -380,6 +381,13 @@ export default function POSPage() {
 
       const { error: detErr } = await supabase.from('transaction_details').insert(details);
       if (detErr) throw detErr;
+
+      await logAction({
+        action: 'Completed Sale',
+        details: `Transaction #${transData.TRANS_ID} completed via ${paymentMethod} for Ksh. ${grandTotal.toLocaleString()}`,
+        severity: 'info',
+        employeeId: employeeId
+      });
 
       alert(`Success! Transaction #${transData.TRANS_ID} completed.`);
       

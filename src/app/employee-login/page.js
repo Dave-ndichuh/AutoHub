@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Loader2, ArrowLeft, User, KeyRound, Delete } from 'lucide-react';
 import Link from 'next/link';
 import InstallPrompt from '@/components/InstallPrompt';
+import { logAction } from '@/lib/logger';
 
 export default function EmployeeLoginPage() {
   const [username, setUsername] = useState('');
@@ -55,7 +56,15 @@ export default function EmployeeLoginPage() {
         throw new Error('Invalid Username or PIN.');
       }
 
-      router.push('/dashboard');
+      await logAction({
+        action: 'Employee Login',
+        details: `Employee ${data.firstName} ${data.lastName} logged in via PIN.`,
+        severity: 'info',
+        employeeId: data.employeeId,
+        userEmail: data.email
+      });
+
+      router.push('/pos');
     } catch (err) {
       setError(err.message);
       setPin(''); // Clear pin on error

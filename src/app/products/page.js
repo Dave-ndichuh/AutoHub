@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { Plus, Edit, Trash2, Search, X, Image as ImageIcon } from 'lucide-react';
 import { UploadButton } from '@/utils/uploadthing';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { logAction } from '@/lib/logger';
 
 function ProductsContent() {
   const router = useRouter();
@@ -56,7 +57,20 @@ function ProductsContent() {
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
+    
+    // Fetch product name for logging before deleting
+    const productToDelete = products.find(p => p.PRODUCT_ID === id);
+    
     await supabase.from('product').delete().eq('PRODUCT_ID', id);
+    
+    if (productToDelete) {
+      await logAction({
+        action: 'Deleted Product',
+        details: `Deleted product: ${productToDelete.NAME} (Code: ${productToDelete.PRODUCT_CODE})`,
+        severity: 'danger'
+      });
+    }
+    
     fetchProducts();
   };
 
@@ -115,6 +129,12 @@ function ProductsContent() {
       alert(`Database Error: ${errorMsg}`);
       return;
     }
+    
+    await logAction({
+      action: editingId ? 'Updated Product' : 'Added Product',
+      details: `${editingId ? 'Updated' : 'Added'} product: ${formData.NAME} (Code: ${formData.PRODUCT_CODE})`,
+      severity: 'info'
+    });
     
     setShowModal(false);
     fetchProducts();

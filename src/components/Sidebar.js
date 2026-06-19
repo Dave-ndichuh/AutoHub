@@ -12,7 +12,8 @@ import {
   Settings,
   LogOut,
   BarChart3,
-  Wrench
+  Wrench,
+  ShieldAlert
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -66,6 +67,7 @@ export default function Sidebar() {
     { name: 'Transactions', path: '/transactions', icon: FileText },
     { name: 'Services', path: '/services', icon: Wrench },
     { name: 'Reports', path: '/reports', icon: BarChart3 },
+    { name: 'System Logs', path: '/logs', icon: ShieldAlert },
     { name: 'Employees', path: '/employees', icon: Users },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];

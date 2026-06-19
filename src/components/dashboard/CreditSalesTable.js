@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { AlertTriangle, CheckCircle, ExternalLink, X, DollarSign, RefreshCw, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
+import { logAction } from '@/lib/logger';
 
 export default function CreditSalesTable() {
   const router = useRouter();
@@ -104,6 +105,12 @@ export default function CreditSalesTable() {
           .eq('TRANS_ID', transId);
 
         if (error) throw error;
+        
+        await logAction({
+          action: 'Returned Credit Sale',
+          details: `Transaction #TRX-${transId} was returned. Items added back to stock and amounts zeroed out.`,
+          severity: 'warning'
+        });
 
       } else {
         // Normal settlement (Cash, M-Pesa, Hybrid)
@@ -130,6 +137,12 @@ export default function CreditSalesTable() {
           .eq('TRANS_ID', transId);
 
         if (error) throw error;
+        
+        await logAction({
+          action: 'Settled Credit Sale',
+          details: `Transaction #TRX-${transId} was settled via ${settlementMode}.`,
+          severity: 'info'
+        });
       }
 
       setSettlingSale(null);
