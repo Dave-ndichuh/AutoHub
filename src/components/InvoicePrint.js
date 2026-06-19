@@ -15,15 +15,17 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
     <div 
       ref={ref} 
       style={{
-        padding: '40px',
+        padding: '2rem',
         background: 'white',
         color: '#1a1a1a',
         fontFamily: '"Inter", "Roboto", "Helvetica Neue", Arial, sans-serif',
-        width: '210mm', // A4 width
-        minHeight: '297mm', // A4 height
+        width: '100%',
+        maxWidth: '800px',
         margin: '0 auto',
         boxSizing: 'border-box',
-        position: 'relative'
+        position: 'relative',
+        WebkitPrintColorAdjust: 'exact',
+        printColorAdjust: 'exact'
       }}
     >
       {/* Header */}
@@ -38,14 +40,6 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
         }}>
           INVOICE
         </h1>
-        <h2 style={{ 
-          fontSize: '24px', 
-          fontWeight: 500, 
-          color: '#4a5568', 
-          margin: '5px 0 0 0'
-        }}>
-          Jobea Auto Spares
-        </h2>
       </div>
 
       {/* Invoice Details */}
@@ -159,10 +153,10 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
 
           <div>
             <p style={{ fontWeight: 600, color: '#243c64', margin: '0 0 4px 0', fontSize: '14px' }}>Phone Number :</p>
-            <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#4a5568' }}>+254 700 000000</p>
+            <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#4a5568' }}>0725599999</p>
             
-            <p style={{ fontWeight: 600, color: '#243c64', margin: '0 0 4px 0', fontSize: '14px' }}>Email Address :</p>
-            <p style={{ margin: 0, fontSize: '14px', color: '#4a5568' }}>info@jobea.co.ke</p>
+            <p style={{ fontWeight: 600, color: '#243c64', margin: '0 0 4px 0', fontSize: '14px' }}>Address :</p>
+            <p style={{ margin: 0, fontSize: '14px', color: '#4a5568' }}>Po. Box 1936, Kakamega</p>
           </div>
         </div>
 
