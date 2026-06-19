@@ -5,9 +5,12 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import AuthProvider from '@/components/AuthGuard';
 
 export const metadata = {
-  title: 'Auto Spare Parts Management',
+  title: 'Jobea Auto Spares',
   description: 'Premium Point of Sale and Inventory Management System',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/logo.png',
+  },
 };
 
 export const viewport = {
