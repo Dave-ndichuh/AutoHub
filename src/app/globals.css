@@ -467,6 +467,16 @@ button {
     display: none !important;
   }
 
+  /* Reset app layout wrappers so they don't constrain the print area */
+  .app-layout, .main-content, .page-content {
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+
   /* When printing invoice, hide the POS UI elements completely to prevent blank pages */
   body.printing-invoice .left-panel,
   body.printing-invoice .cart-panel,
