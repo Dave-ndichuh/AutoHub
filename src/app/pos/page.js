@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
-import { Search, Plus, Minus, Trash2, CreditCard, Loader2, ShoppingCart, Smartphone, ArrowLeft, Tag, Layers, User as UserIcon, Calendar, X, ChevronDown, ShoppingBag } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, CreditCard, Loader2, ShoppingCart, Smartphone, ArrowLeft, Tag, Layers, User as UserIcon, Calendar, X, ChevronDown, ShoppingBag, Image as ImageIcon } from 'lucide-react';
 import Receipt from '@/components/Receipt';
 import { useAuth } from '@/components/AuthGuard';
 
@@ -241,6 +241,15 @@ export default function POSPage() {
                   {product.ON_HAND <= 0 ? 'Out of Stock' : `Stock: ${product.ON_HAND}`}
                 </span>
               </div>
+              
+              <div style={{ width: '100%', height: '120px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem' }}>
+                {product.IMAGE_URL ? (
+                  <img src={product.IMAGE_URL} alt={product.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                ) : (
+                  <ImageIcon size={32} style={{ opacity: 0.1 }} />
+                )}
+              </div>
+
               <div style={{ flex: 1 }}>
                 <h4 style={{ fontWeight: 600, color: 'var(--foreground)', marginBottom: '0.25rem', lineHeight: '1.4' }}>{product.NAME}</h4>
                 {(product.BRAND || product.MODEL) && (
