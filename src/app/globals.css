@@ -455,3 +455,27 @@ button {
   min-width: 0; /* allow shrinking inside flex containers */
   position: relative;
 }
+
+/* Print styles for Invoice */
+@media print {
+  @page {
+    margin: 0;
+  }
+  body.printing-invoice {
+    margin: 0;
+    -webkit-print-color-adjust: exact;
+  }
+  body.printing-invoice * {
+    visibility: hidden;
+  }
+  body.printing-invoice #print-invoice-area, 
+  body.printing-invoice #print-invoice-area * {
+    visibility: visible;
+  }
+  body.printing-invoice #print-invoice-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}

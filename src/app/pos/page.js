@@ -490,32 +490,7 @@ export default function POSPage() {
   return (
     <div className="animate-fade-in pos-wrapper">
       
-      {/* Hide main UI when printing invoices */}
-      <style jsx global>{`
-        @media print {
-          @page {
-            margin: 0;
-          }
-          /* When printInvoiceData is active, we apply invoice print styles */
-          body.printing-invoice {
-            margin: 0;
-            -webkit-print-color-adjust: exact;
-          }
-          body.printing-invoice * {
-            visibility: hidden;
-          }
-          body.printing-invoice #print-invoice-area, 
-          body.printing-invoice #print-invoice-area * {
-            visibility: visible;
-          }
-          body.printing-invoice #print-invoice-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-        }
-      `}</style>
+
 
       {/* Left Area: Categories or Products */}
       <motion.div 
