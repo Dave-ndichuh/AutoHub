@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import { Lock, Mail, Loader2, Sparkles, UserCheck, ArrowRight, Settings, Wrench, Battery, Gauge, Zap, Car, Bike, Truck } from 'lucide-react';
 import Link from 'next/link';
 import InstallPrompt from '@/components/InstallPrompt';
