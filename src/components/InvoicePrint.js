@@ -15,13 +15,14 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
     <div 
       ref={ref} 
       style={{
-        padding: '2rem',
+        padding: '2.5rem',
         background: 'white',
         color: '#1a1a1a',
         fontFamily: '"Inter", "Roboto", "Helvetica Neue", Arial, sans-serif',
         width: '100%',
-        maxWidth: '800px',
-        margin: '0 auto',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
         boxSizing: 'border-box',
         position: 'relative',
         WebkitPrintColorAdjust: 'exact',
@@ -30,17 +31,7 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
     >
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <h1 style={{ 
-          fontSize: '64px', 
-          fontWeight: 900, 
-          color: '#243c64', 
-          margin: 0, 
-          letterSpacing: '2px',
-          textTransform: 'uppercase'
-        }}>
-          INVOICE
-        </h1>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '10px' }}>
           <img src="/logo.png" alt="Jobea Auto Spares" style={{ height: '40px', objectFit: 'contain' }} />
           <h2 style={{ 
             fontSize: '24px', 
@@ -51,6 +42,16 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
             Jobea Auto Spares
           </h2>
         </div>
+        <h1 style={{ 
+          fontSize: '64px', 
+          fontWeight: 900, 
+          color: '#243c64', 
+          margin: 0, 
+          letterSpacing: '2px',
+          textTransform: 'uppercase'
+        }}>
+          INVOICE
+        </h1>
       </div>
 
       {/* Invoice Details */}
@@ -61,9 +62,14 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
             {invoice.CUSTOMER_NAME || 'Walk-in Customer'}
           </h3>
           <p style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 600 }}>{invoice.CUSTOMER_PHONE}</p>
-          <p style={{ margin: 0, fontSize: '14px', color: '#4a5568', maxWidth: '250px' }}>
-            {invoice.CUSTOMER_ADDRESS}
-          </p>
+          {invoice.CUSTOMER_EMAIL && (
+            <p style={{ margin: '0 0 4px 0', fontSize: '14px', color: '#4a5568' }}>{invoice.CUSTOMER_EMAIL}</p>
+          )}
+          {invoice.CUSTOMER_ADDRESS && (
+            <p style={{ margin: 0, fontSize: '14px', color: '#4a5568', maxWidth: '250px' }}>
+              {invoice.CUSTOMER_ADDRESS}
+            </p>
+          )}
         </div>
         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
           <p style={{ fontWeight: 600, color: '#4a5568', margin: '0 0 8px 0', fontSize: '14px' }}>Invoice Date :</p>
@@ -73,8 +79,9 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
         </div>
       </div>
 
-      {/* Table */}
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '40px' }}>
+      {/* Table (Flex 1 to push footer to the bottom) */}
+      <div style={{ flex: 1 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '40px' }}>
         <thead>
           <tr>
             <th style={{ 
@@ -147,6 +154,7 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
           ))}
         </tbody>
       </table>
+      </div>
 
       {/* Totals & Footer Info */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

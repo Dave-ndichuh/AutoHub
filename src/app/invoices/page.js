@@ -395,7 +395,11 @@ export default function InvoicesPage() {
                   <input type="text" className="input" placeholder="123-456-7890" value={newInvoice.CUSTOMER_PHONE} onChange={e => setNewInvoice({...newInvoice, CUSTOMER_PHONE: e.target.value})} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Address</label>
+                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Email Address (Optional)</label>
+                  <input type="email" className="input" placeholder="customer@example.com" value={newInvoice.CUSTOMER_EMAIL || ''} onChange={e => setNewInvoice({...newInvoice, CUSTOMER_EMAIL: e.target.value})} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Address (Optional)</label>
                   <textarea className="input" placeholder="123 Anywhere St., Any City" value={newInvoice.CUSTOMER_ADDRESS} onChange={e => setNewInvoice({...newInvoice, CUSTOMER_ADDRESS: e.target.value})} rows={2} style={{ resize: 'none' }}/>
                 </div>
               </div>
