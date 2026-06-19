@@ -354,8 +354,17 @@ export default function InvoicesPage() {
                   {productSearch && (
                     <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', maxHeight: '200px', overflowY: 'auto', zIndex: 10, marginTop: '4px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}>
                       {products.filter(p => p.NAME.toLowerCase().includes(productSearch.toLowerCase()) || p.PRODUCT_CODE.toLowerCase().includes(productSearch.toLowerCase())).slice(0, 10).map(p => (
-                        <div key={p.PRODUCT_ID} style={{ padding: '0.75rem 1rem', display: 'flex', justifyContent: 'space-between', cursor: 'pointer', borderBottom: '1px solid var(--border)' }} onClick={() => addItem(p)} className="hover-bg">
-                          <span style={{ fontWeight: 500 }}>{p.NAME}</span>
+                        <div key={p.PRODUCT_ID} style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', borderBottom: '1px solid var(--border)' }} onClick={() => addItem(p)} className="hover-bg">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: 'var(--background)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              {p.IMAGE_URL ? (
+                                <img src={p.IMAGE_URL} alt={p.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                              ) : (
+                                <span style={{ opacity: 0.2 }}>📦</span>
+                              )}
+                            </div>
+                            <span style={{ fontWeight: 500 }}>{p.NAME}</span>
+                          </div>
                           <span className="text-muted">Ksh {p.PRICE?.toLocaleString()}</span>
                         </div>
                       ))}
