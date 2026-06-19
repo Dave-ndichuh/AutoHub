@@ -33,6 +33,14 @@ export default function InvoicesPage() {
   const [printItems, setPrintItems] = useState([]);
   const printRef = useRef(null);
 
+  // Settlement Modal
+  const [settleInvoice, setSettleInvoice] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('Cash'); // Cash, M-Pesa, Hybrid
+  const [hybridCash, setHybridCash] = useState('');
+  const [hybridMpesa, setHybridMpesa] = useState('');
+  const [mpesaReceipt, setMpesaReceipt] = useState('');
+  const [settling, setSettling] = useState(false);
+
   useEffect(() => {
     fetchInvoices();
     fetchProducts();
@@ -84,6 +92,11 @@ export default function InvoicesPage() {
   const updateItemQty = (productId, qty) => {
     if (qty < 1) return;
     setInvoiceItems(invoiceItems.map(i => i.PRODUCT_ID === productId ? { ...i, QTY: qty, TOTAL_PRICE: qty * i.UNIT_PRICE } : i));
+  };
+
+  const updateItemPrice = (productId, price) => {
+    if (price < 0) return;
+    setInvoiceItems(invoiceItems.map(i => i.PRODUCT_ID === productId ? { ...i, UNIT_PRICE: price, TOTAL_PRICE: i.QTY * price } : i));
   };
 
   const calculateTotals = () => {
@@ -144,19 +157,43 @@ export default function InvoicesPage() {
     fetchInvoices();
   };
 
-  const markAsPaid = async (invoiceId) => {
-    if (!confirm("Mark this invoice as Paid? This will deduct the stock for these items and generate a POS transaction.")) return;
-    
-    // Fetch full invoice details
-    const { data: inv } = await supabase.from('invoice').select('*, invoice_details(*)').eq('INVOICE_ID', invoiceId).single();
-    if (!inv) return;
+  const openSettleModal = (inv) => {
+    setSettleInvoice(inv);
+    setPaymentMethod('Cash');
+    setHybridCash('');
+    setHybridMpesa('');
+    setMpesaReceipt('');
+  };
 
-    // 1. Check stock availability first
-    for (let item of inv.invoice_details) {
-      const { data: pData } = await supabase.from('product').select('ON_HAND, NAME').eq('PRODUCT_ID', item.PRODUCT_ID).single();
-      if (pData && pData.ON_HAND < item.QTY) {
-        alert(`Insufficient stock for ${pData.NAME}. Available: ${pData.ON_HAND}, Required: ${item.QTY}`);
+  const confirmSettlement = async () => {
+    if (!settleInvoice) return;
+    setSettling(true);
+
+    if (paymentMethod === 'Hybrid') {
+      const cash = Number(hybridCash) || 0;
+      const mpesa = Number(hybridMpesa) || 0;
+      if (Math.abs((cash + mpesa) - settleInvoice.GRAND_TOTAL) > 0.01) {
+        alert(`Hybrid payments must equal exactly Ksh. ${settleInvoice.GRAND_TOTAL.toLocaleString()}`);
+        setSettling(false);
         return;
+      }
+    }
+
+    // Fetch full invoice details
+    const { data: inv } = await supabase.from('invoice').select('*, invoice_details(*)').eq('INVOICE_ID', settleInvoice.INVOICE_ID).single();
+    if (!inv) { setSettling(false); return; }
+
+    // 1. Check stock availability and compute true catalog subtotal
+    let catalogSubtotal = 0;
+    for (let item of inv.invoice_details) {
+      const { data: pData } = await supabase.from('product').select('ON_HAND, NAME, PRICE').eq('PRODUCT_ID', item.PRODUCT_ID).single();
+      if (pData) {
+        if (pData.ON_HAND < item.QTY) {
+          alert(`Insufficient stock for ${pData.NAME}. Available: ${pData.ON_HAND}, Required: ${item.QTY}`);
+          setSettling(false);
+          return;
+        }
+        catalogSubtotal += (pData.PRICE * item.QTY);
       }
     }
 
@@ -168,19 +205,38 @@ export default function InvoicesPage() {
       }
     }
 
+    // Calculate Discount
+    const discountAmount = catalogSubtotal - inv.SUBTOTAL;
+
+    let cashAmt = 0;
+    let mpesaAmt = 0;
+    if (paymentMethod === 'Cash') cashAmt = inv.GRAND_TOTAL;
+    if (paymentMethod === 'M-Pesa') mpesaAmt = inv.GRAND_TOTAL;
+    if (paymentMethod === 'Hybrid') {
+      cashAmt = Number(hybridCash) || 0;
+      mpesaAmt = Number(hybridMpesa) || 0;
+    }
+
     // 3. Create Transaction
     const { data: tData, error: tErr } = await supabase.from('transaction').insert([{
       EMPLOYEE_ID: employeeId || inv.EMPLOYEE_ID,
-      SUBTOTAL: inv.SUBTOTAL,
+      SUBTOTAL: catalogSubtotal,
       TAX_AMOUNT: inv.TAX_AMOUNT,
-      GRAND_TOTAL: inv.GRAND_TOTAL,
-      PAYMENT_METHOD: 'Invoice Settlement',
+      DISCOUNT_AMOUNT: -(discountAmount),
+      GRAND_TOTAL: catalogSubtotal,
+      ADJUSTED_TOTAL: inv.GRAND_TOTAL,
+      PAYMENT_METHOD: paymentMethod,
+      CASH_AMOUNT: cashAmt,
+      MPESA_AMOUNT: mpesaAmt,
+      HYBRID_PAYMENT: paymentMethod === 'Hybrid',
       IS_CREDIT: false,
-      IS_SETTLED: true
+      IS_SETTLED: true,
+      CASH_TENDERED: inv.GRAND_TOTAL
     }]).select().single();
 
     if (tErr) {
        alert("Failed to create transaction: " + tErr.message);
+       setSettling(false);
        return;
     }
 
@@ -194,17 +250,19 @@ export default function InvoicesPage() {
     await supabase.from('transaction_details').insert(tItems);
 
     // 4. Update Invoice Status
-    await supabase.from('invoice').update({ STATUS: 'Paid' }).eq('INVOICE_ID', invoiceId);
+    await supabase.from('invoice').update({ STATUS: 'Paid' }).eq('INVOICE_ID', inv.INVOICE_ID);
 
     await logAction({
       action: 'Paid Invoice',
-      details: `Invoice #${invoiceId} marked as Paid. Transaction #${tData.TRANS_ID} generated and stock deducted.`,
+      details: `Invoice #${inv.INVOICE_ID} marked as Paid via ${paymentMethod}. Transaction #${tData.TRANS_ID} generated with Ksh ${discountAmount > 0 ? discountAmount : 0} discount.`,
       severity: 'info',
       employeeId: employeeId
     });
 
     fetchInvoices();
     alert("Invoice paid and stock deducted successfully.");
+    setSettleInvoice(null);
+    setSettling(false);
   };
 
   const handlePrint = (inv) => {
@@ -293,7 +351,7 @@ export default function InvoicesPage() {
                 <td style={{ textAlign: 'right' }}>
                   <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                     {inv.STATUS === 'Pending' && (
-                      <button className="btn btn-success" style={{ padding: '0.5rem', background: '#10b981', color: 'white' }} title="Mark as Paid" onClick={() => markAsPaid(inv.INVOICE_ID)}>
+                      <button className="btn btn-success" style={{ padding: '0.5rem', background: '#10b981', color: 'white' }} title="Mark as Paid" onClick={() => openSettleModal(inv)}>
                         <CheckCircle size={16} />
                       </button>
                     )}
@@ -377,6 +435,7 @@ export default function InvoicesPage() {
                     <thead style={{ background: 'var(--card)', borderBottom: '1px solid var(--border)' }}>
                       <tr>
                         <th style={{ padding: '0.5rem', textAlign: 'left', fontSize: '0.875rem' }}>Item</th>
+                        <th style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.875rem' }}>Price</th>
                         <th style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.875rem' }}>Qty</th>
                         <th style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.875rem' }}>Total</th>
                         <th style={{ padding: '0.5rem' }}></th>
@@ -387,7 +446,10 @@ export default function InvoicesPage() {
                         <tr key={item.PRODUCT_ID} style={{ borderBottom: '1px solid var(--border)' }}>
                           <td style={{ padding: '0.5rem', fontSize: '0.875rem' }}>{item.DESCRIPTION}</td>
                           <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                            <input type="number" min="1" value={item.QTY} onChange={(e) => updateItemQty(item.PRODUCT_ID, parseInt(e.target.value) || 1)} style={{ width: '50px', padding: '0.25rem', textAlign: 'center', background: 'var(--background)', color: 'var(--foreground)', border: '1px solid var(--border)', borderRadius: '4px' }} />
+                            <input type="number" min="0" value={item.UNIT_PRICE} onChange={(e) => updateItemPrice(item.PRODUCT_ID, parseFloat(e.target.value) || 0)} style={{ width: '80px', padding: '0.25rem', textAlign: 'right', background: 'var(--background)', color: 'var(--foreground)', border: '1px solid var(--border)', borderRadius: '4px' }} title="Unit Price" />
+                          </td>
+                          <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                            <input type="number" min="1" value={item.QTY} onChange={(e) => updateItemQty(item.PRODUCT_ID, parseInt(e.target.value) || 1)} style={{ width: '50px', padding: '0.25rem', textAlign: 'center', background: 'var(--background)', color: 'var(--foreground)', border: '1px solid var(--border)', borderRadius: '4px' }} title="Quantity" />
                           </td>
                           <td style={{ padding: '0.5rem', textAlign: 'right', fontSize: '0.875rem', fontWeight: 600 }}>Ksh {item.TOTAL_PRICE?.toLocaleString()}</td>
                           <td style={{ padding: '0.5rem', textAlign: 'center' }}>
@@ -436,6 +498,56 @@ export default function InvoicesPage() {
       <div id="print-invoice-area" style={{ display: printInvoice ? 'block' : 'none' }}>
         <InvoicePrint ref={printRef} invoice={printInvoice} items={printItems} />
       </div>
+
+      {/* Settlement Modal */}
+      {settleInvoice && typeof document !== 'undefined' && createPortal(
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '2rem' }}>
+          <div className="glass" style={{ width: '100%', maxWidth: '400px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'var(--background)' }}>
+            <h3 className="heading-2" style={{ margin: 0 }}>Settle Invoice</h3>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--card)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+              <span className="text-muted">Total Due:</span>
+              <span style={{ fontWeight: 700, fontSize: '1.25rem', color: 'var(--primary)' }}>Ksh {settleInvoice.GRAND_TOTAL?.toLocaleString()}</span>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Payment Method</label>
+              <select className="input" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                <option value="Cash">Cash</option>
+                <option value="M-Pesa">M-Pesa</option>
+                <option value="Hybrid">Hybrid (Cash + M-Pesa)</option>
+              </select>
+            </div>
+
+            {paymentMethod === 'Hybrid' && (
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Cash Amount</label>
+                  <input type="number" className="input" value={hybridCash} onChange={e => setHybridCash(e.target.value)} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>M-Pesa Amount</label>
+                  <input type="number" className="input" value={hybridMpesa} onChange={e => setHybridMpesa(e.target.value)} />
+                </div>
+              </div>
+            )}
+
+            {(paymentMethod === 'M-Pesa' || paymentMethod === 'Hybrid') && (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>M-Pesa Receipt (Optional)</label>
+                <input type="text" className="input" placeholder="e.g. QWE123RTY" value={mpesaReceipt} onChange={e => setMpesaReceipt(e.target.value.toUpperCase())} />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setSettleInvoice(null)}>Cancel</button>
+              <button className="btn btn-primary" style={{ flex: 1 }} onClick={confirmSettlement} disabled={settling}>
+                {settling ? 'Processing...' : 'Confirm Payment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
 
     </div>
   );
