@@ -67,11 +67,21 @@ export default function POSPage() {
   // Auto-trigger print when printData or printInvoiceData is fully rendered
   useEffect(() => {
     if (printData || printInvoiceData) {
+      if (printInvoiceData) {
+        document.body.classList.add('printing-invoice');
+      }
+      
       const timer = setTimeout(() => {
         window.print();
-        if (printInvoiceData) setPrintInvoiceData(null);
+        if (printInvoiceData) {
+          document.body.classList.remove('printing-invoice');
+          setPrintInvoiceData(null);
+        }
       }, 200);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        document.body.classList.remove('printing-invoice');
+      };
     }
   }, [printData, printInvoiceData]);
 
@@ -480,6 +490,33 @@ export default function POSPage() {
   return (
     <div className="animate-fade-in pos-wrapper">
       
+      {/* Hide main UI when printing invoices */}
+      <style jsx global>{`
+        @media print {
+          @page {
+            margin: 0;
+          }
+          /* When printInvoiceData is active, we apply invoice print styles */
+          body.printing-invoice {
+            margin: 0;
+            -webkit-print-color-adjust: exact;
+          }
+          body.printing-invoice * {
+            visibility: hidden;
+          }
+          body.printing-invoice #print-invoice-area, 
+          body.printing-invoice #print-invoice-area * {
+            visibility: visible;
+          }
+          body.printing-invoice #print-invoice-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+          }
+        }
+      `}</style>
+
       {/* Left Area: Categories or Products */}
       <motion.div 
         className="left-panel"
@@ -832,9 +869,12 @@ export default function POSPage() {
         />
       )}
 
-      {printInvoiceData && (
-        <InvoicePrint invoice={printInvoiceData} items={printInvoiceData.invoice_details} />
-      )}
+      {/* Print Area Container for Invoice */}
+      <div id="print-invoice-area" style={{ display: printInvoiceData ? 'block' : 'none' }}>
+        {printInvoiceData && (
+          <InvoicePrint invoice={printInvoiceData} items={printInvoiceData.invoice_details} />
+        )}
+      </div>
     </div>
   );
 }
