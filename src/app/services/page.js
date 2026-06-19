@@ -17,6 +17,7 @@ export default function ServicesPage() {
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [originalStatus, setOriginalStatus] = useState('');
   const [formData, setFormData] = useState({
     SERVICE_CODE: '', CUSTOMER_ID: '', EMPLOYEE_ID: '', SERVICE_TYPE: '', DESCRIPTION: '', 
     DATE_SCHEDULED: '', STATUS: 'Scheduled', PRICE: 0, DURATION: '', NOTES: ''
@@ -62,6 +63,7 @@ export default function ServicesPage() {
   const openModal = (service = null) => {
     if (service) {
       setEditingId(service.SERVICE_ID);
+      setOriginalStatus(service.STATUS || 'Scheduled');
       setFormData({
         SERVICE_CODE: service.SERVICE_CODE || '',
         CUSTOMER_ID: service.CUSTOMER_ID || '',
@@ -77,6 +79,7 @@ export default function ServicesPage() {
       setServiceDetails(service.service_details || []);
     } else {
       setEditingId(null);
+      setOriginalStatus('');
       setFormData({ 
         SERVICE_CODE: `SRV-${Math.floor(Math.random() * 10000)}`, 
         CUSTOMER_ID: '', EMPLOYEE_ID: '', SERVICE_TYPE: '', DESCRIPTION: '', 
@@ -110,6 +113,50 @@ export default function ServicesPage() {
     if (errorMsg) {
       alert(`Database Error: ${errorMsg}`);
       return;
+    }
+
+    // Generate transaction if status changed to Completed
+    if (payload.STATUS === 'Completed' && originalStatus !== 'Completed' && editingId) {
+      const laborPrice = Number(payload.PRICE) || 0;
+      const partsTotal = serviceDetails.reduce((sum, d) => sum + Number(d.SUBTOTAL), 0);
+      const grandTotal = laborPrice + partsTotal;
+
+      const { data: transData, error: transErr } = await supabase.from('transaction').insert([{
+        SUBTOTAL: grandTotal,
+        TAX_AMOUNT: 0,
+        GRAND_TOTAL: grandTotal,
+        DISCOUNT_AMOUNT: 0,
+        ADJUSTED_TOTAL: grandTotal,
+        PAYMENT_METHOD: 'Pending Payment',
+        CASH_AMOUNT: 0,
+        MPESA_AMOUNT: 0,
+        HYBRID_PAYMENT: false,
+        IS_CREDIT: false,
+        IS_SETTLED: false,
+        CASH_TENDERED: 0,
+        EMPLOYEE_ID: payload.EMPLOYEE_ID || employeeId
+      }]).select().single();
+
+      if (!transErr && transData) {
+        const details = serviceDetails.map(item => ({
+          TRANS_ID: transData.TRANS_ID,
+          PRODUCT_ID: item.PRODUCT_ID,
+          QTY: item.QTY,
+          UNIT_PRICE: item.UNIT_PRICE,
+          SUBTOTAL: item.SUBTOTAL
+        }));
+        if (details.length > 0) {
+          await supabase.from('transaction_details').insert(details);
+        }
+        
+        // Deduct stock
+        for (const item of serviceDetails) {
+          const { data: pData } = await supabase.from('product').select('ON_HAND').eq('PRODUCT_ID', item.PRODUCT_ID).single();
+          if (pData) {
+            await supabase.from('product').update({ ON_HAND: pData.ON_HAND - item.QTY }).eq('PRODUCT_ID', item.PRODUCT_ID);
+          }
+        }
+      }
     }
     
     setShowModal(false);
@@ -151,62 +198,6 @@ export default function ServicesPage() {
       if (data) setServiceDetails(data);
       setSelectedProduct('');
       setQtyToAdd(1);
-    }
-  };
-
-  const processServicePayment = async () => {
-    if (!confirm('This will finalize the service, create a transaction, and prompt the customer for payment. Continue?')) return;
-    
-    const laborPrice = Number(formData.PRICE) || 0;
-    const partsTotal = serviceDetails.reduce((sum, d) => sum + Number(d.SUBTOTAL), 0);
-    const grandTotal = laborPrice + partsTotal;
-
-    const methodStr = prompt('Enter payment method (Cash, M-Pesa, Credit):', 'Cash');
-    if (!methodStr) return;
-
-    let mpesaAmt = 0;
-    let cashAmt = 0;
-    if (methodStr.toLowerCase() === 'm-pesa') mpesaAmt = grandTotal;
-    else cashAmt = grandTotal;
-
-    try {
-      const { data: transData, error: transErr } = await supabase.from('transaction').insert([{
-        SUBTOTAL: grandTotal,
-        TAX_AMOUNT: 0,
-        GRAND_TOTAL: grandTotal,
-        DISCOUNT_AMOUNT: 0,
-        ADJUSTED_TOTAL: grandTotal,
-        PAYMENT_METHOD: methodStr,
-        CASH_AMOUNT: cashAmt,
-        MPESA_AMOUNT: mpesaAmt,
-        HYBRID_PAYMENT: false,
-        IS_CREDIT: methodStr.toLowerCase() === 'credit',
-        CASH_TENDERED: grandTotal,
-        EMPLOYEE_ID: employeeId
-      }]).select().single();
-
-      if (transErr) throw transErr;
-
-      const details = serviceDetails.map(item => ({
-        TRANS_ID: transData.TRANS_ID,
-        PRODUCT_ID: item.PRODUCT_ID,
-        QTY: item.QTY,
-        UNIT_PRICE: item.UNIT_PRICE,
-        SUBTOTAL: item.SUBTOTAL
-      }));
-
-      if (details.length > 0) {
-        const { error: detErr } = await supabase.from('transaction_details').insert(details);
-        if (detErr) throw detErr;
-      }
-
-      await supabase.from('service').update({ STATUS: 'Completed & Paid', DATE_COMPLETED: new Date().toISOString() }).eq('SERVICE_ID', editingId);
-
-      alert(`Success! Service Paid. Transaction #${transData.TRANS_ID} created.`);
-      setShowModal(false);
-      fetchServices();
-    } catch (err) {
-      alert('Error processing payment: ' + err.message);
     }
   };
 
@@ -335,181 +326,263 @@ export default function ServicesPage() {
 
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', zIndex: 9999, padding: '5rem 2rem 2rem 2rem', overflowY: 'auto' }}>
-          <div className="glass" style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', background: 'var(--background)', marginBottom: '4rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-              <h3 className="heading-2" style={{ margin: 0 }}>{editingId ? 'Edit Service Ticket' : 'Create Service Ticket'}</h3>
-              <button onClick={() => setShowModal(false)}><X size={20} className="text-muted" /></button>
-            </div>
-            
-            <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          
+          {role === 'employee' ? (
+            // EMPLOYEE SIMPLIFIED OVERLAY
+            <div className="glass" style={{ width: '100%', maxWidth: '600px', display: 'flex', flexDirection: 'column', background: 'var(--background)', marginBottom: '4rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+                <h3 className="heading-2" style={{ margin: 0 }}>Service Assignment</h3>
+                <button onClick={() => setShowModal(false)}><X size={20} className="text-muted" /></button>
+              </div>
               
-              <form id="serviceForm" onSubmit={saveService} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                
-                {/* Left Column - Details */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  <h4 style={{ fontWeight: 600, color: 'var(--primary)', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Wrench size={18} /> Service Info
-                  </h4>
-                  
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Ticket Code</label>
-                      <input type="text" className="input" value={formData.SERVICE_CODE} onChange={e => setFormData({...formData, SERVICE_CODE: e.target.value})} required />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Service Type</label>
-                      <input type="text" className="input" placeholder="e.g. Oil Change" value={formData.SERVICE_TYPE} onChange={e => setFormData({...formData, SERVICE_TYPE: e.target.value})} required />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Customer</label>
-                      <select className="input" value={formData.CUSTOMER_ID} onChange={e => setFormData({...formData, CUSTOMER_ID: parseInt(e.target.value) || ''})} required style={{ background: 'var(--card)' }}>
-                        <option value="" disabled>Select Customer</option>
-                        {customers.map(c => <option key={c.CUST_ID} value={c.CUST_ID}>{c.FIRST_NAME} {c.LAST_NAME}</option>)}
-                      </select>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Assigned Employee</label>
-                      <select className="input" value={formData.EMPLOYEE_ID} onChange={e => setFormData({...formData, EMPLOYEE_ID: parseInt(e.target.value) || ''})} required style={{ background: 'var(--card)' }}>
-                        <option value="" disabled>Select Employee</option>
-                        {employees.map(e => <option key={e.EMPLOYEE_ID} value={e.EMPLOYEE_ID}>{e.FIRST_NAME} {e.LAST_NAME}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Service Description / Issue</label>
-                    <textarea className="input" rows={3} value={formData.DESCRIPTION} onChange={e => setFormData({...formData, DESCRIPTION: e.target.value})} style={{ resize: 'vertical' }} />
+              <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ padding: '1rem', background: 'var(--card)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontWeight: 600, color: 'var(--primary)', marginBottom: '0.25rem' }}>{formData.SERVICE_CODE} - {formData.SERVICE_TYPE}</div>
+                  <div className="text-muted" style={{ fontSize: '0.875rem' }}>
+                    {formData.DESCRIPTION || 'No description provided.'}
                   </div>
                 </div>
 
-                {/* Right Column - Status & Billing */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                  <h4 style={{ fontWeight: 600, color: 'var(--primary)', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Calendar size={18} /> Schedule & Billing
-                  </h4>
-                  
-                  <div style={{ display: 'flex', gap: '1rem' }}>
+                <form id="employeeServiceForm" onSubmit={saveService}>
+                  <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
                     <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Scheduled Date</label>
-                      <input type="date" className="input" value={formData.DATE_SCHEDULED} onChange={e => setFormData({...formData, DATE_SCHEDULED: e.target.value})} required />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Estimated Duration</label>
-                      <input type="text" className="input" placeholder="e.g. 2 Hours" value={formData.DURATION} onChange={e => setFormData({...formData, DURATION: e.target.value})} />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Status</label>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Update Status</label>
                       <select className="input" value={formData.STATUS} onChange={e => setFormData({...formData, STATUS: e.target.value})} style={{ background: 'var(--card)' }}>
-                        <option value="Pending Assignment">Pending Assignment</option>
                         <option value="Scheduled">Scheduled</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Completed">Completed</option>
-                        <option value="Completed & Paid">Completed & Paid</option>
-                        <option value="Declined">Declined</option>
-                        <option value="Cancelled">Cancelled</option>
                       </select>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Labor Price (Ksh)</label>
-                      <input type="number" className="input" value={formData.PRICE} onChange={e => setFormData({...formData, PRICE: parseFloat(e.target.value) || 0})} required />
                     </div>
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Internal Notes</label>
-                    <textarea className="input" rows={2} value={formData.NOTES} onChange={e => setFormData({...formData, NOTES: e.target.value})} style={{ resize: 'vertical' }} />
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Service Notes / Mechanic Log</label>
+                    <textarea className="input" rows={3} value={formData.NOTES} onChange={e => setFormData({...formData, NOTES: e.target.value})} style={{ resize: 'vertical' }} />
                   </div>
-                </div>
+                </form>
 
-              </form>
+                {/* Parts Section for Employees */}
+                {editingId && (
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+                    <h4 style={{ fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Settings size={18} /> Parts Used
+                    </h4>
+                    
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', marginBottom: '1rem' }}>
+                      <div style={{ flex: 2 }}>
+                        <select className="input" value={selectedProduct} onChange={e => setSelectedProduct(e.target.value)} style={{ background: 'var(--card)' }}>
+                          <option value="" disabled>Select a part from inventory...</option>
+                          {products.map(p => <option key={p.PRODUCT_ID} value={p.PRODUCT_ID}>{p.NAME} ({p.ON_HAND} in stock)</option>)}
+                        </select>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <input type="number" className="input" min="1" placeholder="Qty" value={qtyToAdd} onChange={e => setQtyToAdd(parseInt(e.target.value) || 1)} />
+                      </div>
+                      <button type="button" className="btn btn-secondary" onClick={addPartToService}>
+                        <Plus size={16} /> Add
+                      </button>
+                    </div>
 
-              {/* Parts Usage Section (Only visible if Editing an existing service) */}
-              {editingId && (
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
-                  <h4 style={{ fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Settings size={18} /> Parts & Materials Consumed
-                  </h4>
-                  
-                  <div className="glass" style={{ padding: '1rem', marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-                    <div style={{ flex: 2 }}>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Search Inventory Part</label>
-                      <select className="input" value={selectedProduct} onChange={e => setSelectedProduct(e.target.value)} style={{ background: 'var(--card)' }}>
-                        <option value="" disabled>Select a part...</option>
-                        {products.map(p => <option key={p.PRODUCT_ID} value={p.PRODUCT_ID}>{p.NAME} - Ksh {p.PRICE} ({p.ON_HAND} in stock)</option>)}
-                      </select>
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Qty</label>
-                      <input type="number" className="input" min="1" value={qtyToAdd} onChange={e => setQtyToAdd(parseInt(e.target.value) || 1)} />
-                    </div>
-                    <button type="button" className="btn btn-secondary" onClick={addPartToService}>
-                      <Plus size={16} /> Add Part
-                    </button>
+                    <table className="table" style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                      <tbody>
+                        {serviceDetails.length === 0 ? (
+                          <tr><td colSpan="3" style={{ textAlign: 'center', color: 'var(--muted-foreground)', padding: '1rem' }}>No parts added yet.</td></tr>
+                        ) : (
+                          serviceDetails.map(detail => (
+                            <tr key={detail.DETAIL_ID}>
+                              <td>{detail.product?.NAME}</td>
+                              <td>Qty: {detail.QTY}</td>
+                              <td style={{ textAlign: 'right' }}>
+                                <button type="button" onClick={() => removePart(detail.DETAIL_ID)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                                  <X size={16} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
                   </div>
+                )}
+              </div>
 
-                  <table className="table" style={{ fontSize: '0.875rem' }}>
-                    <thead>
-                      <tr>
-                        <th>Part Name</th>
-                        <th>Qty</th>
-                        <th>Unit Price</th>
-                        <th>Subtotal</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {serviceDetails.length === 0 ? (
-                        <tr><td colSpan="5" style={{ textAlign: 'center', color: 'var(--muted-foreground)' }}>No parts added to this ticket yet.</td></tr>
-                      ) : (
-                        serviceDetails.map(detail => (
-                          <tr key={detail.DETAIL_ID}>
-                            <td>{detail.product?.NAME}</td>
-                            <td>{detail.QTY}</td>
-                            <td>Ksh {detail.UNIT_PRICE}</td>
-                            <td style={{ fontWeight: 600 }}>Ksh {detail.SUBTOTAL}</td>
-                            <td>
-                              <button type="button" onClick={() => removePart(detail.DETAIL_ID)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
-                                <X size={16} />
-                              </button>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                  
-                  {serviceDetails.length > 0 && (
-                    <div style={{ textAlign: 'right', marginTop: '1rem', fontWeight: 600, fontSize: '1.125rem' }}>
-                      Parts Total: Ksh {serviceDetails.reduce((sum, d) => sum + Number(d.SUBTOTAL), 0).toLocaleString()}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {!editingId && (
-                <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', color: 'var(--muted-foreground)', fontSize: '0.875rem', textAlign: 'center' }}>
-                  Save this service ticket first to unlock the "Parts & Materials Consumed" section.
-                </div>
-              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                <button type="button" className="btn btn-secondary" style={{ marginRight: '1rem' }} onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" form="employeeServiceForm" className="btn btn-primary" style={{ padding: '0.75rem 2.5rem' }}>Save Updates</button>
+              </div>
+            </div>
+          ) : (
+            // ADMIN FULL MODAL
+            <div className="glass" style={{ width: '100%', maxWidth: '900px', display: 'flex', flexDirection: 'column', background: 'var(--background)', marginBottom: '4rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+                <h3 className="heading-2" style={{ margin: 0 }}>{editingId ? 'Edit Service Ticket' : 'Create Service Ticket'}</h3>
+                <button onClick={() => setShowModal(false)}><X size={20} className="text-muted" /></button>
+              </div>
               
-            </div>
+              <div style={{ padding: '1.5rem', overflowY: 'auto', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                
+                <form id="serviceForm" onSubmit={saveService} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                  
+                  {/* Left Column - Details */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <h4 style={{ fontWeight: 600, color: 'var(--primary)', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Wrench size={18} /> Service Info
+                    </h4>
+                    
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Ticket Code</label>
+                        <input type="text" className="input" value={formData.SERVICE_CODE} onChange={e => setFormData({...formData, SERVICE_CODE: e.target.value})} required />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Service Type</label>
+                        <input type="text" className="input" placeholder="e.g. Oil Change" value={formData.SERVICE_TYPE} onChange={e => setFormData({...formData, SERVICE_TYPE: e.target.value})} required />
+                      </div>
+                    </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1.5rem', borderTop: '1px solid var(--border)' }}>
-              {formData.STATUS === 'Completed' && editingId && (
-                <button type="button" className="btn btn-primary" style={{ background: '#10b981', marginRight: 'auto' }} onClick={processServicePayment}>
-                  <CheckCircle size={18} style={{ marginRight: '0.5rem' }} /> Checkout & Process Payment
-                </button>
-              )}
-              <button type="button" className="btn btn-secondary" style={{ marginRight: '1rem' }} onClick={() => setShowModal(false)}>Cancel</button>
-              <button type="submit" form="serviceForm" className="btn btn-primary" style={{ padding: '0.75rem 2.5rem' }}>Save Ticket</button>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Customer</label>
+                        <select className="input" value={formData.CUSTOMER_ID} onChange={e => setFormData({...formData, CUSTOMER_ID: parseInt(e.target.value) || ''})} required style={{ background: 'var(--card)' }}>
+                          <option value="" disabled>Select Customer</option>
+                          {customers.map(c => <option key={c.CUST_ID} value={c.CUST_ID}>{c.FIRST_NAME} {c.LAST_NAME}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Assigned Employee</label>
+                        <select className="input" value={formData.EMPLOYEE_ID} onChange={e => setFormData({...formData, EMPLOYEE_ID: parseInt(e.target.value) || ''})} required style={{ background: 'var(--card)' }}>
+                          <option value="" disabled>Select Employee</option>
+                          {employees.map(e => <option key={e.EMPLOYEE_ID} value={e.EMPLOYEE_ID}>{e.FIRST_NAME} {e.LAST_NAME}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Service Description / Issue</label>
+                      <textarea className="input" rows={3} value={formData.DESCRIPTION} onChange={e => setFormData({...formData, DESCRIPTION: e.target.value})} style={{ resize: 'vertical' }} />
+                    </div>
+                  </div>
+
+                  {/* Right Column - Status & Billing */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <h4 style={{ fontWeight: 600, color: 'var(--primary)', marginBottom: '-0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Calendar size={18} /> Schedule & Billing
+                    </h4>
+                    
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Scheduled Date</label>
+                        <input type="date" className="input" value={formData.DATE_SCHEDULED} onChange={e => setFormData({...formData, DATE_SCHEDULED: e.target.value})} required />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Estimated Duration</label>
+                        <input type="text" className="input" placeholder="e.g. 2 Hours" value={formData.DURATION} onChange={e => setFormData({...formData, DURATION: e.target.value})} />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Status</label>
+                        <select className="input" value={formData.STATUS} onChange={e => setFormData({...formData, STATUS: e.target.value})} style={{ background: 'var(--card)' }}>
+                          <option value="Pending Assignment">Pending Assignment</option>
+                          <option value="Scheduled">Scheduled</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Completed">Completed</option>
+                          <option value="Declined">Declined</option>
+                          <option value="Cancelled">Cancelled</option>
+                        </select>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Labor Price (Ksh)</label>
+                        <input type="number" className="input" value={formData.PRICE} onChange={e => setFormData({...formData, PRICE: parseFloat(e.target.value) || 0})} required />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Internal Notes</label>
+                      <textarea className="input" rows={2} value={formData.NOTES} onChange={e => setFormData({...formData, NOTES: e.target.value})} style={{ resize: 'vertical' }} />
+                    </div>
+                  </div>
+
+                </form>
+
+                {/* Parts Usage Section (Only visible if Editing an existing service) */}
+                {editingId && (
+                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
+                    <h4 style={{ fontWeight: 600, color: 'var(--primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <Settings size={18} /> Parts & Materials Consumed
+                    </h4>
+                    
+                    <div className="glass" style={{ padding: '1rem', marginBottom: '1rem', display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
+                      <div style={{ flex: 2 }}>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Search Inventory Part</label>
+                        <select className="input" value={selectedProduct} onChange={e => setSelectedProduct(e.target.value)} style={{ background: 'var(--card)' }}>
+                          <option value="" disabled>Select a part...</option>
+                          {products.map(p => <option key={p.PRODUCT_ID} value={p.PRODUCT_ID}>{p.NAME} - Ksh {p.PRICE} ({p.ON_HAND} in stock)</option>)}
+                        </select>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Qty</label>
+                        <input type="number" className="input" min="1" value={qtyToAdd} onChange={e => setQtyToAdd(parseInt(e.target.value) || 1)} />
+                      </div>
+                      <button type="button" className="btn btn-secondary" onClick={addPartToService}>
+                        <Plus size={16} /> Add Part
+                      </button>
+                    </div>
+
+                    <table className="table" style={{ fontSize: '0.875rem' }}>
+                      <thead>
+                        <tr>
+                          <th>Part Name</th>
+                          <th>Qty</th>
+                          <th>Unit Price</th>
+                          <th>Subtotal</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {serviceDetails.length === 0 ? (
+                          <tr><td colSpan="5" style={{ textAlign: 'center', color: 'var(--muted-foreground)' }}>No parts added to this ticket yet.</td></tr>
+                        ) : (
+                          serviceDetails.map(detail => (
+                            <tr key={detail.DETAIL_ID}>
+                              <td>{detail.product?.NAME}</td>
+                              <td>{detail.QTY}</td>
+                              <td>Ksh {detail.UNIT_PRICE}</td>
+                              <td style={{ fontWeight: 600 }}>Ksh {detail.SUBTOTAL}</td>
+                              <td>
+                                <button type="button" onClick={() => removePart(detail.DETAIL_ID)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
+                                  <X size={16} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                    
+                    {serviceDetails.length > 0 && (
+                      <div style={{ textAlign: 'right', marginTop: '1rem', fontWeight: 600, fontSize: '1.125rem' }}>
+                        Parts Total: Ksh {serviceDetails.reduce((sum, d) => sum + Number(d.SUBTOTAL), 0).toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {!editingId && (
+                  <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', color: 'var(--muted-foreground)', fontSize: '0.875rem', textAlign: 'center' }}>
+                    Save this service ticket first to unlock the "Parts & Materials Consumed" section.
+                  </div>
+                )}
+                
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '1.5rem', borderTop: '1px solid var(--border)' }}>
+                <button type="button" className="btn btn-secondary" style={{ marginRight: '1rem' }} onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="submit" form="serviceForm" className="btn btn-primary" style={{ padding: '0.75rem 2.5rem' }}>Save Ticket</button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>

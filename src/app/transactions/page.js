@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Search, Printer, Calendar, X, Eye } from 'lucide-react';
+import { Search, Printer, Calendar, X, Eye, CheckCircle } from 'lucide-react';
 import Receipt from '@/components/Receipt';
 import { useAuth } from '@/components/AuthGuard';
 import { useSearchParams } from 'next/navigation';
@@ -22,6 +22,13 @@ function TransactionsContent() {
   
   // Modal State
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  
+  // Settlement State
+  const [settleModalOpen, setSettleModalOpen] = useState(false);
+  const [transactionToSettle, setTransactionToSettle] = useState(null);
+  const [paymentMode, setPaymentMode] = useState('Cash');
+  const [cashAmount, setCashAmount] = useState('');
+  const [mpesaAmount, setMpesaAmount] = useState('');
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -110,6 +117,60 @@ function TransactionsContent() {
       vat: trans.TAX_AMOUNT,
       grandTotal: trans.GRAND_TOTAL
     });
+  };
+
+  const openSettleModal = (trans) => {
+    setTransactionToSettle(trans);
+    setPaymentMode('Cash');
+    setCashAmount(trans.ADJUSTED_TOTAL || trans.GRAND_TOTAL);
+    setMpesaAmount(0);
+    setSettleModalOpen(true);
+  };
+
+  const handleSettleSubmit = async (e) => {
+    e.preventDefault();
+    if (!transactionToSettle) return;
+
+    let finalCash = 0;
+    let finalMpesa = 0;
+    let isHybrid = false;
+
+    const totalDue = transactionToSettle.ADJUSTED_TOTAL || transactionToSettle.GRAND_TOTAL;
+
+    if (paymentMode === 'Cash') finalCash = totalDue;
+    else if (paymentMode === 'M-Pesa') finalMpesa = totalDue;
+    else if (paymentMode === 'Hybrid') {
+      finalCash = Number(cashAmount);
+      finalMpesa = Number(mpesaAmount);
+      isHybrid = true;
+      if (finalCash + finalMpesa !== totalDue) {
+        alert(`Hybrid amounts (Ksh ${finalCash + finalMpesa}) must equal the total due (Ksh ${totalDue}).`);
+        return;
+      }
+    }
+
+    const { error } = await supabase.from('transaction').update({
+      PAYMENT_METHOD: paymentMode,
+      CASH_AMOUNT: finalCash,
+      MPESA_AMOUNT: finalMpesa,
+      HYBRID_PAYMENT: isHybrid,
+      IS_SETTLED: true,
+      CASH_TENDERED: totalDue
+    }).eq('TRANS_ID', transactionToSettle.TRANS_ID);
+
+    if (error) {
+      alert('Error settling transaction: ' + error.message);
+    } else {
+      setSettleModalOpen(false);
+      setTransactionToSettle(null);
+      // Quickly update local state to avoid full refetch
+      setTransactions(prev => prev.map(t => {
+        if (t.TRANS_ID === transactionToSettle.TRANS_ID) {
+          return { ...t, PAYMENT_METHOD: paymentMode, CASH_AMOUNT: finalCash, MPESA_AMOUNT: finalMpesa, HYBRID_PAYMENT: isHybrid, IS_SETTLED: true, CASH_TENDERED: totalDue };
+        }
+        return t;
+      }));
+    }
   };
 
   return (
@@ -209,10 +270,17 @@ function TransactionsContent() {
                       </div>
                     )}
                   </td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button className="btn btn-secondary" style={{ padding: '0.5rem' }} title="Print Invoice" onClick={() => handlePrint(trans)}>
-                      <Printer size={16} /> Print
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                      {(!trans.IS_SETTLED && trans.PAYMENT_METHOD === 'Pending Payment') && role !== 'employee' && (
+                        <button className="btn btn-primary" style={{ padding: '0.5rem', background: '#10b981' }} title="Settle Payment" onClick={() => openSettleModal(trans)}>
+                          <Printer size={16} style={{ display: 'none' }} /> {/* Just for spacing consistency if needed, actually use Check icon */}
+                          <CheckCircle size={16} /> Settle
+                        </button>
+                      )}
+                      <button className="btn btn-secondary" style={{ padding: '0.5rem' }} title="Print Invoice" onClick={() => handlePrint(trans)}>
+                        <Printer size={16} /> Print
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -243,6 +311,69 @@ function TransactionsContent() {
           </div>
         )}
       </div>
+
+      {/* Settlement Modal */}
+      {settleModalOpen && transactionToSettle && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem' }}>
+          <div className="glass" style={{ width: '100%', maxWidth: '400px', background: 'var(--background)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+              <h3 className="heading-2" style={{ margin: 0 }}>Settle Transaction</h3>
+              <button onClick={() => setSettleModalOpen(false)}><X size={20} className="text-muted" /></button>
+            </div>
+            
+            <form onSubmit={handleSettleSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: 'var(--radius)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                <div style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Total Amount Due</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#10b981' }}>
+                  Ksh { (transactionToSettle.ADJUSTED_TOTAL || transactionToSettle.GRAND_TOTAL).toLocaleString() }
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Payment Mode</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
+                  {['Cash', 'M-Pesa', 'Hybrid'].map(mode => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setPaymentMode(mode)}
+                      style={{
+                        padding: '0.5rem',
+                        borderRadius: 'var(--radius)',
+                        border: `1px solid ${paymentMode === mode ? 'var(--primary)' : 'var(--border)'}`,
+                        background: paymentMode === mode ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                        color: paymentMode === mode ? 'var(--primary)' : 'var(--foreground)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        fontWeight: 500
+                      }}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {paymentMode === 'Hybrid' && (
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Cash Amount</label>
+                    <input type="number" className="input" min="0" value={cashAmount} onChange={e => setCashAmount(e.target.value)} required />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>M-Pesa Amount</label>
+                    <input type="number" className="input" min="0" value={mpesaAmount} onChange={e => setMpesaAmount(e.target.value)} required />
+                  </div>
+                </div>
+              )}
+
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', marginTop: '0.5rem' }}>
+                Confirm Payment
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
     {printData && (
         <Receipt 
