@@ -410,6 +410,15 @@ export default function POSPage() {
 
     setCheckingOut(true);
 
+    const getAdjustedUnitPrice = (item) => {
+      const discount = Number(discountAmount) || 0;
+      if (!subtotal || discount === 0) return item.PRICE;
+      const itemTotal = item.PRICE * item.quantity;
+      const weight = itemTotal / subtotal;
+      const adjustment = weight * discount;
+      return item.PRICE + (adjustment / item.quantity);
+    };
+
     try {
       if (paymentMethod === 'Invoice') {
         const selectedCustomer = customers.find(c => c.CUST_ID === parseInt(creditCustomerId));
@@ -420,23 +429,26 @@ export default function POSPage() {
           CUSTOMER_ADDRESS: selectedCustomer?.ADDRESS || '',
           CUSTOMER_EMAIL: selectedCustomer?.EMAIL || '',
           NOTES: creditTerms || 'Generated from POS',
-          SUBTOTAL: subtotal,
+          SUBTOTAL: grandTotal,
           TAX_AMOUNT: 0,
-          GRAND_TOTAL: totalBeforeDiscount, // Applying POS discounts to invoices can be tricky, we'll just log it in notes or pass it
+          GRAND_TOTAL: grandTotal,
           STATUS: 'Pending',
           EMPLOYEE_ID: employeeId
         }]).select().single();
 
         if (invError) throw invError;
 
-        const details = cart.map(item => ({
-          INVOICE_ID: invData.INVOICE_ID,
-          PRODUCT_ID: item.PRODUCT_ID,
-          DESCRIPTION: item.NAME,
-          QTY: item.quantity,
-          UNIT_PRICE: item.PRICE,
-          TOTAL_PRICE: item.PRICE * item.quantity
-        }));
+        const details = cart.map(item => {
+          const adjPrice = getAdjustedUnitPrice(item);
+          return {
+            INVOICE_ID: invData.INVOICE_ID,
+            PRODUCT_ID: item.PRODUCT_ID,
+            DESCRIPTION: item.NAME,
+            QTY: item.quantity,
+            UNIT_PRICE: adjPrice,
+            TOTAL_PRICE: adjPrice * item.quantity
+          };
+        });
 
         await supabase.from('invoice_details').insert(details);
 
@@ -481,10 +493,10 @@ export default function POSPage() {
 
       // Create Transaction
       const { data: transData, error: transErr } = await supabase.from('transaction').insert([{
-        SUBTOTAL: subtotal,
+        SUBTOTAL: grandTotal,
         TAX_AMOUNT: 0,
-        GRAND_TOTAL: totalBeforeDiscount,
-        DISCOUNT_AMOUNT: -(Number(discountAmount) || 0),
+        GRAND_TOTAL: grandTotal,
+        DISCOUNT_AMOUNT: 0, // Baked into unit prices
         ADJUSTED_TOTAL: grandTotal,
         
         PAYMENT_METHOD: paymentMethod,
@@ -504,13 +516,16 @@ export default function POSPage() {
       if (transErr) throw transErr;
 
       // Create Details
-      const details = cart.map(item => ({
-        TRANS_ID: transData.TRANS_ID,
-        PRODUCT_ID: item.PRODUCT_ID,
-        QTY: item.quantity,
-        UNIT_PRICE: item.PRICE,
-        SUBTOTAL: item.PRICE * item.quantity
-      }));
+      const details = cart.map(item => {
+        const adjPrice = getAdjustedUnitPrice(item);
+        return {
+          TRANS_ID: transData.TRANS_ID,
+          PRODUCT_ID: item.PRODUCT_ID,
+          QTY: item.quantity,
+          UNIT_PRICE: adjPrice,
+          SUBTOTAL: adjPrice * item.quantity
+        };
+      });
 
       const { error: detErr } = await supabase.from('transaction_details').insert(details);
       if (detErr) throw detErr;
