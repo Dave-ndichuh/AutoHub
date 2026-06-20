@@ -40,9 +40,17 @@ export default function ServicesPage() {
   const fetchServices = async () => {
     setLoading(true);
     
+    let query = supabase.from('service')
+      .select(`*, customer(FIRST_NAME, LAST_NAME), employee(FIRST_NAME, LAST_NAME), service_details(DETAIL_ID, PRODUCT_ID, QTY, UNIT_PRICE, SUBTOTAL, product(NAME))`)
+      .order('SERVICE_ID', { ascending: false });
+
+    if (role === 'employee' && employeeId) {
+      query = query.eq('EMPLOYEE_ID', employeeId);
+    }
+
     // Fetch base data
     const [srvRes, custRes, empRes, prodRes] = await Promise.all([
-      supabase.from('service').select(`*, customer(FIRST_NAME, LAST_NAME), employee(FIRST_NAME, LAST_NAME), service_details(DETAIL_ID, PRODUCT_ID, QTY, UNIT_PRICE, SUBTOTAL, product(NAME))`).order('SERVICE_ID', { ascending: false }),
+      query,
       supabase.from('customer').select('*'),
       supabase.from('employee').select('*'),
       supabase.from('product').select('*').gt('ON_HAND', 0)
@@ -57,8 +65,10 @@ export default function ServicesPage() {
   };
 
   useEffect(() => {
-    fetchServices();
-  }, []);
+    if (role !== undefined) {
+      fetchServices();
+    }
+  }, [role, employeeId]);
 
   const openModal = (service = null) => {
     if (service) {
