@@ -123,6 +123,47 @@ export default function POSPage() {
     fetchData();
   }, []);
 
+  // Global Barcode Scanner Listener
+  useEffect(() => {
+    let barcodeBuffer = '';
+    let lastKeyTime = Date.now();
+
+    const handleKeyDown = (e) => {
+      const currentTime = Date.now();
+      
+      // If typing is too slow (manual typing usually > 50ms per key), reset the buffer
+      if (currentTime - lastKeyTime > 50) {
+        barcodeBuffer = '';
+      }
+      lastKeyTime = currentTime;
+
+      if (e.key === 'Enter') {
+        if (barcodeBuffer.length > 3) {
+          e.preventDefault(); // Prevent form submissions if focused on an input
+          // Look for product by BARCODE or PRODUCT_CODE
+          const scannedProduct = products.find(
+            p => p.BARCODE === barcodeBuffer || p.PRODUCT_CODE === barcodeBuffer
+          );
+          
+          if (scannedProduct) {
+            addToCart(scannedProduct);
+            // Optionally clear search term in case the scanner typed into the search box
+            setSearchTerm('');
+          } else {
+            console.warn(`Barcode ${barcodeBuffer} not found in inventory.`);
+          }
+        }
+        barcodeBuffer = '';
+      } else if (e.key.length === 1) {
+        // Append printable characters to buffer
+        barcodeBuffer += e.key;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [products]);
+
   const getFilteredProducts = () => {
     let filtered = products;
     if (selectedCategory) {
