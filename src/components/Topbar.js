@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { User, Palette, Menu } from 'lucide-react';
+import { User, Palette, Menu, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/context/ThemeContext';
@@ -50,6 +50,17 @@ export default function Topbar() {
       
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
         
+        {/* Refresh Button */}
+        <button 
+          onClick={() => window.location.reload()}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '50%', width: '36px', height: '36px', color: 'var(--foreground)', cursor: 'pointer', transition: 'all 0.2s' }}
+          title="Refresh App"
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'rotate(15deg)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'rotate(0deg)'}
+        >
+          <RefreshCw size={16} />
+        </button>
+
         {/* Theme Switcher */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--card)', padding: '0.5rem', borderRadius: '99px', border: '1px solid var(--border)' }}>
           <Palette size={16} className="text-muted" style={{ marginLeft: '0.25rem' }} />
