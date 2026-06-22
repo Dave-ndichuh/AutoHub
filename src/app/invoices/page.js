@@ -50,9 +50,18 @@ export default function InvoicesPage() {
     if (printInvoice) {
       const timer = setTimeout(() => {
         window.print();
-        setPrintInvoice(null);
       }, 500);
-      return () => clearTimeout(timer);
+
+      const handleAfterPrint = () => {
+        setPrintInvoice(null);
+      };
+
+      window.addEventListener('afterprint', handleAfterPrint);
+      
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('afterprint', handleAfterPrint);
+      };
     }
   }, [printInvoice]);
 
@@ -281,12 +290,9 @@ export default function InvoicesPage() {
       {/* Hide main UI when printing */}
       <style jsx global>{`
         @media print {
-          @page {
-            margin: 0;
-          }
-          body {
-            margin: 0;
-            -webkit-print-color-adjust: exact;
+          html, body {
+            height: auto !important;
+            min-height: auto !important;
           }
           body * {
             visibility: hidden;

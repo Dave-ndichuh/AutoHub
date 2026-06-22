@@ -78,13 +78,21 @@ export default function POSPage() {
       
       const timer = setTimeout(() => {
         window.print();
+      }, 500);
+
+      const handleAfterPrint = () => {
         if (printInvoiceData) {
           document.body.classList.remove('printing-invoice');
           setPrintInvoiceData(null);
         }
-      }, 200);
+        setPrintData(null);
+      };
+
+      window.addEventListener('afterprint', handleAfterPrint);
+      
       return () => {
         clearTimeout(timer);
+        window.removeEventListener('afterprint', handleAfterPrint);
         document.body.classList.remove('printing-invoice');
       };
     }

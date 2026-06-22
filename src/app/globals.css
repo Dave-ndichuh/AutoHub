@@ -467,6 +467,12 @@ button {
     display: none !important;
   }
 
+  html, body {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+  }
+
   /* Reset app layout wrappers so they don't constrain the print area */
   .app-layout, .main-content, .page-content {
     display: block !important;
