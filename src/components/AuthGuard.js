@@ -49,7 +49,7 @@ export default function AuthProvider({ children }) {
       setEmployeeId(empData?.EMPLOYEE_ID || null);
 
       if (isEmployee) {
-        const allowedEmployeeRoutes = ['/pos', '/customers', '/transactions', '/services', '/login', '/employee-login'];
+        const allowedEmployeeRoutes = ['/pos', '/customers', '/transactions', '/services', '/invoices', '/login', '/employee-login'];
         if (!allowedEmployeeRoutes.includes(pathname)) {
           router.push('/pos');
           return;
