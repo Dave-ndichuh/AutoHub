@@ -51,17 +51,7 @@ export default function InvoicesPage() {
       const timer = setTimeout(() => {
         window.print();
       }, 500);
-
-      const handleAfterPrint = () => {
-        setPrintInvoice(null);
-      };
-
-      window.addEventListener('afterprint', handleAfterPrint);
-      
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('afterprint', handleAfterPrint);
-      };
+      return () => clearTimeout(timer);
     }
   }, [printInvoice]);
 
@@ -303,6 +293,9 @@ export default function InvoicesPage() {
           .hide-on-print {
             display: none !important;
           }
+          .print-action-bar {
+            display: none !important;
+          }
         }
       `}</style>
 
@@ -507,10 +500,20 @@ export default function InvoicesPage() {
         </div>
       , document.body)}
 
-      {/* Print Area Container */}
-      <div id="print-invoice-area" style={{ display: printInvoice ? 'block' : 'none' }}>
-        <InvoicePrint ref={printRef} invoice={printInvoice} items={printItems} />
-      </div>
+      {/* Print Area Overlay */}
+      {printInvoice && typeof document !== 'undefined' && createPortal(
+        <div id="print-invoice-area" style={{ position: 'fixed', inset: 0, background: 'white', zIndex: 99999, overflowY: 'auto' }}>
+          <div className="print-action-bar" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10 }}>
+            <button className="btn btn-secondary" onClick={() => setPrintInvoice(null)}>
+              <XCircle size={18} /> Close Preview
+            </button>
+            <button className="btn btn-primary" onClick={() => window.print()}>
+              <Printer size={18} /> Print Again
+            </button>
+          </div>
+          <InvoicePrint ref={printRef} invoice={printInvoice} items={printItems} />
+        </div>
+      , document.body)}
 
       {/* Settlement Modal */}
       {settleInvoice && typeof document !== 'undefined' && createPortal(

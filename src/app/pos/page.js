@@ -79,20 +79,9 @@ export default function POSPage() {
       const timer = setTimeout(() => {
         window.print();
       }, 500);
-
-      const handleAfterPrint = () => {
-        if (printInvoiceData) {
-          document.body.classList.remove('printing-invoice');
-          setPrintInvoiceData(null);
-        }
-        setPrintData(null);
-      };
-
-      window.addEventListener('afterprint', handleAfterPrint);
       
       return () => {
         clearTimeout(timer);
-        window.removeEventListener('afterprint', handleAfterPrint);
         document.body.classList.remove('printing-invoice');
       };
     }
@@ -957,22 +946,39 @@ export default function POSPage() {
         )}
       </AnimatePresence>
 
-      {/* Hidden Thermal Receipt */}
-      {printData && (
-        <Receipt 
-          transaction={printData.transaction} 
-          cart={printData.cart} 
-          subtotal={printData.subtotal} 
-          grandTotal={printData.grandTotal} 
-        />
-      )}
+      {/* Print Area Overlay */}
+      {(printData || printInvoiceData) && typeof document !== 'undefined' && createPortal(
+        <div id="print-invoice-area" style={{ position: 'fixed', inset: 0, background: 'white', zIndex: 99999, overflowY: 'auto' }}>
+          <div className="print-action-bar" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10 }}>
+            <button className="btn btn-secondary" onClick={() => { setPrintData(null); setPrintInvoiceData(null); document.body.classList.remove('printing-invoice'); }}>
+              <X size={18} /> Close Preview
+            </button>
+            <button className="btn btn-primary" onClick={() => window.print()}>
+              <Printer size={18} /> Print Again
+            </button>
+          </div>
+          
+          <style jsx global>{`
+            @media print {
+              .print-action-bar { display: none !important; }
+            }
+          `}</style>
 
-      {/* Print Area Container for Invoice */}
-      <div id="print-invoice-area" style={{ display: printInvoiceData ? 'block' : 'none' }}>
-        {printInvoiceData && (
-          <InvoicePrint invoice={printInvoiceData} items={printInvoiceData.invoice_details} />
-        )}
-      </div>
+          {printData && (
+            <Receipt 
+              transaction={printData.transaction} 
+              cart={printData.cart} 
+              subtotal={printData.subtotal} 
+              grandTotal={printData.grandTotal} 
+            />
+          )}
+
+          {printInvoiceData && (
+            <InvoicePrint invoice={printInvoiceData} items={printInvoiceData.invoice_details} />
+          )}
+        </div>
+      , document.body)}
+
     </div>
   );
 }
