@@ -298,21 +298,15 @@ export default function InvoicesPage() {
           html, body {
             height: auto !important;
             min-height: auto !important;
+            background: white !important;
           }
-          body * {
-            visibility: hidden;
-          }
-          #print-invoice-area, #print-invoice-area * {
-            visibility: visible;
-          }
-          #print-invoice-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
+          .hide-on-print {
+            display: none !important;
           }
         }
       `}</style>
+
+      <div className="hide-on-print" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1 className="heading-2" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -382,6 +376,7 @@ export default function InvoicesPage() {
             ))}
           </tbody>
         </table>
+      </div>
       </div>
 
       {showCreateModal && typeof document !== 'undefined' && createPortal(
