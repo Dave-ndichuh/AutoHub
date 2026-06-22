@@ -68,6 +68,11 @@ export default function InvoicesPage() {
   const fetchInvoices = async () => {
     setLoading(true);
     let query = supabase.from('invoice').select(`*, invoice_details(*)`).order('INVOICE_ID', { ascending: false });
+    
+    if (role === 'employee' && employeeId) {
+      query = query.eq('EMPLOYEE_ID', employeeId);
+    }
+    
     const { data, error } = await query;
     if (data) setInvoices(data);
     setLoading(false);
