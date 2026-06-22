@@ -38,30 +38,7 @@ export default function Topbar() {
         >
           <Menu size={20} />
         </button>
-        <style jsx>{`
-          .mobile-menu-btn { display: none !important; }
-          .topbar-right { display: flex; align-items: center; gap: 1.5rem; }
-          .theme-switcher-container { display: flex; align-items: center; gap: 0.5rem; background: var(--card); padding: 0.5rem; border-radius: 99px; border: 1px solid var(--border); }
-          .user-badge { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--card); border-radius: 99px; border: 1px solid var(--border); }
-          .online-badge { display: block; }
-          .theme-icon { display: block; }
-          .title-text { margin: 0; color: var(--foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
-          
-          @media (max-width: 1024px) { 
-            .mobile-menu-btn { display: flex !important; } 
-          }
-          @media (max-width: 768px) {
-            .topbar-right { gap: 0.5rem; }
-            .online-badge { display: none !important; }
-            .user-badge span { display: none; } /* Hide the email text, keep the icon */
-            .user-badge { padding: 0.5rem; border-radius: 50%; width: 36px; height: 36px; justify-content: center; }
-          }
-          @media (max-width: 480px) {
-            .theme-icon { display: none !important; }
-            .theme-switcher-container { padding: 0.35rem; }
-            .title-text { font-size: 1.25rem; max-width: 110px; }
-          }
-        `}</style>
+
 
         <h1 className="heading-2 title-text">
           {getTitle()}
