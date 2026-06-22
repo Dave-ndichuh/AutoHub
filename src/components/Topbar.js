@@ -40,20 +40,40 @@ export default function Topbar() {
         </button>
         <style jsx>{`
           .mobile-menu-btn { display: none !important; }
-          @media (max-width: 1024px) { .mobile-menu-btn { display: flex !important; } }
+          .topbar-right { display: flex; align-items: center; gap: 1.5rem; }
+          .theme-switcher-container { display: flex; align-items: center; gap: 0.5rem; background: var(--card); padding: 0.5rem; border-radius: 99px; border: 1px solid var(--border); }
+          .user-badge { display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: var(--card); border-radius: 99px; border: 1px solid var(--border); }
+          .online-badge { display: block; }
+          .theme-icon { display: block; }
+          .title-text { margin: 0; color: var(--foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 300px; }
+          
+          @media (max-width: 1024px) { 
+            .mobile-menu-btn { display: flex !important; } 
+          }
+          @media (max-width: 768px) {
+            .topbar-right { gap: 0.5rem; }
+            .online-badge { display: none !important; }
+            .user-badge span { display: none; } /* Hide the email text, keep the icon */
+            .user-badge { padding: 0.5rem; border-radius: 50%; width: 36px; height: 36px; justify-content: center; }
+          }
+          @media (max-width: 480px) {
+            .theme-icon { display: none !important; }
+            .theme-switcher-container { padding: 0.35rem; }
+            .title-text { font-size: 1.25rem; max-width: 110px; }
+          }
         `}</style>
 
-        <h1 className="heading-2" style={{ margin: 0, color: 'var(--foreground)' }}>
+        <h1 className="heading-2 title-text">
           {getTitle()}
         </h1>
       </div>
       
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
+      <div className="topbar-right">
         
         {/* Refresh Button */}
         <button 
           onClick={() => window.location.reload()}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '50%', width: '36px', height: '36px', color: 'var(--foreground)', cursor: 'pointer', transition: 'all 0.2s' }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '50%', width: '36px', height: '36px', color: 'var(--foreground)', cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0 }}
           title="Refresh App"
           onMouseEnter={(e) => e.currentTarget.style.transform = 'rotate(15deg)'}
           onMouseLeave={(e) => e.currentTarget.style.transform = 'rotate(0deg)'}
@@ -62,8 +82,10 @@ export default function Topbar() {
         </button>
 
         {/* Theme Switcher */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--card)', padding: '0.5rem', borderRadius: '99px', border: '1px solid var(--border)' }}>
-          <Palette size={16} className="text-muted" style={{ marginLeft: '0.25rem' }} />
+        <div className="theme-switcher-container">
+          <div className="theme-icon">
+            <Palette size={16} className="text-muted" style={{ marginLeft: '0.25rem' }} />
+          </div>
           <div style={{ display: 'flex', gap: '0.25rem' }}>
             <button 
               onClick={() => changeTheme('midnight')}
@@ -88,9 +110,9 @@ export default function Topbar() {
           </div>
         </div>
 
-        <div className="badge badge-success">Online</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', background: 'var(--card)', borderRadius: '99px', border: '1px solid var(--border)' }}>
-          <User size={16} className="text-muted" />
+        <div className="badge badge-success online-badge">Online</div>
+        <div className="user-badge">
+          <User size={16} className="text-muted" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{userEmail || 'Admin'}</span>
         </div>
       </div>
