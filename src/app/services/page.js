@@ -159,13 +159,7 @@ export default function ServicesPage() {
           await supabase.from('transaction_details').insert(details);
         }
         
-        // Deduct stock
-        for (const item of serviceDetails) {
-          const { data: pData } = await supabase.from('product').select('ON_HAND').eq('PRODUCT_ID', item.PRODUCT_ID).single();
-          if (pData) {
-            await supabase.from('product').update({ ON_HAND: pData.ON_HAND - item.QTY }).eq('PRODUCT_ID', item.PRODUCT_ID);
-          }
-        }
+        // Stock is deducted automatically via database trigger when transaction_details are inserted.
       }
     }
     
