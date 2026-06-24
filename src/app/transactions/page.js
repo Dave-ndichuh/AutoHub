@@ -238,7 +238,7 @@ function TransactionsContent() {
                     <span className="badge badge-warning">TRX-{trans.TRANS_ID}</span>
                     {trans.IS_CREDIT && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem' }}>Credit</span>}
                     {trans.CREDIT_TERMS && trans.CREDIT_TERMS.startsWith('INV-') && (
-                      <span className="badge badge-primary" style={{ marginLeft: '0.5rem', background: 'var(--primary)', color: 'white' }}>{trans.CREDIT_TERMS}</span>
+                      <span className="badge badge-primary" style={{ marginLeft: '0.5rem', background: 'var(--primary)', color: 'white' }}>{trans.CREDIT_TERMS.split('|')[0].trim()}</span>
                     )}
                   </td>
                   <td className="text-muted">
@@ -246,7 +246,12 @@ function TransactionsContent() {
                     <small>{new Date(trans.CREATED_AT).toLocaleTimeString()}</small>
                   </td>
                   <td>
-                    {(trans.customer || trans.credit_customer) ? `${(trans.customer || trans.credit_customer).FIRST_NAME} ${(trans.customer || trans.credit_customer).LAST_NAME}` : 'Walk-in'}
+                    {(trans.customer || trans.credit_customer) ? 
+                      `${(trans.customer || trans.credit_customer).FIRST_NAME} ${(trans.customer || trans.credit_customer).LAST_NAME}` : 
+                      (trans.CREDIT_TERMS && trans.CREDIT_TERMS.startsWith('INV-') && trans.CREDIT_TERMS.includes('|') ? 
+                        trans.CREDIT_TERMS.split('|')[1].trim() : 
+                        'Walk-in')
+                    }
                   </td>
                   <td>
                     <button 

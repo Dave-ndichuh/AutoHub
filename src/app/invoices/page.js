@@ -231,7 +231,7 @@ export default function InvoicesPage() {
       IS_CREDIT: false,
       IS_SETTLED: true,
       CASH_TENDERED: inv.GRAND_TOTAL,
-      CREDIT_TERMS: `INV-${inv.INVOICE_ID}`
+      CREDIT_TERMS: `INV-${inv.INVOICE_ID} | ${inv.CUSTOMER_NAME || 'Walk-in'}`
     }]).select().single();
 
     if (tErr) {
