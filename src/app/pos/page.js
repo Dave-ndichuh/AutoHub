@@ -527,14 +527,6 @@ export default function POSPage() {
       const { error: detErr } = await supabase.from('transaction_details').insert(details);
       if (detErr) throw detErr;
 
-      // Deduct stock for direct sales
-      for (let item of cart) {
-        const { data: pData } = await supabase.from('product').select('ON_HAND').eq('PRODUCT_ID', item.PRODUCT_ID).single();
-        if (pData) {
-          await supabase.from('product').update({ ON_HAND: pData.ON_HAND - item.quantity }).eq('PRODUCT_ID', item.PRODUCT_ID);
-        }
-      }
-
       await logAction({
         action: 'Completed Sale',
         details: `Transaction #${transData.TRANS_ID} completed via ${paymentMethod} for Ksh. ${grandTotal.toLocaleString()}`,

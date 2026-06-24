@@ -199,13 +199,7 @@ export default function InvoicesPage() {
       }
     }
 
-    // 2. Deduct Stock
-    for (let item of inv.invoice_details) {
-      const { data: pData } = await supabase.from('product').select('ON_HAND').eq('PRODUCT_ID', item.PRODUCT_ID).single();
-      if (pData) {
-        await supabase.from('product').update({ ON_HAND: pData.ON_HAND - item.QTY }).eq('PRODUCT_ID', item.PRODUCT_ID);
-      }
-    }
+    // Stock is deducted automatically via database trigger when transaction_details are inserted.
 
     let cashAmt = 0;
     let mpesaAmt = 0;
