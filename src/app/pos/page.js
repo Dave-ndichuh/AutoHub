@@ -519,8 +519,7 @@ export default function POSPage() {
           TRANS_ID: transData.TRANS_ID,
           PRODUCT_ID: item.PRODUCT_ID,
           QTY: item.quantity,
-          UNIT_PRICE: adjPrice,
-          SUBTOTAL: adjPrice * item.quantity
+          UNIT_PRICE: adjPrice
         };
       });
 

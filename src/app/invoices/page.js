@@ -245,8 +245,7 @@ export default function InvoicesPage() {
       TRANS_ID: tData.TRANS_ID,
       PRODUCT_ID: i.PRODUCT_ID,
       QTY: i.QTY,
-      UNIT_PRICE: i.UNIT_PRICE,
-      SUBTOTAL: i.TOTAL_PRICE
+      UNIT_PRICE: i.UNIT_PRICE
     }));
     await supabase.from('transaction_details').insert(tItems);
 
