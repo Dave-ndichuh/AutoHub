@@ -1,21 +1,26 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, Suspense } from 'react';
 import { Plus, Edit, Trash2, Search, X, Image as ImageIcon } from 'lucide-react';
 import { UploadButton } from '@/utils/uploadthing';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { logAction } from '@/lib/logger';
+import { useProducts } from '@/hooks/useProducts';
 
 function ProductsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const filterParam = searchParams.get('filter');
 
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    products,
+    categories,
+    suppliers,
+    loading,
+    error,
+    saveProduct: saveProductHook,
+    deleteProduct: deleteProductHook
+  } = useProducts();
+
   const [searchTerm, setSearchTerm] = useState('');
   
   // Modal State
@@ -26,75 +31,38 @@ function ProductsContent() {
     STATUS: 'active', UOM: 'pcs', REORDER_THRESHOLD: 5, COST_PRICE: '', BARCODE: '', IMAGE_URL: '', TAX_RATE: 16.0, BRAND: '', MODEL: '', WEIGHT: ''
   });
 
-  const fetchProducts = async () => {
-    setLoading(true);
-    // Fetch products with their category and supplier names
-    const { data, error } = await supabase
-      .from('product')
-      .select(`
-        *,
-        category(CNAME),
-        supplier(COMPANY_NAME)
-      `)
-      .order('PRODUCT_ID', { ascending: false });
-
-    if (!error && data) {
-      setProducts(data);
-    }
-
-    const { data: catData } = await supabase.from('category').select('*').order('CNAME', { ascending: true });
-    if (catData) setCategories(catData);
-
-    const { data: supData } = await supabase.from('supplier').select('*');
-    if (supData) setSuppliers(supData);
-
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
     
-    // Fetch product name for logging before deleting
-    const productToDelete = products.find(p => p.PRODUCT_ID === id);
+    const productToDelete = products.find(p => p.id === id);
+    const { success, error: deleteError } = await deleteProductHook(id, { name: productToDelete?.name, productCode: productToDelete?.productCode });
     
-    await supabase.from('product').delete().eq('PRODUCT_ID', id);
-    
-    if (productToDelete) {
-      await logAction({
-        action: 'Deleted Product',
-        details: `Deleted product: ${productToDelete.NAME} (Code: ${productToDelete.PRODUCT_CODE})`,
-        severity: 'danger'
-      });
+    if (!success) {
+      alert(`Error deleting product: ${deleteError}`);
     }
-    
-    fetchProducts();
   };
 
   const openModal = (product = null) => {
     if (product) {
-      setEditingId(product.PRODUCT_ID);
+      setEditingId(product.id);
       setFormData({
-        PRODUCT_CODE: product.PRODUCT_CODE,
-        NAME: product.NAME,
-        DESCRIPTION: product.DESCRIPTION || '',
-        ON_HAND: product.ON_HAND || 0,
-        PRICE: product.PRICE || 0,
-        CATEGORY_ID: product.CATEGORY_ID || '',
-        SUPPLIER_ID: product.SUPPLIER_ID || '',
-        STATUS: product.STATUS || 'active',
-        UOM: product.UOM || 'pcs',
-        REORDER_THRESHOLD: product.REORDER_THRESHOLD || 5,
-        COST_PRICE: product.COST_PRICE || 0,
-        BARCODE: product.BARCODE || '',
-        IMAGE_URL: product.IMAGE_URL || '',
-        TAX_RATE: product.TAX_RATE || 16.0,
-        BRAND: product.BRAND || '',
-        MODEL: product.MODEL || '',
-        WEIGHT: product.WEIGHT || ''
+        PRODUCT_CODE: product.productCode,
+        NAME: product.name,
+        DESCRIPTION: product.description,
+        ON_HAND: product.onHand,
+        PRICE: product.price,
+        CATEGORY_ID: product.categoryId,
+        SUPPLIER_ID: product.supplierId,
+        STATUS: product.status,
+        UOM: product.uom,
+        REORDER_THRESHOLD: product.reorderThreshold,
+        COST_PRICE: product.costPrice,
+        BARCODE: product.barcode,
+        IMAGE_URL: product.imageUrl,
+        TAX_RATE: product.taxRate,
+        BRAND: product.brand,
+        MODEL: product.model,
+        WEIGHT: product.weight
       });
     } else {
       setEditingId(null);
@@ -108,42 +76,20 @@ function ProductsContent() {
 
   const saveProduct = async (e) => {
     e.preventDefault();
-    const payload = { 
-      ...formData, 
-      DATE_STOCK_IN: new Date().toISOString(),
-      PRICE: Number(formData.PRICE) || 0,
-      COST_PRICE: Number(formData.COST_PRICE) || 0,
-      ON_HAND: Number(formData.ON_HAND) || 0
-    };
+    const { success, error: saveError } = await saveProductHook(editingId, formData);
     
-    let errorMsg = null;
-    if (editingId) {
-      const { error } = await supabase.from('product').update(payload).eq('PRODUCT_ID', editingId);
-      if (error) errorMsg = error.message;
-    } else {
-      const { error } = await supabase.from('product').insert([payload]);
-      if (error) errorMsg = error.message;
-    }
-    
-    if (errorMsg) {
-      alert(`Database Error: ${errorMsg}`);
+    if (!success) {
+      alert(`Error saving product: ${saveError}`);
       return;
     }
     
-    await logAction({
-      action: editingId ? 'Updated Product' : 'Added Product',
-      details: `${editingId ? 'Updated' : 'Added'} product: ${formData.NAME} (Code: ${formData.PRODUCT_CODE})`,
-      severity: 'info'
-    });
-    
     setShowModal(false);
-    fetchProducts();
   };
 
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.NAME?.toLowerCase().includes(searchTerm.toLowerCase()) || p.PRODUCT_CODE?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || p.productCode?.toLowerCase().includes(searchTerm.toLowerCase());
     if (filterParam === 'low-stock') {
-      return matchesSearch && p.ON_HAND <= (p.REORDER_THRESHOLD || 5);
+      return matchesSearch && p.onHand <= p.reorderThreshold;
     }
     return matchesSearch;
   });
@@ -201,43 +147,43 @@ function ProductsContent() {
               </tr>
             ) : (
               filteredProducts.map((product) => (
-                <tr key={product.PRODUCT_ID}>
-                  <td><span className="badge badge-warning">{product.PRODUCT_CODE}</span></td>
+                <tr key={product.id}>
+                  <td><span className="badge badge-warning">{product.productCode}</span></td>
                   <td style={{ fontWeight: 500 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      {product.IMAGE_URL ? (
-                        <img src={product.IMAGE_URL} alt={product.NAME} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
+                      {product.imageUrl ? (
+                        <img src={product.imageUrl} alt={product.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
                       ) : (
                         <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <ImageIcon size={20} className="text-muted" />
                         </div>
                       )}
                       <div>
-                        <div>{product.NAME}</div>
+                        <div>{product.name}</div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 'normal', marginTop: '0.125rem' }}>
-                          {product.BRAND && <span>{product.BRAND}</span>}
-                          {product.BRAND && product.MODEL && <span> • </span>}
-                          {product.MODEL && <span>{product.MODEL}</span>}
+                          {product.brand && <span>{product.brand}</span>}
+                          {product.brand && product.model && <span> • </span>}
+                          {product.model && <span>{product.model}</span>}
                         </div>
                       </div>
                     </div>
                   </td>
-                  <td className="text-muted">{product.category?.CNAME || 'N/A'}</td>
+                  <td className="text-muted">{product.categoryName || 'N/A'}</td>
                   <td>
-                    <span className={`badge ${product.ON_HAND <= (product.REORDER_THRESHOLD || 5) ? 'badge-warning' : 'badge-success'}`}>
-                      {product.ON_HAND} {product.UOM || 'pcs'}
+                    <span className={`badge ${product.onHand <= product.reorderThreshold ? 'badge-warning' : 'badge-success'}`}>
+                      {product.onHand} {product.uom}
                     </span>
-                    {product.ON_HAND <= (product.REORDER_THRESHOLD || 5) && <span style={{ display: 'block', fontSize: '0.75rem', color: '#f59e0b', marginTop: '0.25rem' }}>Low Stock!</span>}
+                    {product.onHand <= product.reorderThreshold && <span style={{ display: 'block', fontSize: '0.75rem', color: '#f59e0b', marginTop: '0.25rem' }}>Low Stock!</span>}
                   </td>
                   <td>
-                    <span className={`badge ${product.STATUS === 'inactive' ? 'badge-destructive' : 'badge-success'}`}>
-                      {product.STATUS || 'active'}
+                    <span className={`badge ${product.status === 'inactive' ? 'badge-destructive' : 'badge-success'}`}>
+                      {product.status}
                     </span>
                   </td>
                   <td style={{ fontWeight: 600 }}>
-                    {product.PRICE?.toLocaleString()}
+                    {product.price?.toLocaleString()}
                     <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', fontWeight: 'normal' }}>
-                      Cost: {product.COST_PRICE?.toLocaleString()}
+                      Cost: {product.costPrice?.toLocaleString()}
                     </div>
                   </td>
                   <td style={{ textAlign: 'right' }}>
@@ -245,7 +191,7 @@ function ProductsContent() {
                       <button className="btn btn-secondary" style={{ padding: '0.5rem' }} title="Edit" onClick={() => openModal(product)}>
                         <Edit size={16} />
                       </button>
-                      <button className="btn btn-destructive" style={{ padding: '0.5rem' }} title="Delete" onClick={() => handleDelete(product.PRODUCT_ID)}>
+                      <button className="btn btn-destructive" style={{ padding: '0.5rem' }} title="Delete" onClick={() => handleDelete(product.id)}>
                         <Trash2 size={16} />
                       </button>
                     </div>
