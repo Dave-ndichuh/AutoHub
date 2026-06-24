@@ -237,6 +237,9 @@ function TransactionsContent() {
                   <td>
                     <span className="badge badge-warning">TRX-{trans.TRANS_ID}</span>
                     {trans.IS_CREDIT && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem' }}>Credit</span>}
+                    {trans.CREDIT_TERMS && trans.CREDIT_TERMS.startsWith('INV-') && (
+                      <span className="badge badge-primary" style={{ marginLeft: '0.5rem', background: 'var(--primary)', color: 'white' }}>{trans.CREDIT_TERMS}</span>
+                    )}
                   </td>
                   <td className="text-muted">
                     {new Date(trans.CREATED_AT).toLocaleDateString()} <br/>

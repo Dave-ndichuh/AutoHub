@@ -187,17 +187,15 @@ export default function InvoicesPage() {
     const { data: inv } = await supabase.from('invoice').select('*, invoice_details(*)').eq('INVOICE_ID', settleInvoice.INVOICE_ID).single();
     if (!inv) { setSettling(false); return; }
 
-    // 1. Check stock availability and compute true catalog subtotal
-    let catalogSubtotal = 0;
+    // 1. Check stock availability (but DO NOT use catalog price for transaction math)
     for (let item of inv.invoice_details) {
-      const { data: pData } = await supabase.from('product').select('ON_HAND, NAME, PRICE').eq('PRODUCT_ID', item.PRODUCT_ID).single();
+      const { data: pData } = await supabase.from('product').select('ON_HAND, NAME').eq('PRODUCT_ID', item.PRODUCT_ID).single();
       if (pData) {
         if (pData.ON_HAND < item.QTY) {
           alert(`Insufficient stock for ${pData.NAME}. Available: ${pData.ON_HAND}, Required: ${item.QTY}`);
           setSettling(false);
           return;
         }
-        catalogSubtotal += (pData.PRICE * item.QTY);
       }
     }
 
@@ -209,9 +207,6 @@ export default function InvoicesPage() {
       }
     }
 
-    // Calculate Discount
-    const discountAmount = catalogSubtotal - inv.SUBTOTAL;
-
     let cashAmt = 0;
     let mpesaAmt = 0;
     if (paymentMethod === 'Cash') cashAmt = inv.GRAND_TOTAL;
@@ -221,13 +216,13 @@ export default function InvoicesPage() {
       mpesaAmt = Number(hybridMpesa) || 0;
     }
 
-    // 3. Create Transaction
+    // 3. Create Transaction using exact Invoice math
     const { data: tData, error: tErr } = await supabase.from('transaction').insert([{
       EMPLOYEE_ID: employeeId || inv.EMPLOYEE_ID,
-      SUBTOTAL: catalogSubtotal,
+      SUBTOTAL: inv.SUBTOTAL,
       TAX_AMOUNT: inv.TAX_AMOUNT,
-      DISCOUNT_AMOUNT: -(discountAmount),
-      GRAND_TOTAL: catalogSubtotal,
+      DISCOUNT_AMOUNT: 0,
+      GRAND_TOTAL: inv.GRAND_TOTAL,
       ADJUSTED_TOTAL: inv.GRAND_TOTAL,
       PAYMENT_METHOD: paymentMethod,
       CASH_AMOUNT: cashAmt,
@@ -235,7 +230,8 @@ export default function InvoicesPage() {
       HYBRID_PAYMENT: paymentMethod === 'Hybrid',
       IS_CREDIT: false,
       IS_SETTLED: true,
-      CASH_TENDERED: inv.GRAND_TOTAL
+      CASH_TENDERED: inv.GRAND_TOTAL,
+      CREDIT_TERMS: `INV-${inv.INVOICE_ID}`
     }]).select().single();
 
     if (tErr) {
@@ -249,7 +245,8 @@ export default function InvoicesPage() {
       TRANS_ID: tData.TRANS_ID,
       PRODUCT_ID: i.PRODUCT_ID,
       QTY: i.QTY,
-      UNIT_PRICE: i.UNIT_PRICE
+      UNIT_PRICE: i.UNIT_PRICE,
+      SUBTOTAL: i.TOTAL_PRICE
     }));
     await supabase.from('transaction_details').insert(tItems);
 
@@ -258,7 +255,7 @@ export default function InvoicesPage() {
 
     await logAction({
       action: 'Paid Invoice',
-      details: `Invoice #${inv.INVOICE_ID} marked as Paid via ${paymentMethod}. Transaction #${tData.TRANS_ID} generated with Ksh ${discountAmount > 0 ? discountAmount : 0} discount.`,
+      details: `Invoice #${inv.INVOICE_ID} marked as Paid via ${paymentMethod}. Transaction #${tData.TRANS_ID} generated.`,
       severity: 'info',
       employeeId: employeeId
     });
