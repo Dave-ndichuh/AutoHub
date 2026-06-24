@@ -30,7 +30,8 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
     <div className="receipt-print-area">
       {/* 1. Brand & Header Block */}
       <div className="receipt-header">
-        <h2 className="receipt-store-name">Jobea.autos</h2>
+        <h2 className="receipt-store-name">Jobea Auto Spares</h2>
+        <p className="receipt-store-meta">Maziwa road</p>
         <p className="receipt-store-meta">Po. Box 1936, Kakamega</p>
         <p className="receipt-store-meta">Tel: 0725599999</p>
       </div>

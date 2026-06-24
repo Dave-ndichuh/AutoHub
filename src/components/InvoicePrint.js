@@ -173,6 +173,7 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
             <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#4a5568' }}>0725599999</p>
             
             <p style={{ fontWeight: 600, color: '#243c64', margin: '0 0 4px 0', fontSize: '14px' }}>Address :</p>
+            <p style={{ margin: 0, fontSize: '14px', color: '#4a5568' }}>Maziwa road</p>
             <p style={{ margin: 0, fontSize: '14px', color: '#4a5568' }}>Po. Box 1936, Kakamega</p>
           </div>
         </div>
