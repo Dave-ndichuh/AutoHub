@@ -499,10 +499,10 @@ export default function InvoicesPage() {
           <div className="print-action-bar" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10 }}>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.25rem 0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
-              <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Format:</label>
-              <select className="input" style={{ border: 'none', padding: '0.25rem 2rem 0.25rem 0.5rem', height: 'auto', background: 'transparent' }} value={printFormat} onChange={e => setPrintFormat(e.target.value)}>
-                <option value="THERMAL">Thermal Roll (80mm)</option>
-                <option value="A4">Standard Sheet (A4)</option>
+              <label style={{ fontSize: '0.875rem', fontWeight: 500, color: '#64748b' }}>Format:</label>
+              <select className="input" style={{ border: 'none', padding: '0.25rem 2rem 0.25rem 0.5rem', height: 'auto', background: 'transparent', color: '#0f172a' }} value={printFormat} onChange={e => setPrintFormat(e.target.value)}>
+                <option value="THERMAL" style={{ color: '#0f172a' }}>Thermal Roll (80mm)</option>
+                <option value="A4" style={{ color: '#0f172a' }}>Standard Sheet (A4)</option>
               </select>
             </div>
 
