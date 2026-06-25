@@ -67,6 +67,8 @@ export default function POSPage() {
   const [printData, setPrintData] = useState(null);
   const [printInvoiceData, setPrintInvoiceData] = useState(null);
   const [printFormat, setPrintFormat] = useState('THERMAL'); // 'THERMAL' or 'A4'
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [quoteData, setQuoteData] = useState(null);
   const { employeeId } = useAuth();
   
   const [isMobile, setIsMobile] = useState(false);
@@ -747,7 +749,8 @@ export default function POSPage() {
                       TOTAL_PRICE: (item.PRICE * (1 - (item.discount_percent || 0) / 100)) * item.quantity
                     }))
                   };
-                  setPrintInvoiceData(quoteData);
+                  setQuoteData(quoteData);
+                  setShowQuoteModal(true);
                 }}
               >
                 <FileText size={16} /> Quote
@@ -976,6 +979,69 @@ export default function POSPage() {
             <div style={{ fontWeight: 700, fontSize: '1.25rem', letterSpacing: '0.025em' }}>
               Ksh. {grandTotal.toLocaleString()}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showQuoteModal && quoteData && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+              style={{ background: 'var(--card)', borderRadius: '1rem', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid var(--border)' }}
+            >
+              <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'var(--card)', zIndex: 10 }}>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <FileText size={20} color="var(--primary)" /> Quotation Preview
+                </h3>
+                <button className="btn" style={{ background: 'transparent', padding: '0.5rem' }} onClick={() => setShowQuoteModal(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div style={{ padding: '1.5rem' }}>
+                <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                  <h2 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary)', fontSize: '1.5rem' }}>Jobea Auto Spares</h2>
+                  <p style={{ margin: 0, color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>{new Date(quoteData.CREATED_AT).toLocaleString()}</p>
+                  <p style={{ margin: '0.5rem 0 0 0', fontWeight: 500 }}>Customer: {quoteData.CUSTOMER_NAME}</p>
+                </div>
+                
+                <div style={{ borderTop: '1px dashed var(--border)', borderBottom: '1px dashed var(--border)', padding: '1rem 0', marginBottom: '1.5rem' }}>
+                  {quoteData.invoice_details.map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 500 }}>{item.DESCRIPTION}</div>
+                        <div style={{ color: 'var(--muted-foreground)', fontSize: '0.8rem' }}>Qty: {item.QTY}</div>
+                      </div>
+                      <div style={{ fontWeight: 600, paddingLeft: '1rem' }}>
+                        Ksh {item.TOTAL_PRICE.toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>
+                  <span>Total Estimate:</span>
+                  <span>Ksh {quoteData.GRAND_TOTAL.toLocaleString()}</span>
+                </div>
+                
+                <p style={{ textAlign: 'center', color: 'var(--muted-foreground)', fontSize: '0.875rem', marginTop: '2rem', fontStyle: 'italic' }}>
+                  This is a standalone quotation. Prices are valid for 7 days.
+                </p>
+              </div>
+              
+              <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.02)', borderTop: '1px solid var(--border)', display: 'flex', gap: '1rem' }}>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowQuoteModal(false)}>
+                  Close
+                </button>
+                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => { setShowQuoteModal(false); setPrintInvoiceData(quoteData); }}>
+                  <Printer size={18} style={{ marginRight: '0.5rem' }} /> Print Quote
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
