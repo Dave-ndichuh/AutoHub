@@ -127,6 +127,7 @@ const ThermalInvoice = React.forwardRef(({ invoice, items }, ref) => {
             display: block !important;
             width: 80mm; 
             max-width: 100%;
+            margin: 0 auto;
             padding: 2mm 4mm;
             background: #ffffff !important;
             color: #000000 !important;
