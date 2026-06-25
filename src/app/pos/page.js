@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
-import { Search, Plus, Minus, Trash2, CreditCard, Loader2, ShoppingCart, Smartphone, ArrowLeft, Tag, Layers, User as UserIcon, Calendar, X, ChevronDown, ShoppingBag, Image as ImageIcon, FileText } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, CreditCard, Loader2, ShoppingCart, Smartphone, ArrowLeft, Tag, Layers, User as UserIcon, Calendar, X, ChevronDown, ShoppingBag, Image as ImageIcon, FileText, Printer } from 'lucide-react';
 import Receipt from '@/components/Receipt';
 import InvoicePrint from '@/components/InvoicePrint';
 import ThermalInvoice from '@/components/ThermalInvoice';
@@ -727,8 +727,40 @@ export default function POSPage() {
             }
           }
         `}</style>
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 className="heading-2" style={{ margin: 0 }}>Current Sale</h2>
+          {cart.length > 0 && (
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button 
+                className="btn btn-secondary" 
+                style={{ padding: '0.5rem 0.75rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.375rem', background: 'var(--card)' }}
+                onClick={() => {
+                  const quoteData = {
+                    IS_QUOTE: true,
+                    CREATED_AT: new Date().toISOString(),
+                    CUSTOMER_NAME: paymentMethod === 'Credit' || paymentMethod === 'Invoice' ? (customers.find(c => c.CUST_ID === parseInt(creditCustomerId))?.FIRST_NAME || newCustomer.FIRST_NAME || 'Walk-in') : 'Walk-in',
+                    SUBTOTAL: subtotal,
+                    GRAND_TOTAL: grandTotal,
+                    invoice_details: cart.map(item => ({
+                      DESCRIPTION: item.NAME,
+                      QTY: item.quantity,
+                      TOTAL_PRICE: (item.PRICE * (1 - (item.discount_percent || 0) / 100)) * item.quantity
+                    }))
+                  };
+                  setPrintInvoiceData(quoteData);
+                }}
+              >
+                <FileText size={16} /> Quote
+              </button>
+              <button 
+                className="btn btn-destructive" 
+                style={{ padding: '0.5rem 0.75rem', fontSize: '0.875rem', background: 'transparent', color: 'var(--destructive)', border: '1px solid var(--destructive)', display: 'flex', alignItems: 'center', gap: '0.375rem' }} 
+                onClick={() => setCart([])}
+              >
+                <Trash2 size={16} /> Clear
+              </button>
+            </div>
+          )}
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
@@ -895,41 +927,6 @@ export default function POSPage() {
           {(paymentMethod === 'Hybrid' && Number(hybridMpesa) > 0) && (
             <input type="text" className="input" placeholder="M-Pesa Transaction Code" style={{ marginBottom: '1.25rem', border: '2px solid #25D366', padding: '0.75rem' }} value={mpesaReceipt} onChange={(e) => setMpesaReceipt(e.target.value)} />
           )}
-
-          <button 
-            className="btn btn-secondary" 
-            style={{ 
-              width: '100%', 
-              padding: '1rem', 
-              fontSize: '1rem', 
-              fontWeight: 600,
-              marginBottom: '0.75rem',
-              backgroundColor: 'var(--card)',
-              border: '1px solid var(--border)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem'
-            }}
-            disabled={cart.length === 0 || checkingOut}
-            onClick={() => {
-              const quoteData = {
-                IS_QUOTE: true,
-                CREATED_AT: new Date().toISOString(),
-                CUSTOMER_NAME: paymentMethod === 'Credit' || paymentMethod === 'Invoice' ? (customers.find(c => c.CUST_ID === parseInt(creditCustomerId))?.FIRST_NAME || newCustomer.FIRST_NAME || 'Walk-in') : 'Walk-in',
-                SUBTOTAL: subtotal,
-                GRAND_TOTAL: grandTotal,
-                invoice_details: cart.map(item => ({
-                  DESCRIPTION: item.NAME,
-                  QTY: item.quantity,
-                  TOTAL_PRICE: (item.PRICE * (1 - (item.discount_percent || 0) / 100)) * item.quantity
-                }))
-              };
-              setPrintInvoiceData(quoteData);
-            }}
-          >
-            <FileText size={18} /> Print Quotation
-          </button>
 
           <button 
             className="btn btn-primary" 
