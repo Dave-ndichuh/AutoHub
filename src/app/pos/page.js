@@ -1029,7 +1029,7 @@ export default function POSPage() {
                 </div>
                 
                 <p style={{ textAlign: 'center', color: 'var(--muted-foreground)', fontSize: '0.875rem', marginTop: '2rem', fontStyle: 'italic' }}>
-                  This is a standalone quotation. Prices are valid for 7 days.
+                  This is a standalone quotation. Prices are subject to regular review.
                 </p>
               </div>
               

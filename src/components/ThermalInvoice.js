@@ -99,7 +99,7 @@ const ThermalInvoice = React.forwardRef(({ invoice, items, isQuote = false }, re
       {/* 5. Footer Block */}
       <div className="receipt-footer">
         <p>Thank you for your business!</p>
-        <p>This is a standalone {isQuote ? 'quotation' : 'invoice'}. {isQuote ? 'Prices valid for 7 days.' : 'Goods remain property of Jobea Auto Spares until settled.'}</p>
+        <p>This is a standalone {isQuote ? 'quotation' : 'invoice'}. {isQuote ? 'Prices are subject to regular review.' : 'Goods remain property of Jobea Auto Spares until settled.'}</p>
         {!isQuote && (
           <>
             <p style={{ marginTop: '5px', fontWeight: 'bold' }}>NB Goods once sold Will not be re-accepted</p>
