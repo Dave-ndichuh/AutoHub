@@ -167,7 +167,7 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
               This is a standalone invoice. Stock is not deducted or reserved until full payment is received. Goods remain the property of Jobea Auto Spares until the invoice is settled in full.
             </p>
             <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#4a5568', lineHeight: '1.5', fontWeight: 600 }}>
-              NB Goods once sold Will not be re-acepted<br/>
+              NB Goods once sold Will not be re-accepted<br/>
               No warranty!
             </p>
           </div>

@@ -133,7 +133,7 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
       {/* 5. Footer Block */}
       <div className="receipt-footer">
         <p>Thank you for your business!</p>
-        <p>NB Goods once sold Will not be re-acepted</p>
+        <p>NB Goods once sold Will not be re-accepted</p>
         <p>No warranty!</p>
       </div>
 
