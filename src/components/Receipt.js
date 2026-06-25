@@ -133,7 +133,8 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
       {/* 5. Footer Block */}
       <div className="receipt-footer">
         <p>Thank you for your business!</p>
-        <p>Goods once sold are not returnable.</p>
+        <p>NB Goods once sold Will not be re-acepted</p>
+        <p>No warranty!</p>
         <p className="receipt-signature">www.jobeaauto.co.ke</p>
       </div>
 
