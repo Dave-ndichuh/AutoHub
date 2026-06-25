@@ -156,9 +156,10 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
           }
           
           body {
-            background: #ffffff;
+            background: #ffffff !important;
             margin: 0;
             padding: 0;
+            color: #000000 !important;
           }
           
           .receipt-print-area {
@@ -166,8 +167,8 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
             width: 80mm; 
             max-width: 100%;
             padding: 2mm 4mm;
-            background: #fff;
-            color: #000;
+            background: #ffffff !important;
+            color: #000000 !important;
             font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-size: 11pt;
             line-height: 1.3;
@@ -185,11 +186,12 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
             font-weight: 800;
             letter-spacing: 0.5px;
             text-transform: uppercase;
+            color: #000000 !important;
           }
           .receipt-store-meta {
             margin: 0;
             font-size: 9pt;
-            color: #000;
+            color: #000000 !important;
           }
 
           /* Dividers */
