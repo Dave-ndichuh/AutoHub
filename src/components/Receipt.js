@@ -135,7 +135,6 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
         <p>Thank you for your business!</p>
         <p>NB Goods once sold Will not be re-acepted</p>
         <p>No warranty!</p>
-        <p className="receipt-signature">www.jobeaauto.co.ke</p>
       </div>
 
       <style jsx global>{`
