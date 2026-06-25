@@ -1053,27 +1053,12 @@ export default function POSPage() {
 
       {/* Synchronous Print Portal for Quote */}
       {showQuoteModal && quoteData && typeof document !== 'undefined' && createPortal(
-        <div id="print-invoice-area" className="quote-print-portal">
+        <div id="print-invoice-area">
           {printFormat === 'A4' ? (
             <InvoicePrint invoice={quoteData} items={quoteData.invoice_details} isQuote={true} />
           ) : (
             <ThermalInvoice invoice={quoteData} items={quoteData.invoice_details} isQuote={true} />
           )}
-          <style jsx global>{`
-            .quote-print-portal {
-              position: absolute;
-              opacity: 0;
-              pointer-events: none;
-              z-index: -1;
-            }
-            @media print {
-              .quote-print-portal {
-                position: static !important;
-                opacity: 1 !important;
-                z-index: auto !important;
-              }
-            }
-          `}</style>
         </div>,
         document.body
       )}
