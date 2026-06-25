@@ -990,50 +990,51 @@ export default function POSPage() {
             style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
           >
             <motion.div 
+              id="quote-modal-content"
               initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-              style={{ background: 'var(--card)', borderRadius: '1rem', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', border: '1px solid var(--border)' }}
+              style={{ background: '#ffffff', color: '#0f172a', borderRadius: '1rem', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', border: '1px solid #e2e8f0' }}
             >
-              <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: 'var(--card)', zIndex: 10 }}>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <FileText size={20} color="var(--primary)" /> Quotation Preview
+              <div style={{ padding: '1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, background: '#ffffff', zIndex: 10 }}>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>
+                  <FileText size={20} color="#2563eb" /> Quotation Preview
                 </h3>
-                <button className="btn" style={{ background: 'transparent', padding: '0.5rem' }} onClick={() => setShowQuoteModal(false)}>
+                <button className="btn" style={{ background: 'transparent', padding: '0.5rem', color: '#64748b' }} onClick={() => setShowQuoteModal(false)}>
                   <X size={20} />
                 </button>
               </div>
               
               <div style={{ padding: '1.5rem' }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                  <h2 style={{ margin: '0 0 0.5rem 0', color: 'var(--primary)', fontSize: '1.5rem' }}>Jobea Auto Spares</h2>
-                  <p style={{ margin: 0, color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>{new Date(quoteData.CREATED_AT).toLocaleString()}</p>
-                  <p style={{ margin: '0.5rem 0 0 0', fontWeight: 500 }}>Customer: {quoteData.CUSTOMER_NAME}</p>
+                  <h2 style={{ margin: '0 0 0.5rem 0', color: '#2563eb', fontSize: '1.5rem' }}>Jobea Auto Spares</h2>
+                  <p style={{ margin: 0, color: '#64748b', fontSize: '0.875rem' }}>{new Date(quoteData.CREATED_AT).toLocaleString()}</p>
+                  <p style={{ margin: '0.5rem 0 0 0', fontWeight: 500, color: '#0f172a' }}>Customer: {quoteData.CUSTOMER_NAME}</p>
                 </div>
                 
-                <div style={{ borderTop: '1px dashed var(--border)', borderBottom: '1px dashed var(--border)', padding: '1rem 0', marginBottom: '1.5rem' }}>
+                <div style={{ borderTop: '1px dashed #cbd5e1', borderBottom: '1px dashed #cbd5e1', padding: '1rem 0', marginBottom: '1.5rem' }}>
                   {quoteData.invoice_details.map((item, idx) => (
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 500 }}>{item.DESCRIPTION}</div>
-                        <div style={{ color: 'var(--muted-foreground)', fontSize: '0.8rem' }}>Qty: {item.QTY}</div>
+                        <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.DESCRIPTION}</div>
+                        <div style={{ color: '#64748b', fontSize: '0.8rem' }}>Qty: {item.QTY}</div>
                       </div>
-                      <div style={{ fontWeight: 600, paddingLeft: '1rem' }}>
+                      <div style={{ fontWeight: 700, paddingLeft: '1rem', color: '#0f172a' }}>
                         Ksh {item.TOTAL_PRICE.toLocaleString()}
                       </div>
                     </div>
                   ))}
                 </div>
                 
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.25rem', fontWeight: 700, color: 'var(--primary)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.25rem', fontWeight: 700, color: '#2563eb' }}>
                   <span>Total Estimate:</span>
                   <span>Ksh {quoteData.GRAND_TOTAL.toLocaleString()}</span>
                 </div>
                 
-                <p style={{ textAlign: 'center', color: 'var(--muted-foreground)', fontSize: '0.875rem', marginTop: '2rem', fontStyle: 'italic' }}>
+                <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.875rem', marginTop: '2rem', fontStyle: 'italic' }}>
                   This is a standalone quotation. Prices are subject to regular review.
                 </p>
               </div>
               
-              <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.02)', borderTop: '1px solid var(--border)', display: 'flex', gap: '1rem' }} className="no-print">
+              <div style={{ padding: '1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '1rem' }} className="no-print">
                 <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowQuoteModal(false)}>
                   Close
                 </button>
