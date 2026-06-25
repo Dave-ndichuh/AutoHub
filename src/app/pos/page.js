@@ -1033,11 +1033,14 @@ export default function POSPage() {
                 </p>
               </div>
               
-              <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.02)', borderTop: '1px solid var(--border)', display: 'flex', gap: '1rem' }}>
+              <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.02)', borderTop: '1px solid var(--border)', display: 'flex', gap: '1rem' }} className="no-print">
                 <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowQuoteModal(false)}>
                   Close
                 </button>
-                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => { setShowQuoteModal(false); setPrintInvoiceData(quoteData); }}>
+                <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => { 
+                  // Trigger print synchronously to avoid mobile WebView crashes.
+                  window.print();
+                }}>
                   <Printer size={18} style={{ marginRight: '0.5rem' }} /> Print Quote
                 </button>
               </div>
@@ -1045,6 +1048,14 @@ export default function POSPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Synchronous Print Portal for Quote */}
+      {showQuoteModal && quoteData && typeof document !== 'undefined' && createPortal(
+        <div id="print-invoice-area" style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+          <ThermalInvoice invoice={quoteData} items={quoteData.invoice_details} isQuote={true} />
+        </div>,
+        document.body
+      )}
 
       {/* Print Area Overlay */}
       {(printData || printInvoiceData) && typeof document !== 'undefined' && createPortal(
