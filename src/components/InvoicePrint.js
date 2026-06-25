@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
+const InvoicePrint = React.forwardRef(({ invoice, items, isQuote = false }, ref) => {
   if (!invoice) return null;
 
   const formatDate = (dateString) => {
@@ -50,7 +50,7 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
           letterSpacing: '2px',
           textTransform: 'uppercase'
         }}>
-          INVOICE
+          {isQuote ? 'QUOTATION' : 'INVOICE'}
         </h1>
       </div>
 
@@ -164,12 +164,14 @@ const InvoicePrint = React.forwardRef(({ invoice, items }, ref) => {
           <div style={{ marginBottom: '30px' }}>
             <h4 style={{ fontWeight: 600, color: '#243c64', margin: '0 0 8px 0', fontSize: '14px' }}>Terms & Conditions</h4>
             <p style={{ margin: 0, fontSize: '13px', color: '#4a5568', lineHeight: '1.5' }}>
-              This is a standalone invoice. Stock is not deducted or reserved until full payment is received. Goods remain the property of Jobea Auto Spares until the invoice is settled in full.
+              This is a standalone {isQuote ? 'quotation' : 'invoice'}. {isQuote ? 'Prices are valid for 7 days.' : 'Stock is not deducted or reserved until full payment is received. Goods remain the property of Jobea Auto Spares until the invoice is settled in full.'}
             </p>
-            <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#4a5568', lineHeight: '1.5', fontWeight: 600 }}>
-              NB Goods once sold Will not be re-accepted<br/>
-              No warranty!
-            </p>
+            {!isQuote && (
+              <p style={{ margin: '8px 0 0 0', fontSize: '13px', color: '#4a5568', lineHeight: '1.5', fontWeight: 600 }}>
+                NB Goods once sold Will not be re-accepted<br/>
+                No warranty!
+              </p>
+            )}
           </div>
 
           <div>

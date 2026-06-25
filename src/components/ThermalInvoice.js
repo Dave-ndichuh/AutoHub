@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const ThermalInvoice = React.forwardRef(({ invoice, items }, ref) => {
+const ThermalInvoice = React.forwardRef(({ invoice, items, isQuote = false }, ref) => {
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
@@ -23,7 +23,7 @@ const ThermalInvoice = React.forwardRef(({ invoice, items }, ref) => {
         <p className="receipt-store-meta">Tel: 0725599999</p>
         
         <h3 style={{ marginTop: '10px', fontSize: '14pt', borderBottom: '1px solid black', display: 'inline-block' }}>
-          INVOICE
+          {isQuote ? 'QUOTATION' : 'INVOICE'}
         </h3>
       </div>
 
@@ -95,9 +95,13 @@ const ThermalInvoice = React.forwardRef(({ invoice, items }, ref) => {
       {/* 5. Footer Block */}
       <div className="receipt-footer">
         <p>Thank you for your business!</p>
-        <p>This is a standalone invoice. Goods remain property of Jobea Auto Spares until settled.</p>
-        <p style={{ marginTop: '5px', fontWeight: 'bold' }}>NB Goods once sold Will not be re-accepted</p>
-        <p style={{ fontWeight: 'bold' }}>No warranty!</p>
+        <p>This is a standalone {isQuote ? 'quotation' : 'invoice'}. {isQuote ? 'Prices valid for 7 days.' : 'Goods remain property of Jobea Auto Spares until settled.'}</p>
+        {!isQuote && (
+          <>
+            <p style={{ marginTop: '5px', fontWeight: 'bold' }}>NB Goods once sold Will not be re-accepted</p>
+            <p style={{ fontWeight: 'bold' }}>No warranty!</p>
+          </>
+        )}
       </div>
 
       <style jsx global>{`

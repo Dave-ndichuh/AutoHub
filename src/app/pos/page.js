@@ -897,6 +897,41 @@ export default function POSPage() {
           )}
 
           <button 
+            className="btn btn-secondary" 
+            style={{ 
+              width: '100%', 
+              padding: '1rem', 
+              fontSize: '1rem', 
+              fontWeight: 600,
+              marginBottom: '0.75rem',
+              backgroundColor: 'var(--card)',
+              border: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem'
+            }}
+            disabled={cart.length === 0 || checkingOut}
+            onClick={() => {
+              const quoteData = {
+                IS_QUOTE: true,
+                CREATED_AT: new Date().toISOString(),
+                CUSTOMER_NAME: paymentMethod === 'Credit' || paymentMethod === 'Invoice' ? (customers.find(c => c.CUST_ID === parseInt(creditCustomerId))?.FIRST_NAME || newCustomer.FIRST_NAME || 'Walk-in') : 'Walk-in',
+                SUBTOTAL: subtotal,
+                GRAND_TOTAL: grandTotal,
+                invoice_details: cart.map(item => ({
+                  DESCRIPTION: item.NAME,
+                  QTY: item.quantity,
+                  TOTAL_PRICE: (item.PRICE * (1 - (item.discount_percent || 0) / 100)) * item.quantity
+                }))
+              };
+              setPrintInvoiceData(quoteData);
+            }}
+          >
+            <FileText size={18} /> Print Quotation
+          </button>
+
+          <button 
             className="btn btn-primary" 
             style={{ 
               width: '100%', 
@@ -988,12 +1023,12 @@ export default function POSPage() {
             )}
 
             {printInvoiceData && printFormat === 'THERMAL' && (
-              <ThermalInvoice invoice={printInvoiceData} items={printInvoiceData.invoice_details} />
+              <ThermalInvoice invoice={printInvoiceData} items={printInvoiceData.invoice_details} isQuote={printInvoiceData.IS_QUOTE} />
             )}
 
             {printInvoiceData && printFormat === 'A4' && (
               <div style={{ width: '100%', maxWidth: '210mm', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
-                <InvoicePrint invoice={printInvoiceData} items={printInvoiceData.invoice_details} />
+                <InvoicePrint invoice={printInvoiceData} items={printInvoiceData.invoice_details} isQuote={printInvoiceData.IS_QUOTE} />
               </div>
             )}
           </div>
