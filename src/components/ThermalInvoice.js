@@ -116,11 +116,14 @@ const ThermalInvoice = React.forwardRef(({ invoice, items }, ref) => {
             display: none !important;
           }
           
-          body {
-            background: #ffffff !important;
+          html, body {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            color-scheme: light !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
             margin: 0;
             padding: 0;
-            color: #000000 !important;
           }
           
           .receipt-print-area {
@@ -129,12 +132,17 @@ const ThermalInvoice = React.forwardRef(({ invoice, items }, ref) => {
             max-width: 100%;
             margin: 0 auto;
             padding: 2mm 4mm;
-            background: #ffffff !important;
+            background-color: #ffffff !important;
             color: #000000 !important;
             font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-size: 11pt;
             line-height: 1.3;
             box-sizing: border-box;
+          }
+          
+          .receipt-print-area * {
+            color: #000000 !important;
+            border-color: #000000 !important;
           }
 
           .receipt-header {
