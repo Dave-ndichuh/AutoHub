@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthGuard';
 import { Plus, Search, FileText, Printer, CheckCircle, XCircle, ChevronDown, Trash2 } from 'lucide-react';
 import InvoicePrint from '@/components/InvoicePrint';
+import ThermalInvoice from '@/components/ThermalInvoice';
 import { logAction } from '@/lib/logger';
 import { createPortal } from 'react-dom';
 
@@ -31,6 +32,7 @@ export default function InvoicesPage() {
   // Print
   const [printInvoice, setPrintInvoice] = useState(null);
   const [printItems, setPrintItems] = useState([]);
+  const [printFormat, setPrintFormat] = useState('THERMAL'); // 'THERMAL' or 'A4'
   const printRef = useRef(null);
 
   // Settlement Modal
@@ -494,15 +496,33 @@ export default function InvoicesPage() {
       {/* Print Area Overlay */}
       {printInvoice && typeof document !== 'undefined' && createPortal(
         <div id="print-invoice-area" style={{ position: 'fixed', inset: 0, background: 'white', zIndex: 99999, overflowY: 'auto' }}>
-          <div className="print-action-bar" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div className="print-action-bar" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10 }}>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.25rem 0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
+              <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Format:</label>
+              <select className="input" style={{ border: 'none', padding: '0.25rem 2rem 0.25rem 0.5rem', height: 'auto', background: 'transparent' }} value={printFormat} onChange={e => setPrintFormat(e.target.value)}>
+                <option value="THERMAL">Thermal Roll (80mm)</option>
+                <option value="A4">Standard Sheet (A4)</option>
+              </select>
+            </div>
+
             <button className="btn btn-secondary" onClick={() => setPrintInvoice(null)}>
               <XCircle size={18} /> Close Preview
             </button>
             <button className="btn btn-primary" onClick={() => window.print()}>
-              <Printer size={18} /> Print Again
+              <Printer size={18} /> Print
             </button>
           </div>
-          <InvoicePrint ref={printRef} invoice={printInvoice} items={printItems} />
+
+          <div style={{ display: 'flex', justifyContent: 'center', padding: printFormat === 'A4' ? '2rem' : '0' }}>
+            {printFormat === 'THERMAL' ? (
+              <ThermalInvoice ref={printRef} invoice={printInvoice} items={printItems} />
+            ) : (
+              <div style={{ width: '100%', maxWidth: '210mm', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+                <InvoicePrint ref={printRef} invoice={printInvoice} items={printItems} />
+              </div>
+            )}
+          </div>
         </div>
       , document.body)}
 

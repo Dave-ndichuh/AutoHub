@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { Search, Plus, Minus, Trash2, CreditCard, Loader2, ShoppingCart, Smartphone, ArrowLeft, Tag, Layers, User as UserIcon, Calendar, X, ChevronDown, ShoppingBag, Image as ImageIcon, FileText } from 'lucide-react';
 import Receipt from '@/components/Receipt';
 import InvoicePrint from '@/components/InvoicePrint';
+import ThermalInvoice from '@/components/ThermalInvoice';
 import { useAuth } from '@/components/AuthGuard';
 import { logAction } from '@/lib/logger';
 
@@ -65,6 +66,7 @@ export default function POSPage() {
   const [lastTransaction, setLastTransaction] = useState(null);
   const [printData, setPrintData] = useState(null);
   const [printInvoiceData, setPrintInvoiceData] = useState(null);
+  const [printFormat, setPrintFormat] = useState('THERMAL'); // 'THERMAL' or 'A4'
   const { employeeId } = useAuth();
   
   const [isMobile, setIsMobile] = useState(false);
@@ -949,7 +951,18 @@ export default function POSPage() {
       {/* Print Area Overlay */}
       {(printData || printInvoiceData) && typeof document !== 'undefined' && createPortal(
         <div id="print-invoice-area" style={{ position: 'fixed', inset: 0, background: 'white', zIndex: 99999, overflowY: 'auto' }}>
-          <div className="print-action-bar" style={{ display: 'flex', justifyContent: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10 }}>
+          <div className="print-action-bar" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', padding: '1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 10 }}>
+            
+            {printInvoiceData && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.25rem 0.5rem', borderRadius: '0.5rem', border: '1px solid var(--border)' }}>
+                <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Format:</label>
+                <select className="input" style={{ border: 'none', padding: '0.25rem 2rem 0.25rem 0.5rem', height: 'auto', background: 'transparent' }} value={printFormat} onChange={e => setPrintFormat(e.target.value)}>
+                  <option value="THERMAL">Thermal Roll (80mm)</option>
+                  <option value="A4">Standard Sheet (A4)</option>
+                </select>
+              </div>
+            )}
+
             <button className="btn btn-secondary" onClick={() => { setPrintData(null); setPrintInvoiceData(null); document.body.classList.remove('printing-invoice'); }}>
               <X size={18} /> Close Preview
             </button>
@@ -964,18 +977,26 @@ export default function POSPage() {
             }
           `}</style>
 
-          {printData && (
-            <Receipt 
-              transaction={printData.transaction} 
-              cart={printData.cart} 
-              subtotal={printData.subtotal} 
-              grandTotal={printData.grandTotal} 
-            />
-          )}
+          <div style={{ display: 'flex', justifyContent: 'center', padding: (printInvoiceData && printFormat === 'A4') ? '2rem' : '0' }}>
+            {printData && (
+              <Receipt 
+                transaction={printData.transaction} 
+                cart={printData.cart} 
+                subtotal={printData.subtotal} 
+                grandTotal={printData.grandTotal} 
+              />
+            )}
 
-          {printInvoiceData && (
-            <InvoicePrint invoice={printInvoiceData} items={printInvoiceData.invoice_details} />
-          )}
+            {printInvoiceData && printFormat === 'THERMAL' && (
+              <ThermalInvoice invoice={printInvoiceData} items={printInvoiceData.invoice_details} />
+            )}
+
+            {printInvoiceData && printFormat === 'A4' && (
+              <div style={{ width: '100%', maxWidth: '210mm', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)' }}>
+                <InvoicePrint invoice={printInvoiceData} items={printInvoiceData.invoice_details} />
+              </div>
+            )}
+          </div>
         </div>
       , document.body)}
 
