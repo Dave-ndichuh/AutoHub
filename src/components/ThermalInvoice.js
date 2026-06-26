@@ -41,7 +41,7 @@ const ThermalInvoice = React.forwardRef(({ invoice, items, isQuote = false }, re
         </div>
         <div className="meta-row">
           <span>{isQuote ? 'Quote No:' : 'Invoice No:'}</span>
-          <span className="meta-val">#{invoice.TRANS_ID ? invoice.TRANS_ID.toString().padStart(6, '0') : 'DRAFT'}</span>
+          <span className="meta-val">#{invoice.INVOICE_ID ? invoice.INVOICE_ID.toString().padStart(6, '0') : invoice.TRANS_ID ? invoice.TRANS_ID.toString().padStart(6, '0') : 'DRAFT'}</span>
         </div>
         {invoice.CUSTOMER_PHONE && (
           <div className="meta-row">
