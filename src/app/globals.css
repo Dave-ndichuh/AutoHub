@@ -314,6 +314,9 @@ button {
 
 .sidebar {
   width: 260px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
   display: flex;
