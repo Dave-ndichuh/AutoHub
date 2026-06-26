@@ -189,8 +189,16 @@ const InvoicePrint = React.forwardRef(({ invoice, items, isQuote = false }, ref)
           <div style={{ marginBottom: '40px' }}>
             <div style={{ marginBottom: '15px' }}>
               <span style={{ color: '#718096', fontSize: '13px', display: 'block', marginBottom: '4px' }}>{isQuote ? 'Quote Number' : 'Invoice Number'}</span>
-              <span style={{ fontWeight: 600, color: '#1a202c' }}>{isQuote ? 'QT-' : 'INV-'}{invoice.TRANS_ID ? invoice.TRANS_ID.toString().padStart(5, '0') : 'DRAFT'}</span>
+              <span style={{ fontWeight: 600, color: '#1a202c' }}>
+                {isQuote ? 'QT-' : 'INV-'}
+                {invoice.INVOICE_ID 
+                  ? invoice.INVOICE_ID.toString().padStart(5, '0') 
+                  : invoice.TRANS_ID 
+                    ? invoice.TRANS_ID.toString().padStart(5, '0') 
+                    : 'DRAFT'}
+              </span>
             </div>
+            
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 16px', borderBottom: '1px solid #243c64', marginBottom: '12px' }}>
               <span style={{ fontWeight: 600, color: '#243c64', fontSize: '14px' }}>Sub-total :</span>
               <span style={{ fontWeight: 700, color: '#243c64', fontSize: '14px' }}>Ksh {invoice.SUBTOTAL?.toLocaleString()}</span>
