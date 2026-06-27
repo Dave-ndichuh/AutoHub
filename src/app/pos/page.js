@@ -625,8 +625,8 @@ export default function POSPage() {
       <AnimatePresence>
         {(!isMobile || isMobileCartOpen) && (
           <motion.div 
-            className="glass cart-panel" 
-            style={{ display: 'flex', flexDirection: 'column' }}
+            className="cart-panel" 
+            style={{ display: 'flex', flexDirection: 'column', background: '#ffffff', color: '#0f172a', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
             initial={isMobile ? { y: "100%" } : false}
             animate={isMobile ? { y: 0 } : false}
             exit={isMobile ? { y: "100%" } : false}
@@ -730,10 +730,10 @@ export default function POSPage() {
             }
           }
         `}</style>
-        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className="heading-2" style={{ margin: 0 }}>Current Sale</h2>
+        <div style={{ padding: '1.5rem', background: '#0f172a', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', display: 'flex', alignItems: 'center', position: 'relative', justifyContent: 'center' }}>
+          <h2 className="heading-2" style={{ margin: 0, color: '#ffffff' }}>Cart</h2>
           {cart.length > 0 && (
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', position: 'absolute', right: '1.5rem' }}>
               <button 
                 className="btn btn-secondary" 
                 style={{ padding: '0.5rem 0.75rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.375rem', background: 'var(--card)' }}
@@ -769,17 +769,17 @@ export default function POSPage() {
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
           {cart.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--muted-foreground)' }}>
-              <ShoppingCart size={48} style={{ marginBottom: '1rem', opacity: 0.2 }} />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8' }}>
+              <ShoppingCart size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
               <p>Cart is empty</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {cart.map(item => (
-                <div key={item.PRODUCT_ID} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div key={item.PRODUCT_ID} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid #e2e8f0' }}>
                   <div style={{ flex: 1, paddingRight: '1rem' }}>
                     <h5 style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.25rem', lineHeight: '1.3' }}>{item.NAME}</h5>
-                    <p className="text-muted" style={{ fontSize: '0.875rem', fontWeight: 500 }}>Ksh. {item.PRICE.toLocaleString()}</p>
+                    <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#64748b' }}>Ksh. {item.PRICE.toLocaleString()}</p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <button className="btn btn-secondary" style={{ padding: '0.4rem' }} onClick={() => updateQuantity(item.PRODUCT_ID, -1)}>
@@ -799,17 +799,17 @@ export default function POSPage() {
           )}
         </div>
 
-        <div style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.2)', borderTop: '1px solid var(--border)' }}>
+        <div style={{ padding: '1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px' }}>
           
           {/* Adjustments Section */}
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', alignItems: 'center' }}>
-            <Tag size={16} className="text-muted" />
-            <span style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', fontWeight: 500 }}>Adjust Price:</span>
+            <Tag size={16} color="#64748b" />
+            <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 500 }}>Adjust Price:</span>
             
-            <div style={{ display: 'flex', alignItems: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
               <button 
                 className="btn btn-secondary" 
-                style={{ padding: '0 0.875rem', height: '36px', border: 'none', borderRight: '1px solid var(--border)', borderRadius: 0 }}
+                style={{ padding: '0 0.875rem', height: '36px', border: 'none', borderRight: '1px solid #cbd5e1', borderRadius: 0, background: '#f1f5f9', color: '#0f172a' }}
                 onClick={() => setDiscountAmount(prev => (Number(prev) || 0) - 100)}
               >
                 <Minus size={16} />
@@ -817,14 +817,14 @@ export default function POSPage() {
               <input 
                 type="number" 
                 className="input" 
-                style={{ padding: '0.25rem 0.5rem', height: '36px', width: '90px', border: 'none', borderRadius: 0, textAlign: 'center', background: 'transparent', fontWeight: 600 }} 
+                style={{ padding: '0.25rem 0.5rem', height: '36px', width: '90px', border: 'none', borderRadius: 0, textAlign: 'center', background: 'transparent', fontWeight: 600, color: '#0f172a' }} 
                 value={discountAmount} 
                 onChange={(e) => setDiscountAmount(e.target.value)} 
                 placeholder="0"
               />
               <button 
                 className="btn btn-secondary" 
-                style={{ padding: '0 0.875rem', height: '36px', border: 'none', borderLeft: '1px solid var(--border)', borderRadius: 0 }}
+                style={{ padding: '0 0.875rem', height: '36px', border: 'none', borderLeft: '1px solid #cbd5e1', borderRadius: 0, background: '#f1f5f9', color: '#0f172a' }}
                 onClick={() => setDiscountAmount(prev => (Number(prev) || 0) + 100)}
               >
                 <Plus size={16} />
@@ -837,7 +837,7 @@ export default function POSPage() {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '1rem' }}>
-            <span className="text-muted">Subtotal</span>
+            <span style={{ color: '#64748b' }}>Subtotal</span>
             <span style={{ fontWeight: 500 }}>Ksh. {subtotal.toLocaleString()}</span>
           </div>
           {Number(discountAmount) !== 0 && (
@@ -846,7 +846,7 @@ export default function POSPage() {
               <span>{Number(discountAmount) < 0 ? '-' : '+'} Ksh. {Math.abs(Number(discountAmount)).toLocaleString()}</span>
             </div>
           )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed rgba(255,255,255,0.15)', fontSize: '1.75rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.02em' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed #cbd5e1', fontSize: '1.75rem', fontWeight: 800, color: '#2563eb', letterSpacing: '-0.02em' }}>
             <span>Total</span>
             <span>Ksh. {grandTotal.toLocaleString()}</span>
           </div>
