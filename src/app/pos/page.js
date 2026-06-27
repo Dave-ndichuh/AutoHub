@@ -640,7 +640,7 @@ export default function POSPage() {
               </div>
               <span style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--foreground)' }}>Cart</span>
             </div>
-            <style jsx>{`
+            <style jsx global>{`
           .pos-wrapper {
             display: flex;
             gap: 2rem;
@@ -936,11 +936,12 @@ export default function POSPage() {
             className="btn btn-primary" 
             style={{ 
               width: '100%', 
-              padding: '1.125rem', 
-              fontSize: '1.125rem', 
-              fontWeight: 700,
+              padding: '0.875rem 1rem', 
+              fontSize: '1rem', 
+              fontWeight: 600,
+              borderRadius: '12px',
               backgroundColor: paymentMethod === 'M-Pesa' ? '#25D366' : paymentMethod === 'Credit' ? '#f59e0b' : paymentMethod === 'Invoice' ? '#8b5cf6' : 'var(--primary)',
-              transition: 'background-color 0.2s, transform 0.1s',
+              transition: 'all 0.2s ease',
               color: '#fff'
             }}
             disabled={cart.length === 0 || checkingOut}
