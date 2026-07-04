@@ -773,7 +773,7 @@ export default function POSPage() {
           </div>
         </div>
 
-        <div style={{ flex: '1 1 150px', minHeight: '150px', overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column' }}>
+        <div className="cart-items-scroll" style={{ flex: '1 1 150px', minHeight: '150px', overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column' }}>
           {cart.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8' }}>
               <ShoppingCart size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
@@ -805,7 +805,7 @@ export default function POSPage() {
           )}
         </div>
 
-        <div style={{ flex: '0 1 auto', overflowY: 'auto', padding: '1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px', display: 'flex', flexDirection: 'column' }}>
+        <div className="payment-section-scroll" style={{ flex: '0 1 auto', overflowY: 'auto', padding: '1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px', display: 'flex', flexDirection: 'column' }}>
           
           {/* Adjustments Section */}
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', alignItems: 'center' }}>
