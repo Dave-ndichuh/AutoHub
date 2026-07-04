@@ -730,44 +730,50 @@ export default function POSPage() {
             }
           }
         `}</style>
-        <div style={{ padding: '1.5rem', background: '#0f172a', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', display: 'flex', alignItems: 'center', position: 'relative', justifyContent: 'center' }}>
+        <div style={{ padding: '1.25rem 1.5rem', background: '#0f172a', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 className="heading-2" style={{ margin: 0, color: '#ffffff' }}>Cart</h2>
-          {cart.length > 0 && (
-            <div style={{ display: 'flex', gap: '0.5rem', position: 'absolute', right: '1.5rem' }}>
-              <button 
-                className="btn btn-secondary" 
-                style={{ padding: '0.5rem 0.75rem', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.375rem', background: 'var(--card)' }}
-                onClick={() => {
-                  const quoteData = {
-                    IS_QUOTE: true,
-                    CREATED_AT: new Date().toISOString(),
-                    CUSTOMER_NAME: paymentMethod === 'Credit' || paymentMethod === 'Invoice' ? (customers.find(c => c.CUST_ID === parseInt(creditCustomerId))?.FIRST_NAME || newCustomer.FIRST_NAME || 'Walk-in') : 'Walk-in',
-                    SUBTOTAL: subtotal,
-                    GRAND_TOTAL: grandTotal,
-                    invoice_details: cart.map(item => ({
-                      DESCRIPTION: item.NAME,
-                      QTY: item.quantity,
-                      TOTAL_PRICE: (item.PRICE * (1 - (item.discount_percent || 0) / 100)) * item.quantity
-                    }))
-                  };
-                  setQuoteData(quoteData);
-                  setShowQuoteModal(true);
-                }}
-              >
-                <FileText size={16} /> Quote
-              </button>
-              <button 
-                className="btn btn-destructive" 
-                style={{ padding: '0.5rem 0.75rem', fontSize: '0.875rem', background: 'transparent', color: 'var(--destructive)', border: '1px solid var(--destructive)', display: 'flex', alignItems: 'center', gap: '0.375rem' }} 
-                onClick={() => setCart([])}
-              >
-                <Trash2 size={16} /> Clear
-              </button>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            {cart.length > 0 && (
+              <>
+                <button 
+                  className="btn" 
+                  style={{ padding: '0.4rem 1rem', fontSize: '0.875rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.375rem', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.4)', borderRadius: '999px', transition: 'all 0.2s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(59, 130, 246, 0.25)'; e.currentTarget.style.borderColor = '#60a5fa'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)'; e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.4)'; }}
+                  onClick={() => {
+                    const quoteData = {
+                      IS_QUOTE: true,
+                      CREATED_AT: new Date().toISOString(),
+                      CUSTOMER_NAME: paymentMethod === 'Credit' || paymentMethod === 'Invoice' ? (customers.find(c => c.CUST_ID === parseInt(creditCustomerId))?.FIRST_NAME || newCustomer.FIRST_NAME || 'Walk-in') : 'Walk-in',
+                      SUBTOTAL: subtotal,
+                      GRAND_TOTAL: grandTotal,
+                      invoice_details: cart.map(item => ({
+                        DESCRIPTION: item.NAME,
+                        QTY: item.quantity,
+                        TOTAL_PRICE: (item.PRICE * (1 - (item.discount_percent || 0) / 100)) * item.quantity
+                      }))
+                    };
+                    setQuoteData(quoteData);
+                    setShowQuoteModal(true);
+                  }}
+                >
+                  <FileText size={16} /> Quote
+                </button>
+                <button 
+                  className="btn" 
+                  style={{ padding: '0.4rem 1rem', fontSize: '0.875rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.375rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '999px', transition: 'all 0.2s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)'; e.currentTarget.style.borderColor = '#f87171'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.4)'; }}
+                  onClick={() => setCart([])}
+                >
+                  <Trash2 size={16} /> Clear
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '1rem' }}>
+        <div style={{ flex: '1 1 150px', minHeight: '150px', overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column' }}>
           {cart.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8' }}>
               <ShoppingCart size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
@@ -799,7 +805,7 @@ export default function POSPage() {
           )}
         </div>
 
-        <div style={{ padding: '1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px' }}>
+        <div style={{ flex: '0 1 auto', overflowY: 'auto', padding: '1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px', display: 'flex', flexDirection: 'column' }}>
           
           {/* Adjustments Section */}
           <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', alignItems: 'center' }}>
