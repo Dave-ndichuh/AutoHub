@@ -301,9 +301,9 @@ export default function POSPage() {
               }}
               onClick={() => product.ON_HAND > 0 ? addToCart(product) : alert('This product is out of stock!')}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                <span className="badge badge-warning">{product.PRODUCT_CODE}</span>
-                <span className={product.ON_HAND <= 0 ? "text-destructive font-bold" : "text-muted"} style={{ fontSize: '0.875rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', gap: '0.5rem' }}>
+                <span className="badge badge-warning" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }} title={product.PRODUCT_CODE}>{product.PRODUCT_CODE}</span>
+                <span className={product.ON_HAND <= 0 ? "text-destructive font-bold" : "text-muted"} style={{ fontSize: '0.875rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
                   {product.ON_HAND <= 0 ? 'Out of Stock' : `Stock: ${product.ON_HAND}`}
                 </span>
               </div>
