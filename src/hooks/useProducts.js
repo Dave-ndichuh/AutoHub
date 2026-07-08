@@ -53,18 +53,18 @@ export function useProducts() {
 
   const deleteProduct = async (id, productData) => {
     try {
-      await ProductService.deleteProduct(id);
+      const result = await ProductService.deleteProduct(id);
       
       if (productData) {
         await logAction({
-          action: 'Deleted Product',
-          details: `Deleted product: ${productData.name} (Code: ${productData.productCode})`,
-          severity: 'danger'
+          action: result?.archived ? 'Archived Product' : 'Deleted Product',
+          details: `${result?.archived ? 'Archived' : 'Deleted'} product: ${productData.name} (Code: ${productData.productCode})`,
+          severity: result?.archived ? 'warning' : 'danger'
         });
       }
       
       await fetchProducts();
-      return { success: true };
+      return { success: true, archived: result?.archived };
     } catch (err) {
       return { success: false, error: err.message };
     }

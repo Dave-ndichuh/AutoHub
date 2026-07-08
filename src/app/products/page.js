@@ -35,10 +35,12 @@ function ProductsContent() {
     if (!confirm('Are you sure you want to delete this product?')) return;
     
     const productToDelete = products.find(p => p.id === id);
-    const { success, error: deleteError } = await deleteProductHook(id, { name: productToDelete?.name, productCode: productToDelete?.productCode });
+    const { success, error: deleteError, archived } = await deleteProductHook(id, { name: productToDelete?.name, productCode: productToDelete?.productCode });
     
     if (!success) {
       alert(`Error deleting product: ${deleteError}`);
+    } else if (archived) {
+      alert('This product has existing transactions and cannot be permanently deleted. It has been archived (set to inactive) instead.');
     }
   };
 

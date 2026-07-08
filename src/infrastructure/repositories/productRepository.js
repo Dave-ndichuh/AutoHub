@@ -50,7 +50,14 @@ export const productRepository = {
 
   async deleteProduct(id) {
     const { error } = await supabase.from('product').delete().eq('PRODUCT_ID', id);
-    if (error) throw new Error(error.message);
-    return true;
+    if (error) {
+      if (error.code === '23503' || error.message.includes('foreign key constraint')) {
+        const { error: softError } = await supabase.from('product').update({ STATUS: 'inactive' }).eq('PRODUCT_ID', id);
+        if (softError) throw new Error(softError.message);
+        return { archived: true };
+      }
+      throw new Error(error.message);
+    }
+    return { success: true };
   }
 };
