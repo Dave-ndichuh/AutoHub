@@ -175,9 +175,13 @@ export default function POSPage() {
       filtered = filtered.filter(p => matchingCategoryIds.includes(String(p.CATEGORY_ID)));
     }
     if (searchTerm) {
+      const term = searchTerm.toLowerCase();
       filtered = filtered.filter(p => 
-        p.NAME?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.PRODUCT_CODE?.toLowerCase().includes(searchTerm.toLowerCase())
+        p.NAME?.toLowerCase().includes(term) ||
+        p.PRODUCT_CODE?.toLowerCase().includes(term) ||
+        p.BRAND?.toLowerCase().includes(term) ||
+        p.MODEL?.toLowerCase().includes(term) ||
+        p.BARCODE?.toLowerCase().includes(term)
       );
     }
     return filtered;

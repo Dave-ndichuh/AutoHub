@@ -89,7 +89,13 @@ function ProductsContent() {
   };
 
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name?.toLowerCase().includes(searchTerm.toLowerCase()) || p.productCode?.toLowerCase().includes(searchTerm.toLowerCase());
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = 
+      p.name?.toLowerCase().includes(term) || 
+      p.productCode?.toLowerCase().includes(term) ||
+      p.brand?.toLowerCase().includes(term) ||
+      p.model?.toLowerCase().includes(term) ||
+      p.barcode?.toLowerCase().includes(term);
     if (filterParam === 'low-stock') {
       return matchesSearch && p.onHand <= p.reorderThreshold;
     }
