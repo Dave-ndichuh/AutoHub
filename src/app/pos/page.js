@@ -731,6 +731,19 @@ export default function POSPage() {
             .mobile-cart-fab:active {
               transform: scale(0.98);
             }
+            @keyframes marquee {
+              0% { transform: translateX(10%); }
+              100% { transform: translateX(-100%); }
+            }
+            .marquee-container {
+              overflow: hidden;
+              white-space: nowrap;
+              position: relative;
+            }
+            .marquee-content {
+              display: inline-block;
+              animation: marquee 10s linear infinite;
+            }
           }
         `}</style>
         <div style={{ padding: '1.25rem 1.5rem', background: '#0f172a', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -789,8 +802,8 @@ export default function POSPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {cart.map(item => (
                 <div key={item.PRODUCT_ID} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius)', border: '1px solid #e2e8f0', gap: '0.5rem' }}>
-                  <div style={{ flex: 1, minWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600, fontSize: '0.875rem' }} title={item.NAME}>
-                    {item.NAME}
+                  <div className="marquee-container" style={{ flex: 1, minWidth: '80px', fontWeight: 600, fontSize: '0.875rem' }} title={item.NAME}>
+                    <div className={item.NAME.length > 20 ? "marquee-content" : ""} style={{ textOverflow: 'ellipsis', overflow: 'hidden' }}>{item.NAME}</div>
                   </div>
                   
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -804,7 +817,7 @@ export default function POSPage() {
                         value={item.adjustment === undefined || item.adjustment === 0 ? '' : item.adjustment} 
                         onChange={(e) => updateItemAdjustment(item.PRODUCT_ID, e.target.value)}
                         placeholder="0"
-                        style={{ width: '40px', padding: '0 0.25rem', height: '100%', border: 'none', textAlign: 'center', fontSize: '0.75rem', outline: 'none' }}
+                        style={{ width: '60px', padding: '0 0.25rem', height: '100%', border: 'none', textAlign: 'center', fontSize: '0.75rem', outline: 'none' }}
                       />
                       <div style={{ display: 'flex', flexDirection: 'column', borderLeft: '1px solid #cbd5e1' }}>
                         <button 
