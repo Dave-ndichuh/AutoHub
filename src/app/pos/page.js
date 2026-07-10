@@ -754,6 +754,46 @@ export default function POSPage() {
               display: inline-block;
               animation: marquee 10s linear infinite;
             }
+            .adj-btn-add {
+              height: 18px;
+              width: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: #ecfdf5;
+              border: none;
+              border-bottom: 1px solid #a7f3d0;
+              cursor: pointer;
+              font-size: 9px;
+              color: #059669;
+              font-weight: 700;
+              text-transform: uppercase;
+              transition: all 0.2s;
+            }
+            .adj-btn-add:hover {
+              background: #d1fae5;
+              color: #047857;
+            }
+            .adj-btn-deduct {
+              height: 18px;
+              width: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              background: #fef2f2;
+              border: none;
+              border-top: 1px solid #fecaca;
+              cursor: pointer;
+              font-size: 9px;
+              color: #dc2626;
+              font-weight: 700;
+              text-transform: uppercase;
+              transition: all 0.2s;
+            }
+            .adj-btn-deduct:hover {
+              background: #fee2e2;
+              color: #b91c1c;
+            }
           }
         `}</style>
         <div style={{ padding: '1.25rem 1.5rem', background: '#0f172a', borderTopLeftRadius: '16px', borderTopRightRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -821,20 +861,28 @@ export default function POSPage() {
                       Ksh. {(item.PRICE + (Number(item.adjustment) || 0)).toLocaleString()}
                     </span>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', overflow: 'hidden', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
                       <button 
+                        type="button"
                         onClick={() => applyAdjustment(item.PRODUCT_ID, true)}
-                        style={{ height: '14px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', border: 'none', borderBottom: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '9px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>add</button>
+                        style={{ height: '18px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#ecfdf5', border: 'none', borderBottom: '1px solid #a7f3d0', cursor: 'pointer', fontSize: '9px', color: '#059669', fontWeight: 700, textTransform: 'uppercase', transition: 'all 0.2s' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#d1fae5'; e.currentTarget.style.color = '#047857'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#ecfdf5'; e.currentTarget.style.color = '#059669'; }}
+                      >add</button>
                       <input 
                         type="number" 
                         value={item.adjustmentInput || ''} 
                         onChange={(e) => updateItemAdjustmentInput(item.PRODUCT_ID, e.target.value)}
                         placeholder="0"
-                        style={{ width: '50px', padding: '1px 0', border: 'none', textAlign: 'center', fontSize: '0.75rem', outline: 'none' }}
+                        style={{ width: '50px', padding: '2px 0', border: 'none', textAlign: 'center', fontSize: '0.85rem', fontWeight: 600, color: '#334155', outline: 'none' }}
                       />
                       <button 
+                        type="button"
                         onClick={() => applyAdjustment(item.PRODUCT_ID, false)}
-                        style={{ height: '14px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', border: 'none', borderTop: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '9px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>deduct</button>
+                        style={{ height: '18px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fef2f2', border: 'none', borderTop: '1px solid #fecaca', cursor: 'pointer', fontSize: '9px', color: '#dc2626', fontWeight: 700, textTransform: 'uppercase', transition: 'all 0.2s' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#b91c1c'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; }}
+                      >deduct</button>
                     </div>
                   </div>
 
