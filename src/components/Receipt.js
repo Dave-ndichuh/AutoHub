@@ -251,6 +251,7 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
             padding-right: 2mm;
             word-wrap: break-word;
             overflow-wrap: break-word;
+            white-space: pre-line;
           }
           .col-qty {
             width: 15%;

@@ -120,16 +120,16 @@ const InvoicePrint = React.forwardRef(({ invoice, items, isQuote = false }, ref)
         </thead>
         <tbody>
           {items && items.map((item, idx) => (
-            <tr key={idx}>
-              <td style={{ 
-                padding: '16px', 
-                borderBottom: '1px solid #243c64',
-                fontWeight: 600,
-                color: '#243c64',
-                fontSize: '14px'
-              }}>
-                {item.DESCRIPTION}
-              </td>
+              <tr key={idx}>
+                <td style={{ 
+                  padding: '16px', 
+                  borderBottom: '1px solid #243c64',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  whiteSpace: 'pre-line'
+                }}>
+                  {item.DESCRIPTION}
+                </td>
               <td style={{ 
                 padding: '16px', 
                 borderBottom: '1px solid #243c64',

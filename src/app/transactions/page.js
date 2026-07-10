@@ -55,7 +55,7 @@ function TransactionsContent() {
           *,
           customer!transaction_CUST_ID_fkey(FIRST_NAME, LAST_NAME),
           credit_customer:customer!transaction_CREDIT_CUSTOMER_ID_fkey(FIRST_NAME, LAST_NAME),
-          transaction_details(*, product(NAME, BRAND, PRODUCT_CODE))
+          transaction_details(*, product(NAME, BRAND, PRODUCT_CODE, MODEL))
         `)
         .order('TRANS_ID', { ascending: false });
 
@@ -109,6 +109,9 @@ function TransactionsContent() {
     const cartItems = trans.transaction_details?.map(d => ({
       PRODUCT_ID: d.PRODUCT_ID,
       NAME: d.product?.NAME || 'Unknown Part',
+      BRAND: d.product?.BRAND,
+      MODEL: d.product?.MODEL,
+      PRODUCT_CODE: d.product?.PRODUCT_CODE,
       PRICE: d.UNIT_PRICE,
       quantity: d.QTY
     })) || [];
@@ -429,7 +432,7 @@ function TransactionsContent() {
                 <tbody>
                   {selectedTransaction.transaction_details?.map((detail, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '1rem 0', fontWeight: 500 }}>{formatItemName(detail.product)}</td>
+                      <td style={{ padding: '1rem 0', fontWeight: 500, whiteSpace: 'pre-line' }}>{formatItemName(detail.product)}</td>
                       <td style={{ padding: '1rem 0', textAlign: 'center' }}>{detail.QTY}</td>
                       <td style={{ padding: '1rem 0', textAlign: 'right' }}>Ksh {Number(detail.UNIT_PRICE).toLocaleString()}</td>
                       <td style={{ padding: '1rem 0', textAlign: 'right', fontWeight: 600 }}>Ksh {(Number(detail.QTY) * Number(detail.UNIT_PRICE)).toLocaleString()}</td>

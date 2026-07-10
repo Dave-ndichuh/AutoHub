@@ -10,6 +10,7 @@ import InvoicePrint from '@/components/InvoicePrint';
 import ThermalInvoice from '@/components/ThermalInvoice';
 import { useAuth } from '@/components/AuthGuard';
 import { logAction } from '@/lib/logger';
+import { formatItemName } from '@/utils/formatters';
 
 const categoryGradients = [
   'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', // Blue
@@ -457,7 +458,7 @@ export default function POSPage() {
           return {
             INVOICE_ID: invData.INVOICE_ID,
             PRODUCT_ID: item.PRODUCT_ID,
-            DESCRIPTION: item.NAME,
+            DESCRIPTION: formatItemName(item),
             QTY: item.quantity,
             UNIT_PRICE: effectivePrice,
             TOTAL_PRICE: effectivePrice * item.quantity
@@ -816,7 +817,7 @@ export default function POSPage() {
                       invoice_details: cart.map(item => {
                         const effectivePrice = item.PRICE + (Number(item.adjustment) || 0);
                         return {
-                          DESCRIPTION: item.NAME,
+                          DESCRIPTION: formatItemName(item),
                           QTY: item.quantity,
                           TOTAL_PRICE: (effectivePrice * (1 - (item.discount_percent || 0) / 100)) * item.quantity
                         };

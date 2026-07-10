@@ -41,7 +41,7 @@ export default function ServicesPage() {
     setLoading(true);
     
     let query = supabase.from('service')
-      .select(`*, customer(FIRST_NAME, LAST_NAME), employee(FIRST_NAME, LAST_NAME), service_details(DETAIL_ID, PRODUCT_ID, QTY, UNIT_PRICE, SUBTOTAL, product(NAME, BRAND, PRODUCT_CODE))`)
+      .select(`*, customer(FIRST_NAME, LAST_NAME), employee(FIRST_NAME, LAST_NAME), service_details(DETAIL_ID, PRODUCT_ID, QTY, UNIT_PRICE, SUBTOTAL, product(NAME, BRAND, PRODUCT_CODE, MODEL))`)
       .order('SERVICE_ID', { ascending: false });
 
     if (role === 'employee' && employeeId) {
@@ -197,8 +197,7 @@ export default function ServicesPage() {
     if (error) {
       alert(`Failed to add part: ${error.message}`);
     } else {
-      // Refresh local details via a fetch to be safe
-      const { data } = await supabase.from('service_details').select('*, product(NAME, BRAND, PRODUCT_CODE)').eq('SERVICE_ID', editingId);
+      const { data } = await supabase.from('service_details').select('*, product(NAME, BRAND, PRODUCT_CODE, MODEL)').eq('SERVICE_ID', editingId);
       if (data) setServiceDetails(data);
       setSelectedProduct('');
       setQtyToAdd(1);
@@ -208,8 +207,10 @@ export default function ServicesPage() {
   const removePart = async (detailId) => {
     if (confirm('Remove this part from the ticket?')) {
       await supabase.from('service_details').delete().eq('DETAIL_ID', detailId);
-      const { data } = await supabase.from('service_details').select('*, product(NAME, BRAND, PRODUCT_CODE)').eq('SERVICE_ID', editingId);
-      if (data) setServiceDetails(data);
+      if (editingId) {
+        const { data } = await supabase.from('service_details').select('*, product(NAME, BRAND, PRODUCT_CODE, MODEL)').eq('SERVICE_ID', editingId);
+        if (data) setServiceDetails(data);
+      }
     }
   };
 

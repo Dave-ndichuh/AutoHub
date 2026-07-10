@@ -6,13 +6,25 @@ export const formatTransId = (transId) => {
 
 export const formatItemName = (product) => {
   if (!product) return 'Unknown Part';
-  const parts = [];
-  const code = product.PRODUCT_CODE || product.productCode;
+  const code = product.PRODUCT_CODE || product.productCode || product.code;
   const brand = product.BRAND || product.brand;
-  const name = product.NAME || product.name;
+  const model = product.MODEL || product.model;
+  const name = product.NAME || product.name || product.DESCRIPTION || product.description;
   
-  if (code) parts.push(code);
-  if (brand) parts.push(brand);
-  if (name) parts.push(name);
-  return parts.join(' - ') || 'Unknown Part';
+  const metaParts = [];
+  if (code) metaParts.push(code);
+  
+  const brandModel = [];
+  if (brand) brandModel.push(brand);
+  if (model) brandModel.push(model);
+  if (brandModel.length > 0) metaParts.push(brandModel.join(' '));
+  
+  const metaString = metaParts.join(' - ');
+  
+  if (name && metaString) {
+    if (name === metaString) return name;
+    return `${name}\n(${metaString})`;
+  }
+  
+  return name || metaString || 'Unknown Part';
 };

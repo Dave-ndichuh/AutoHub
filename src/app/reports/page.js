@@ -351,7 +351,7 @@ export default function ReportsPage() {
                     <tr><td colSpan="5" style={{ textAlign: 'center' }}>No sales data for this period.</td></tr>
                   ) : topProducts.map((p, idx) => (
                     <tr key={idx}>
-                      <td style={{ fontWeight: 500 }}>{p.name}</td>
+                      <td style={{ fontWeight: 500, whiteSpace: 'pre-line' }}>{p.name}</td>
                       <td className="text-muted" style={{ fontSize: '0.875rem' }}>{p.category}</td>
                       <td style={{ textAlign: 'right' }}><span className="badge badge-primary">{p.qty}</span></td>
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>Ksh {p.revenue.toLocaleString()}</td>
@@ -386,7 +386,7 @@ export default function ReportsPage() {
                     const capital = p.ON_HAND * p.COST_PRICE;
                     return (
                       <tr key={idx}>
-                        <td style={{ fontWeight: 500 }}>{formatItemName(p)}</td>
+                        <td style={{ fontWeight: 500, whiteSpace: 'pre-line' }}>{formatItemName(p)}</td>
                         <td className="text-muted" style={{ fontSize: '0.875rem' }}>{p.category?.CNAME || 'N/A'}</td>
                         <td style={{ textAlign: 'right' }}>
                           <span className="badge badge-destructive">{p.ON_HAND}</span>

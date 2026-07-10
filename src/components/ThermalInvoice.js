@@ -205,6 +205,7 @@ const ThermalInvoice = React.forwardRef(({ invoice, items, isQuote = false }, re
           }
           .col-item {
             width: 55%;
+            white-space: pre-line;
           }
           .col-qty {
             width: 15%;
