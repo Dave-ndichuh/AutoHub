@@ -308,9 +308,9 @@ export default function POSPage() {
                 </span>
               </div>
               
-              <div style={{ width: '100%', height: '120px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem' }}>
+              <div style={{ width: '100%', height: '120px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem' }}>
                 {product.IMAGE_URL ? (
-                  <img src={product.IMAGE_URL} alt={product.NAME} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  <img src={product.IMAGE_URL} alt={product.NAME} className="image-hover-zoom" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '4px' }} />
                 ) : (
                   <ImageIcon size={32} style={{ opacity: 0.1 }} />
                 )}
@@ -753,7 +753,11 @@ export default function POSPage() {
             }
             .marquee-content {
               display: inline-block;
-              animation: marquee 10s linear infinite;
+              white-space: nowrap;
+              padding-right: 10px;
+            }
+            .marquee-container:hover .marquee-content {
+              animation: marquee 5s linear infinite;
             }
             .adj-btn-add {
               height: 18px;

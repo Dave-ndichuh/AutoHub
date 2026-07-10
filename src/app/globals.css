@@ -585,3 +585,17 @@ button {
 .payment-section-scroll::-webkit-scrollbar-thumb:hover {
   background: #8b5cf6;
 }
+
+.image-hover-zoom {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center center;
+  position: relative;
+  z-index: 1;
+}
+.image-hover-zoom:hover {
+  transform: scale(3);
+  z-index: 999;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  background: var(--card);
+  border-radius: 8px;
+}
