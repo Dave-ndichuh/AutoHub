@@ -536,7 +536,8 @@ export default function POSPage() {
           TRANS_ID: transData.TRANS_ID,
           PRODUCT_ID: item.PRODUCT_ID,
           QTY: item.quantity,
-          UNIT_PRICE: effectivePrice
+          UNIT_PRICE: effectivePrice,
+          SUBTOTAL: effectivePrice * item.quantity
         };
       });
 
