@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle, ExternalLink, X, DollarSign, RefreshCw, Loa
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { logAction } from '@/lib/logger';
+import { formatTransId } from '@/utils/formatters';
 
 export default function CreditSalesTable() {
   const router = useRouter();
@@ -108,7 +109,7 @@ export default function CreditSalesTable() {
         
         await logAction({
           action: 'Returned Credit Sale',
-          details: `Transaction #TRX-${transId} was returned. Items added back to stock and amounts zeroed out.`,
+          details: `Transaction #TRX-${formatTransId(transId)} was returned. Items added back to stock and amounts zeroed out.`,
           severity: 'warning'
         });
 
@@ -140,7 +141,7 @@ export default function CreditSalesTable() {
         
         await logAction({
           action: 'Settled Credit Sale',
-          details: `Transaction #TRX-${transId} was settled via ${settlementMode}.`,
+          details: `Transaction #TRX-${formatTransId(transId)} was settled via ${settlementMode}.`,
           severity: 'info'
         });
       }
@@ -213,7 +214,7 @@ export default function CreditSalesTable() {
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     title="View Transaction Details"
                   >
-                    TRX-{sale.TRANS_ID}
+                    TRX-{formatTransId(sale.TRANS_ID)}
                     <ExternalLink size={12} />
                   </button>
                 </td>
@@ -261,7 +262,7 @@ export default function CreditSalesTable() {
             </div>
 
             <p style={{ color: 'var(--muted-foreground)', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
-              You are about to clear the debt for <strong>TRX-{settlingSale.TRANS_ID}</strong> amounting to 
+              You are about to clear the debt for <strong>TRX-{formatTransId(settlingSale.TRANS_ID)}</strong> amounting to 
               <span style={{ color: 'var(--primary)', fontWeight: 700, marginLeft: '0.25rem' }}>
                 Ksh {(settlingSale.ADJUSTED_TOTAL || settlingSale.GRAND_TOTAL).toLocaleString()}
               </span>.

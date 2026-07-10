@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { BarChart3, TrendingUp, AlertCircle, PackageSearch, Download, DollarSign, Calendar, RefreshCcw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
+import { formatItemName } from '@/utils/formatters';
 
 export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
@@ -123,7 +124,7 @@ export default function ReportsPage() {
 
             if (!productStats[pId]) {
               productStats[pId] = { 
-                name: d.product?.NAME || 'Unknown Part', 
+                name: formatItemName(d.product), 
                 category: cName,
                 qty: 0, revenue: 0, profit: 0 
               };
@@ -385,7 +386,7 @@ export default function ReportsPage() {
                     const capital = p.ON_HAND * p.COST_PRICE;
                     return (
                       <tr key={idx}>
-                        <td style={{ fontWeight: 500 }}>{p.NAME}</td>
+                        <td style={{ fontWeight: 500 }}>{formatItemName(p)}</td>
                         <td className="text-muted" style={{ fontSize: '0.875rem' }}>{p.category?.CNAME || 'N/A'}</td>
                         <td style={{ textAlign: 'right' }}>
                           <span className="badge badge-destructive">{p.ON_HAND}</span>

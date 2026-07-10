@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { formatTransId, formatItemName } from '../utils/formatters';
 
 export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }) {
   const [mounted, setMounted] = useState(false);
@@ -42,7 +43,7 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
       <div className="receipt-meta">
         <div className="meta-row">
           <span>Receipt #:</span>
-          <span className="meta-val">TRX-{transaction.TRANS_ID}</span>
+          <span className="meta-val">TRX-{formatTransId(transaction.TRANS_ID)}</span>
         </div>
         <div className="meta-row">
           <span>Date:</span>
@@ -78,7 +79,7 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
         <tbody>
           {cart.map((item, idx) => (
             <tr key={idx} className="item-row">
-              <td className="col-item">{item.NAME}</td>
+              <td className="col-item">{formatItemName(item)}</td>
               <td className="col-qty">{item.quantity}</td>
               <td className="col-total">{(item.PRICE * item.quantity).toLocaleString()}</td>
             </tr>

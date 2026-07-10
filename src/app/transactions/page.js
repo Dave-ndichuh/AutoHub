@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Search, Printer, Calendar, X, Eye, CheckCircle } from 'lucide-react';
 import Receipt from '@/components/Receipt';
+import { formatTransId, formatItemName } from '@/utils/formatters';
 import { useAuth } from '@/components/AuthGuard';
 import { useSearchParams } from 'next/navigation';
 import { createPortal } from 'react-dom';
@@ -79,7 +80,9 @@ function TransactionsContent() {
     let matchesDate = true;
 
     if (searchId) {
-      matchesId = t.TRANS_ID?.toString() === searchId || t.TRANS_ID?.toString().includes(searchId);
+      const sId = searchId.toLowerCase();
+      matchesId = t.TRANS_ID?.toString().toLowerCase().includes(sId) || 
+                  (t.TRANS_ID && formatTransId(t.TRANS_ID).toLowerCase().includes(sId));
     }
     
     if (searchDate) {
@@ -235,7 +238,7 @@ function TransactionsContent() {
               currentItems.map((trans) => (
                 <tr key={trans.TRANS_ID}>
                   <td>
-                    <span className="badge badge-warning">TRX-{trans.TRANS_ID}</span>
+                    <span className="badge badge-warning">TRX-{formatTransId(trans.TRANS_ID)}</span>
                     {trans.IS_CREDIT && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem' }}>Credit</span>}
                     {trans.CREDIT_TERMS && trans.CREDIT_TERMS.startsWith('INV-') && (
                       <span className="badge badge-primary" style={{ marginLeft: '0.5rem', background: 'var(--primary)', color: 'white' }}>{trans.CREDIT_TERMS.split('|')[0].trim()}</span>
@@ -408,7 +411,7 @@ function TransactionsContent() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
               <div>
                 <h3 className="heading-2" style={{ margin: 0 }}>Transaction Details</h3>
-                <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>TRX-{selectedTransaction.TRANS_ID} • {new Date(selectedTransaction.CREATED_AT).toLocaleString()}</div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>TRX-{formatTransId(selectedTransaction.TRANS_ID)}   {new Date(selectedTransaction.CREATED_AT).toLocaleString()}</div>
               </div>
               <button onClick={() => setSelectedTransaction(null)} style={{ background: 'transparent', border: 'none', color: 'var(--muted-foreground)', cursor: 'pointer', display: 'flex' }}><X size={20} /></button>
             </div>
@@ -426,7 +429,7 @@ function TransactionsContent() {
                 <tbody>
                   {selectedTransaction.transaction_details?.map((detail, idx) => (
                     <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '1rem 0', fontWeight: 500 }}>{detail.product?.NAME || 'Unknown Part'}</td>
+                      <td style={{ padding: '1rem 0', fontWeight: 500 }}>{formatItemName(detail.product)}</td>
                       <td style={{ padding: '1rem 0', textAlign: 'center' }}>{detail.QTY}</td>
                       <td style={{ padding: '1rem 0', textAlign: 'right' }}>Ksh {Number(detail.UNIT_PRICE).toLocaleString()}</td>
                       <td style={{ padding: '1rem 0', textAlign: 'right', fontWeight: 600 }}>Ksh {(Number(detail.QTY) * Number(detail.UNIT_PRICE)).toLocaleString()}</td>
