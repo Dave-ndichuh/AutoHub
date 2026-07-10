@@ -81,7 +81,7 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
             <tr key={idx} className="item-row">
               <td className="col-item">{formatItemName(item)}</td>
               <td className="col-qty">{item.quantity}</td>
-              <td className="col-total">{(item.PRICE * item.quantity).toLocaleString()}</td>
+              <td className="col-total">{((item.PRICE + (Number(item.adjustment) || 0)) * item.quantity).toLocaleString()}</td>
             </tr>
           ))}
         </tbody>
