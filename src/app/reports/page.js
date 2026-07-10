@@ -369,9 +369,9 @@ export default function ReportsPage() {
                 <AlertCircle size={20} color="#ef4444" />
                 <h3 className="heading-2" style={{ fontSize: '1.25rem', margin: 0, color: '#ef4444' }}>Dead Stock (0 Sales, &gt;10 Stock)</h3>
               </div>
-              <div className="table-wrapper">
-                <table className="table">
-                <thead>
+              <div className="table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                <table className="table" style={{ position: 'relative' }}>
+                <thead style={{ position: 'sticky', top: 0, background: 'var(--card)', zIndex: 1 }}>
                   <tr>
                     <th>Product Name</th>
                     <th>Category</th>
