@@ -482,7 +482,6 @@ export default function POSPage() {
         });
 
         setCart([]);
-        setDiscountAmount('');
         setIsMobileCartOpen(false);
         setCreditCustomerId('');
         setShowAddCustomer(false);
@@ -573,9 +572,6 @@ export default function POSPage() {
       setShowAddCustomer(false);
       setCreditDueDate('');
       setCreditTerms('');
-      setDiscountAmount('');
-      setCashAmount('');
-      setMpesaAmount('');
       setSelectedCategory(null);
       setIsMobileCartOpen(false);
 
