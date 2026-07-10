@@ -56,8 +56,7 @@ export default function POSPage() {
   const [creditDueDate, setCreditDueDate] = useState('');
   const [creditTerms, setCreditTerms] = useState('');
   
-  // Adjustments
-  const [discountAmount, setDiscountAmount] = useState(''); // positive is discount, negative is surcharge
+  // Adjustments (Moved to item-level)
   
   // New Customer State
   const [showAddCustomer, setShowAddCustomer] = useState(false);
@@ -344,7 +343,7 @@ export default function POSPage() {
         if (existing.quantity >= product.ON_HAND) return prev;
         return prev.map(item => item.PRODUCT_ID === product.PRODUCT_ID ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, quantity: 1, adjustment: 0 }];
     });
   };
 
@@ -358,6 +357,15 @@ export default function POSPage() {
       }
       return item;
     }).filter(Boolean));
+  };
+
+  const updateItemAdjustment = (id, adjustment) => {
+    setCart(prev => prev.map(item => {
+      if (item.PRODUCT_ID === id) {
+        return { ...item, adjustment: Number(adjustment) || 0 };
+      }
+      return item;
+    }));
   };
 
   const removeFromCart = (id) => setCart(prev => prev.filter(item => item.PRODUCT_ID !== id));
@@ -384,9 +392,8 @@ export default function POSPage() {
   };
 
   // Calculations
-  const subtotal = cart.reduce((acc, item) => acc + (item.PRICE * item.quantity), 0);
-  const totalBeforeDiscount = subtotal;
-  const grandTotal = Math.max(0, totalBeforeDiscount + (Number(discountAmount) || 0));
+  const subtotal = cart.reduce((acc, item) => acc + ((item.PRICE + (Number(item.adjustment) || 0)) * item.quantity), 0);
+  const grandTotal = subtotal;
 
   // Validate Hybrid Math
   const isHybridValid = () => {
@@ -416,15 +423,6 @@ export default function POSPage() {
 
     setCheckingOut(true);
 
-    const getAdjustedUnitPrice = (item) => {
-      const discount = Number(discountAmount) || 0;
-      if (!subtotal || discount === 0) return item.PRICE;
-      const itemTotal = item.PRICE * item.quantity;
-      const weight = itemTotal / subtotal;
-      const adjustment = weight * discount;
-      return item.PRICE + (adjustment / item.quantity);
-    };
-
     try {
       if (paymentMethod === 'Invoice') {
         const selectedCustomer = customers.find(c => c.CUST_ID === parseInt(creditCustomerId));
@@ -445,14 +443,14 @@ export default function POSPage() {
         if (invError) throw invError;
 
         const details = cart.map(item => {
-          const adjPrice = getAdjustedUnitPrice(item);
+          const effectivePrice = item.PRICE + (Number(item.adjustment) || 0);
           return {
             INVOICE_ID: invData.INVOICE_ID,
             PRODUCT_ID: item.PRODUCT_ID,
             DESCRIPTION: item.NAME,
             QTY: item.quantity,
-            UNIT_PRICE: adjPrice,
-            TOTAL_PRICE: adjPrice * item.quantity
+            UNIT_PRICE: effectivePrice,
+            TOTAL_PRICE: effectivePrice * item.quantity
           };
         });
 
@@ -521,15 +519,14 @@ export default function POSPage() {
 
       if (transErr) throw transErr;
 
-      // Create Details
       const details = cart.map(item => {
-        const adjPrice = getAdjustedUnitPrice(item);
+        const effectivePrice = item.PRICE + (Number(item.adjustment) || 0);
         return {
           TRANS_ID: transData.TRANS_ID,
           PRODUCT_ID: item.PRODUCT_ID,
           QTY: item.quantity,
-          UNIT_PRICE: adjPrice,
-          SUBTOTAL: adjPrice * item.quantity
+          UNIT_PRICE: effectivePrice,
+          TOTAL_PRICE: effectivePrice * item.quantity
         };
       });
 
@@ -566,6 +563,8 @@ export default function POSPage() {
       setCreditDueDate('');
       setCreditTerms('');
       setDiscountAmount('');
+      setCashAmount('');
+      setMpesaAmount('');
       setSelectedCategory(null);
       setIsMobileCartOpen(false);
 
@@ -751,11 +750,14 @@ export default function POSPage() {
                       CUSTOMER_NAME: paymentMethod === 'Credit' || paymentMethod === 'Invoice' ? (customers.find(c => c.CUST_ID === parseInt(creditCustomerId))?.FIRST_NAME || newCustomer.FIRST_NAME || 'Walk-in') : 'Walk-in',
                       SUBTOTAL: subtotal,
                       GRAND_TOTAL: grandTotal,
-                      invoice_details: cart.map(item => ({
-                        DESCRIPTION: item.NAME,
-                        QTY: item.quantity,
-                        TOTAL_PRICE: (item.PRICE * (1 - (item.discount_percent || 0) / 100)) * item.quantity
-                      }))
+                      invoice_details: cart.map(item => {
+                        const effectivePrice = item.PRICE + (Number(item.adjustment) || 0);
+                        return {
+                          DESCRIPTION: item.NAME,
+                          QTY: item.quantity,
+                          TOTAL_PRICE: (effectivePrice * (1 - (item.discount_percent || 0) / 100)) * item.quantity
+                        };
+                      })
                     };
                     setQuoteData(quoteData);
                     setShowQuoteModal(true);
@@ -786,21 +788,45 @@ export default function POSPage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {cart.map(item => (
-                <div key={item.PRODUCT_ID} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid #e2e8f0' }}>
-                  <div style={{ flex: 1, paddingRight: '1rem' }}>
-                    <h5 style={{ fontWeight: 600, fontSize: '0.95rem', marginBottom: '0.25rem', lineHeight: '1.3' }}>{item.NAME}</h5>
-                    <p style={{ fontSize: '0.875rem', fontWeight: 500, color: '#64748b' }}>Ksh. {item.PRICE.toLocaleString()}</p>
+                <div key={item.PRODUCT_ID} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius)', border: '1px solid #e2e8f0', gap: '0.5rem' }}>
+                  <div style={{ flex: 1, minWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 600, fontSize: '0.875rem' }} title={item.NAME}>
+                    {item.NAME}
                   </div>
+                  
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <button className="btn btn-secondary" style={{ padding: '0.4rem' }} onClick={() => updateQuantity(item.PRODUCT_ID, -1)}>
-                      <Minus size={14} />
+                    <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#0f172a', whiteSpace: 'nowrap' }}>
+                      Ksh. {(item.PRICE + (Number(item.adjustment) || 0)).toLocaleString()}
+                    </span>
+
+                    <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', overflow: 'hidden', height: '24px' }}>
+                      <input 
+                        type="number" 
+                        value={item.adjustment === undefined || item.adjustment === 0 ? '' : item.adjustment} 
+                        onChange={(e) => updateItemAdjustment(item.PRODUCT_ID, e.target.value)}
+                        placeholder="0"
+                        style={{ width: '40px', padding: '0 0.25rem', height: '100%', border: 'none', textAlign: 'center', fontSize: '0.75rem', outline: 'none' }}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', borderLeft: '1px solid #cbd5e1' }}>
+                        <button 
+                          onClick={() => updateItemAdjustment(item.PRODUCT_ID, (Number(item.adjustment)||0) + 100)}
+                          style={{ height: '12px', width: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', border: 'none', borderBottom: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '9px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>add</button>
+                        <button 
+                          onClick={() => updateItemAdjustment(item.PRODUCT_ID, (Number(item.adjustment)||0) - 100)}
+                          style={{ height: '12px', width: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '9px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>deduct</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <button className="btn btn-secondary" style={{ padding: '0', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => updateQuantity(item.PRODUCT_ID, -1)}>
+                      <Minus size={12} />
                     </button>
-                    <span style={{ width: '28px', textAlign: 'center', fontWeight: 600 }}>{item.quantity}</span>
-                    <button className="btn btn-secondary" style={{ padding: '0.4rem' }} onClick={() => updateQuantity(item.PRODUCT_ID, 1)}>
-                      <Plus size={14} />
+                    <span style={{ width: '20px', textAlign: 'center', fontWeight: 600, fontSize: '0.875rem' }}>{item.quantity}</span>
+                    <button className="btn btn-secondary" style={{ padding: '0', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => updateQuantity(item.PRODUCT_ID, 1)}>
+                      <Plus size={12} />
                     </button>
-                    <button className="btn btn-destructive" style={{ padding: '0.4rem', marginLeft: '0.5rem' }} onClick={() => removeFromCart(item.PRODUCT_ID)}>
-                      <Trash2 size={14} />
+                    <button className="btn btn-destructive" style={{ padding: '0', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: '0.25rem' }} onClick={() => removeFromCart(item.PRODUCT_ID)}>
+                      <Trash2 size={12} />
                     </button>
                   </div>
                 </div>
@@ -811,51 +837,10 @@ export default function POSPage() {
 
         <div className="payment-section-scroll" style={{ flex: '0 1 auto', overflowY: 'auto', padding: '1.5rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', borderBottomLeftRadius: '16px', borderBottomRightRadius: '16px', display: 'flex', flexDirection: 'column' }}>
           
-          {/* Adjustments Section */}
-          <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', alignItems: 'center' }}>
-            <Tag size={16} color="#64748b" />
-            <span style={{ fontSize: '0.875rem', color: '#64748b', fontWeight: 500 }}>Adjust Price:</span>
-            
-            <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-              <button 
-                className="btn btn-secondary" 
-                style={{ padding: '0 0.875rem', height: '36px', border: 'none', borderRight: '1px solid #cbd5e1', borderRadius: 0, background: '#f1f5f9', color: '#0f172a' }}
-                onClick={() => setDiscountAmount(prev => (Number(prev) || 0) - 100)}
-              >
-                <Minus size={16} />
-              </button>
-              <input 
-                type="number" 
-                className="input" 
-                style={{ padding: '0.25rem 0.5rem', height: '36px', width: '90px', border: 'none', borderRadius: 0, textAlign: 'center', background: 'transparent', fontWeight: 600, color: '#0f172a' }} 
-                value={discountAmount} 
-                onChange={(e) => setDiscountAmount(e.target.value)} 
-                placeholder="0"
-              />
-              <button 
-                className="btn btn-secondary" 
-                style={{ padding: '0 0.875rem', height: '36px', border: 'none', borderLeft: '1px solid #cbd5e1', borderRadius: 0, background: '#f1f5f9', color: '#0f172a' }}
-                onClick={() => setDiscountAmount(prev => (Number(prev) || 0) + 100)}
-              >
-                <Plus size={16} />
-              </button>
-            </div>
-            
-            <span style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', flex: 1, textAlign: 'right' }}>
-              *negative = discount
-            </span>
-          </div>
-
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '1rem' }}>
             <span style={{ color: '#64748b' }}>Subtotal</span>
             <span style={{ fontWeight: 500 }}>Ksh. {subtotal.toLocaleString()}</span>
           </div>
-          {Number(discountAmount) !== 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '1rem', color: Number(discountAmount) < 0 ? '#10b981' : '#ef4444', fontWeight: 500 }}>
-              <span>{Number(discountAmount) < 0 ? 'Discount' : 'Surcharge'}</span>
-              <span>{Number(discountAmount) < 0 ? '-' : '+'} Ksh. {Math.abs(Number(discountAmount)).toLocaleString()}</span>
-            </div>
-          )}
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed #cbd5e1', fontSize: '1.75rem', fontWeight: 800, color: '#2563eb', letterSpacing: '-0.02em' }}>
             <span>Total</span>
             <span>Ksh. {grandTotal.toLocaleString()}</span>
