@@ -331,9 +331,9 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          <div className="tables-grid">
+          <div className="tables-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', marginTop: '2rem' }}>
             {/* Top 10 Performing Products */}
-            <div className="glass" style={{ flex: 1, padding: '1.5rem', overflowX: 'auto' }}>
+            <div className="glass" style={{ flex: '1 1 450px', padding: '1.5rem', overflowX: 'auto', minWidth: '0' }}>
               <h3 className="heading-2" style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Top 10 Products (Revenue)</h3>
               <div className="table-wrapper">
                 <table className="table">
@@ -364,7 +364,7 @@ export default function ReportsPage() {
             </div>
 
             {/* Worst Performing Products (Dead Stock) */}
-            <div className="glass" style={{ flex: 1, padding: '1.5rem', overflowX: 'auto' }}>
+            <div className="glass" style={{ flex: '1 1 450px', padding: '1.5rem', overflowX: 'auto', minWidth: '0' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
                 <AlertCircle size={20} color="#ef4444" />
                 <h3 className="heading-2" style={{ fontSize: '1.25rem', margin: 0, color: '#ef4444' }}>Dead Stock (0 Sales, &gt;10 Stock)</h3>
