@@ -68,7 +68,7 @@ export default function ReportsPage() {
           PRODUCT_ID,
           QTY,
           UNIT_PRICE,
-          product (NAME, COST_PRICE, CATEGORY_ID, ON_HAND, category(CNAME))
+          product (NAME, BRAND, PRODUCT_CODE, COST_PRICE, CATEGORY_ID, ON_HAND, category(CNAME))
         )
       `)
       .gte('CREATED_AT', startDateTime)

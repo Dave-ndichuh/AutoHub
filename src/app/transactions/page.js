@@ -55,7 +55,7 @@ function TransactionsContent() {
           *,
           customer!transaction_CUST_ID_fkey(FIRST_NAME, LAST_NAME),
           credit_customer:customer!transaction_CREDIT_CUSTOMER_ID_fkey(FIRST_NAME, LAST_NAME),
-          transaction_details(*, product(NAME))
+          transaction_details(*, product(NAME, BRAND, PRODUCT_CODE))
         `)
         .order('TRANS_ID', { ascending: false });
 
