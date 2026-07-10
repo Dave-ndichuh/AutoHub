@@ -343,7 +343,7 @@ export default function POSPage() {
         if (existing.quantity >= product.ON_HAND) return prev;
         return prev.map(item => item.PRODUCT_ID === product.PRODUCT_ID ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      return [...prev, { ...product, quantity: 1, adjustment: 0 }];
+      return [...prev, { ...product, quantity: 1, adjustment: 0, adjustmentInput: '' }];
     });
   };
 
@@ -359,10 +359,20 @@ export default function POSPage() {
     }).filter(Boolean));
   };
 
-  const updateItemAdjustment = (id, adjustment) => {
+  const updateItemAdjustmentInput = (id, val) => {
+    setCart(prev => prev.map(item => item.PRODUCT_ID === id ? { ...item, adjustmentInput: val } : item));
+  };
+
+  const applyAdjustment = (id, isAdd) => {
     setCart(prev => prev.map(item => {
       if (item.PRODUCT_ID === id) {
-        return { ...item, adjustment: Number(adjustment) || 0 };
+        const val = Number(item.adjustmentInput) || 0;
+        const currentAdj = Number(item.adjustment) || 0;
+        return { 
+          ...item, 
+          adjustment: isAdd ? currentAdj + val : currentAdj - val,
+          adjustmentInput: '' // clear after applying
+        };
       }
       return item;
     }));
@@ -811,22 +821,20 @@ export default function POSPage() {
                       Ksh. {(item.PRICE + (Number(item.adjustment) || 0)).toLocaleString()}
                     </span>
 
-                    <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', overflow: 'hidden', height: '24px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', overflow: 'hidden' }}>
+                      <button 
+                        onClick={() => applyAdjustment(item.PRODUCT_ID, true)}
+                        style={{ height: '14px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', border: 'none', borderBottom: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '9px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>add</button>
                       <input 
                         type="number" 
-                        value={item.adjustment === undefined || item.adjustment === 0 ? '' : item.adjustment} 
-                        onChange={(e) => updateItemAdjustment(item.PRODUCT_ID, e.target.value)}
+                        value={item.adjustmentInput || ''} 
+                        onChange={(e) => updateItemAdjustmentInput(item.PRODUCT_ID, e.target.value)}
                         placeholder="0"
-                        style={{ width: '60px', padding: '0 0.25rem', height: '100%', border: 'none', textAlign: 'center', fontSize: '0.75rem', outline: 'none' }}
+                        style={{ width: '50px', padding: '1px 0', border: 'none', textAlign: 'center', fontSize: '0.75rem', outline: 'none' }}
                       />
-                      <div style={{ display: 'flex', flexDirection: 'column', borderLeft: '1px solid #cbd5e1' }}>
-                        <button 
-                          onClick={() => updateItemAdjustment(item.PRODUCT_ID, (Number(item.adjustment)||0) + 100)}
-                          style={{ height: '12px', width: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', border: 'none', borderBottom: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '9px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>add</button>
-                        <button 
-                          onClick={() => updateItemAdjustment(item.PRODUCT_ID, (Number(item.adjustment)||0) - 100)}
-                          style={{ height: '12px', width: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '9px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>deduct</button>
-                      </div>
+                      <button 
+                        onClick={() => applyAdjustment(item.PRODUCT_ID, false)}
+                        style={{ height: '14px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', border: 'none', borderTop: '1px solid #cbd5e1', cursor: 'pointer', fontSize: '9px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>deduct</button>
                     </div>
                   </div>
 
