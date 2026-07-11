@@ -99,9 +99,9 @@ function TransactionsContent() {
 
     let matchesStatus = true;
     if (filterStatus === 'Active') {
-      matchesStatus = t.STATUS !== 'Reversed';
+      matchesStatus = t.status !== 'Reversed';
     } else if (filterStatus === 'Reversed') {
-      matchesStatus = t.STATUS === 'Reversed';
+      matchesStatus = t.status === 'Reversed';
     }
 
     return matchesId && matchesDate && matchesStatus;
@@ -210,7 +210,7 @@ function TransactionsContent() {
     }
 
     // Update local state to mark as reversed
-    setTransactions(prev => prev.map(t => t.TRANS_ID === selectedTransaction.TRANS_ID ? { ...t, STATUS: 'Reversed', REVERSAL_REASON: reversalReason } : t));
+    setTransactions(prev => prev.map(t => t.TRANS_ID === selectedTransaction.TRANS_ID ? { ...t, status: 'Reversed', reversal_reason: reversalReason } : t));
     
     // Log action
     await supabase.from('system_logs').insert([{
@@ -311,10 +311,10 @@ function TransactionsContent() {
               currentItems.map((trans) => (
                 <tr key={trans.TRANS_ID}>
                   <td>
-                    <span className={`badge ${trans.STATUS === 'Reversed' ? 'badge-secondary' : 'badge-warning'}`} style={{ opacity: trans.STATUS === 'Reversed' ? 0.6 : 1, textDecoration: trans.STATUS === 'Reversed' ? 'line-through' : 'none' }}>TRX-{formatTransId(trans.TRANS_ID)}</span>
-                    {trans.STATUS === 'Reversed' && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem', background: '#ef4444', color: 'white' }}>Reversed</span>}
-                    {trans.IS_CREDIT && trans.STATUS !== 'Reversed' && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem' }}>Credit</span>}
-                    {trans.CREDIT_TERMS && trans.CREDIT_TERMS.startsWith('INV-') && trans.STATUS !== 'Reversed' && (
+                    <span className={`badge ${trans.status === 'Reversed' ? 'badge-secondary' : 'badge-warning'}`} style={{ opacity: trans.status === 'Reversed' ? 0.6 : 1, textDecoration: trans.status === 'Reversed' ? 'line-through' : 'none' }}>TRX-{formatTransId(trans.TRANS_ID)}</span>
+                    {trans.status === 'Reversed' && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem', background: '#ef4444', color: 'white' }}>Reversed</span>}
+                    {trans.IS_CREDIT && trans.status !== 'Reversed' && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem' }}>Credit</span>}
+                    {trans.CREDIT_TERMS && trans.CREDIT_TERMS.startsWith('INV-') && trans.status !== 'Reversed' && (
                       <span className="badge badge-primary" style={{ marginLeft: '0.5rem', background: 'var(--primary)', color: 'white' }}>{trans.CREDIT_TERMS.split('|')[0].trim()}</span>
                     )}
                   </td>
@@ -394,10 +394,10 @@ function TransactionsContent() {
                       >
                         <option value="">Actions...</option>
                         <option value="print">Print Receipt</option>
-                        {(!trans.IS_SETTLED && trans.PAYMENT_METHOD === 'Pending Payment' && trans.STATUS !== 'Reversed' && role !== 'employee') && (
+                        {(!trans.IS_SETTLED && trans.PAYMENT_METHOD === 'Pending Payment' && trans.status !== 'Reversed' && role !== 'employee') && (
                           <option value="settle">Settle Payment</option>
                         )}
-                        {(trans.STATUS !== 'Reversed' && role !== 'employee') && (
+                        {(trans.status !== 'Reversed' && role !== 'employee') && (
                           <option value="reverse">Reverse Transaction</option>
                         )}
                       </select>
@@ -568,17 +568,17 @@ function TransactionsContent() {
                 </div>
               </div>
 
-              {selectedTransaction.STATUS === 'Reversed' && (
+              {selectedTransaction.status === 'Reversed' && (
                 <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 'var(--radius)' }}>
                   <h4 style={{ color: '#ef4444', margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <X size={16} /> Transaction Reversed
                   </h4>
-                  <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--muted-foreground)' }}><strong>Reason:</strong> {selectedTransaction.REVERSAL_REASON}</p>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--muted-foreground)' }}><strong>Reason:</strong> {selectedTransaction.reversal_reason}</p>
                 </div>
               )}
 
               {/* Admin Actions */}
-              {role !== 'employee' && selectedTransaction.STATUS !== 'Reversed' && (
+              {role !== 'employee' && selectedTransaction.status !== 'Reversed' && (
                 <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
                   <button 
                     className="btn" 
