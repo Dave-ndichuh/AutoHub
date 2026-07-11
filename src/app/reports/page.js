@@ -101,6 +101,9 @@ export default function ReportsPage() {
     if (transData) {
       setRawTransactions(transData);
       transData.forEach(t => {
+        // Locally filter out reversed transactions to prevent DB crashes if column is missing
+        if (t.STATUS === 'Reversed') return;
+
         // Skip purely voided or 0-value returns that shouldn't inflate counts
         const grandTotal = Number(t.ADJUSTED_TOTAL) || Number(t.GRAND_TOTAL) || 0;
         if (grandTotal === 0 && (t.PAYMENT_METHOD === 'Returned' || t.PAYMENT_METHOD === 'Void')) return;

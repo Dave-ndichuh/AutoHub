@@ -99,8 +99,12 @@ export default function Dashboard() {
 
         if (currentMonthTrans) {
           currentMonthTrans.forEach(t => {
-            tCount++;
+            // Locally filter out reversed transactions to prevent DB crashes if column is missing
+            if (t.STATUS === 'Reversed') return;
+
+            // Skip purely voided or 0-value returns that shouldn't inflate count
             const saleTotal = Number(t.ADJUSTED_TOTAL) || Number(t.GRAND_TOTAL) || 0;
+            tCount++;
             tSales += saleTotal;
 
             // Trend Chart

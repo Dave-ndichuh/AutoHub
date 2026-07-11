@@ -17,12 +17,18 @@ function TransactionsContent() {
   // Filters
   const [searchId, setSearchId] = useState(searchParams.get('searchId') || '');
   const [searchDate, setSearchDate] = useState('');
+  const [filterStatus, setFilterStatus] = useState('Active'); // Active, Reversed, All
   
   // Print State
   const [printData, setPrintData] = useState(null);
   
   // Modal State
   const [selectedTransaction, setSelectedTransaction] = useState(null);
+  
+  // Reversal State
+  const [reversalModalOpen, setReversalModalOpen] = useState(false);
+  const [reversalReason, setReversalReason] = useState('');
+  const [reversing, setReversing] = useState(false);
   
   // Settlement State
   const [settleModalOpen, setSettleModalOpen] = useState(false);
@@ -91,7 +97,14 @@ function TransactionsContent() {
       matchesDate = tDate === searchDate;
     }
 
-    return matchesId && matchesDate;
+    let matchesStatus = true;
+    if (filterStatus === 'Active') {
+      matchesStatus = t.STATUS !== 'Reversed';
+    } else if (filterStatus === 'Reversed') {
+      matchesStatus = t.STATUS === 'Reversed';
+    }
+
+    return matchesId && matchesDate && matchesStatus;
   });
 
   // Pagination Logic
@@ -179,6 +192,41 @@ function TransactionsContent() {
     }
   };
 
+  const handleReverse = async (e) => {
+    e.preventDefault();
+    if (!reversalReason.trim()) return alert("A reason is required to reverse a transaction.");
+    
+    setReversing(true);
+    const { error } = await supabase.rpc('reverse_transaction', {
+      p_trans_id: selectedTransaction.TRANS_ID,
+      p_reason: reversalReason.trim(),
+      p_user: employeeId || 'Admin' // Adjust based on your user tracking
+    });
+
+    if (error) {
+      alert('Error reversing transaction: ' + error.message);
+      setReversing(false);
+      return;
+    }
+
+    // Update local state to mark as reversed
+    setTransactions(prev => prev.map(t => t.TRANS_ID === selectedTransaction.TRANS_ID ? { ...t, STATUS: 'Reversed', REVERSAL_REASON: reversalReason } : t));
+    
+    // Log action
+    await supabase.from('system_logs').insert([{
+      ACTION: 'Reversed Transaction',
+      DETAILS: `Reversed TRX-${formatTransId(selectedTransaction.TRANS_ID)}. Reason: ${reversalReason}`,
+      SEVERITY: 'warning',
+      EMPLOYEE_ID: employeeId || null
+    }]);
+
+    setReversalModalOpen(false);
+    setReversalReason('');
+    setSelectedTransaction(null);
+    setReversing(false);
+    alert('Transaction successfully reversed and stock restored.');
+  };
+
   return (
     <div className="animate-fade-in">
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', marginBottom: '2rem' }}>
@@ -208,11 +256,33 @@ function TransactionsContent() {
           />
         </div>
 
-        {(searchId || searchDate) && (
-          <button className="btn btn-secondary" onClick={() => { setSearchId(''); setSearchDate(''); }}>
+        {(searchId || searchDate || filterStatus !== 'Active') && (
+          <button className="btn btn-secondary" onClick={() => { setSearchId(''); setSearchDate(''); setFilterStatus('Active'); }}>
             Clear Filters
           </button>
         )}
+
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem', background: 'var(--card)', padding: '0.25rem', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+          {['Active', 'Reversed', 'All'].map(s => (
+            <button
+              key={s}
+              onClick={() => setFilterStatus(s)}
+              style={{
+                padding: '0.5rem 1rem',
+                borderRadius: 'calc(var(--radius) - 2px)',
+                background: filterStatus === s ? 'var(--primary)' : 'transparent',
+                color: filterStatus === s ? 'white' : 'var(--muted-foreground)',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 500,
+                fontSize: '0.875rem',
+                transition: 'all 0.2s'
+              }}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="glass table-wrapper">
@@ -241,9 +311,10 @@ function TransactionsContent() {
               currentItems.map((trans) => (
                 <tr key={trans.TRANS_ID}>
                   <td>
-                    <span className="badge badge-warning">TRX-{formatTransId(trans.TRANS_ID)}</span>
-                    {trans.IS_CREDIT && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem' }}>Credit</span>}
-                    {trans.CREDIT_TERMS && trans.CREDIT_TERMS.startsWith('INV-') && (
+                    <span className={`badge ${trans.STATUS === 'Reversed' ? 'badge-secondary' : 'badge-warning'}`} style={{ opacity: trans.STATUS === 'Reversed' ? 0.6 : 1, textDecoration: trans.STATUS === 'Reversed' ? 'line-through' : 'none' }}>TRX-{formatTransId(trans.TRANS_ID)}</span>
+                    {trans.STATUS === 'Reversed' && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem', background: '#ef4444', color: 'white' }}>Reversed</span>}
+                    {trans.IS_CREDIT && trans.STATUS !== 'Reversed' && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem' }}>Credit</span>}
+                    {trans.CREDIT_TERMS && trans.CREDIT_TERMS.startsWith('INV-') && trans.STATUS !== 'Reversed' && (
                       <span className="badge badge-primary" style={{ marginLeft: '0.5rem', background: 'var(--primary)', color: 'white' }}>{trans.CREDIT_TERMS.split('|')[0].trim()}</span>
                     )}
                   </td>
@@ -285,16 +356,51 @@ function TransactionsContent() {
                     )}
                   </td>
                   <td>
-                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                      {(!trans.IS_SETTLED && trans.PAYMENT_METHOD === 'Pending Payment') && role !== 'employee' && (
-                        <button className="btn btn-primary" style={{ padding: '0.5rem', background: '#10b981' }} title="Settle Payment" onClick={() => openSettleModal(trans)}>
-                          <Printer size={16} style={{ display: 'none' }} /> {/* Just for spacing consistency if needed, actually use Check icon */}
-                          <CheckCircle size={16} /> Settle
-                        </button>
-                      )}
-                      <button className="btn btn-secondary" style={{ padding: '0.5rem' }} title="Print Invoice" onClick={() => handlePrint(trans)}>
-                        <Printer size={16} /> Print
-                      </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                      <select 
+                        className="input" 
+                        style={{ 
+                          padding: '0.4rem 2rem 0.4rem 1rem', 
+                          fontSize: '0.85rem', 
+                          fontWeight: 500,
+                          height: 'auto', 
+                          minWidth: '130px', 
+                          background: 'var(--card)',
+                          color: 'var(--foreground)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'calc(var(--radius) - 2px)',
+                          cursor: 'pointer',
+                          appearance: 'none',
+                          backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23a1a1aa%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
+                          backgroundRepeat: 'no-repeat',
+                          backgroundPosition: 'right 0.7rem top 50%',
+                          backgroundSize: '0.65rem auto',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                          transition: 'all 0.2s ease',
+                          outline: 'none'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = 'var(--primary)'}
+                        onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          e.target.value = ""; // Reset after action
+                          if (val === 'print') handlePrint(trans);
+                          if (val === 'settle') openSettleModal(trans);
+                          if (val === 'reverse') {
+                            setSelectedTransaction(trans);
+                            setReversalModalOpen(true);
+                          }
+                        }}
+                      >
+                        <option value="">Actions...</option>
+                        <option value="print">Print Receipt</option>
+                        {(!trans.IS_SETTLED && trans.PAYMENT_METHOD === 'Pending Payment' && trans.STATUS !== 'Reversed' && role !== 'employee') && (
+                          <option value="settle">Settle Payment</option>
+                        )}
+                        {(trans.STATUS !== 'Reversed' && role !== 'employee') && (
+                          <option value="reverse">Reverse Transaction</option>
+                        )}
+                      </select>
                     </div>
                   </td>
                 </tr>
@@ -461,7 +567,65 @@ function TransactionsContent() {
                   <span>Ksh {(selectedTransaction.ADJUSTED_TOTAL || selectedTransaction.GRAND_TOTAL).toLocaleString()}</span>
                 </div>
               </div>
+
+              {selectedTransaction.STATUS === 'Reversed' && (
+                <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 'var(--radius)' }}>
+                  <h4 style={{ color: '#ef4444', margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <X size={16} /> Transaction Reversed
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--muted-foreground)' }}><strong>Reason:</strong> {selectedTransaction.REVERSAL_REASON}</p>
+                </div>
+              )}
+
+              {/* Admin Actions */}
+              {role !== 'employee' && selectedTransaction.STATUS !== 'Reversed' && (
+                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button 
+                    className="btn" 
+                    style={{ background: '#ef4444', color: 'white', padding: '0.5rem 1rem' }}
+                    onClick={() => setReversalModalOpen(true)}
+                  >
+                    Reverse Transaction
+                  </button>
+                </div>
+              )}
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+    {/* Reversal Confirmation Modal */}
+      {reversalModalOpen && createPortal(
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: '1rem' }}>
+          <div className="glass" style={{ width: '100%', maxWidth: '400px', background: 'var(--background)' }}>
+            <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
+              <h3 className="heading-2" style={{ margin: 0, color: '#ef4444' }}>Confirm Reversal</h3>
+            </div>
+            <form onSubmit={handleReverse} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <p style={{ margin: 0, color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>
+                Are you sure you want to reverse this transaction? This action will permanently restore the stock to inventory and void the transaction record.
+              </p>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem' }}>Reason for Reversal *</label>
+                <textarea 
+                  className="input" 
+                  rows="3" 
+                  placeholder="e.g. Customer returned items, entered by mistake..."
+                  value={reversalReason}
+                  onChange={e => setReversalReason(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => { setReversalModalOpen(false); setReversalReason(''); }}>Cancel</button>
+                <button type="submit" className="btn" style={{ flex: 1, background: '#ef4444', color: 'white' }} disabled={reversing}>
+                  {reversing ? 'Processing...' : 'Confirm Reversal'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>,
         document.body
