@@ -36,6 +36,7 @@ function TransactionsContent() {
   const [paymentMode, setPaymentMode] = useState('Cash');
   const [cashAmount, setCashAmount] = useState('');
   const [mpesaAmount, setMpesaAmount] = useState('');
+  const [mpesaReceipt, setMpesaReceipt] = useState('');
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -143,6 +144,7 @@ function TransactionsContent() {
     setPaymentMode('Cash');
     setCashAmount(trans.ADJUSTED_TOTAL || trans.GRAND_TOTAL);
     setMpesaAmount(0);
+    setMpesaReceipt('');
     setSettleModalOpen(true);
   };
 
@@ -174,7 +176,8 @@ function TransactionsContent() {
       MPESA_AMOUNT: finalMpesa,
       HYBRID_PAYMENT: isHybrid,
       IS_SETTLED: true,
-      CASH_TENDERED: totalDue
+      CASH_TENDERED: totalDue,
+      RECEIPT_NUMBER: (paymentMode === 'M-Pesa' || (paymentMode === 'Hybrid' && finalMpesa > 0)) ? mpesaReceipt : null
     }).eq('TRANS_ID', transactionToSettle.TRANS_ID);
 
     if (error) {
@@ -185,7 +188,7 @@ function TransactionsContent() {
       // Quickly update local state to avoid full refetch
       setTransactions(prev => prev.map(t => {
         if (t.TRANS_ID === transactionToSettle.TRANS_ID) {
-          return { ...t, PAYMENT_METHOD: paymentMode, CASH_AMOUNT: finalCash, MPESA_AMOUNT: finalMpesa, HYBRID_PAYMENT: isHybrid, IS_SETTLED: true, CASH_TENDERED: totalDue };
+          return { ...t, PAYMENT_METHOD: paymentMode, CASH_AMOUNT: finalCash, MPESA_AMOUNT: finalMpesa, HYBRID_PAYMENT: isHybrid, IS_SETTLED: true, CASH_TENDERED: totalDue, RECEIPT_NUMBER: (paymentMode === 'M-Pesa' || (paymentMode === 'Hybrid' && finalMpesa > 0)) ? mpesaReceipt : null };
         }
         return t;
       }));
@@ -313,8 +316,8 @@ function TransactionsContent() {
                   <td>
                     <span className={`badge ${trans.status === 'Reversed' ? 'badge-secondary' : 'badge-warning'}`} style={{ opacity: trans.status === 'Reversed' ? 0.6 : 1, textDecoration: trans.status === 'Reversed' ? 'line-through' : 'none' }}>TRX-{formatTransId(trans.TRANS_ID)}</span>
                     {trans.status === 'Reversed' && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem', background: '#ef4444', color: 'white' }}>Reversed</span>}
-                    {trans.IS_CREDIT && trans.status !== 'Reversed' && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem' }}>Credit</span>}
-                    {trans.CREDIT_TERMS && trans.CREDIT_TERMS.startsWith('INV-') && trans.status !== 'Reversed' && (
+                    {trans.IS_CREDIT && trans.status !== 'Reversed' && !trans.IS_SETTLED && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem' }}>Credit</span>}
+                    {trans.CREDIT_TERMS && trans.CREDIT_TERMS.startsWith('INV-') && trans.status !== 'Reversed' && !trans.IS_SETTLED && (
                       <span className="badge badge-primary" style={{ marginLeft: '0.5rem', background: 'var(--primary)', color: 'white' }}>{trans.CREDIT_TERMS.split('|')[0].trim()}</span>
                     )}
                   </td>
@@ -475,16 +478,25 @@ function TransactionsContent() {
                 </div>
               </div>
 
+              {paymentMode === 'M-Pesa' && (
+                <input type="text" className="input" placeholder="M-Pesa Transaction Code" style={{ border: '1px solid #25D366' }} value={mpesaReceipt} onChange={(e) => setMpesaReceipt(e.target.value)} required />
+              )}
+
               {paymentMode === 'Hybrid' && (
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Cash Amount</label>
-                    <input type="number" className="input" min="0" value={cashAmount} onChange={e => setCashAmount(e.target.value)} required />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Cash Amount</label>
+                      <input type="number" className="input" min="0" value={cashAmount} onChange={e => setCashAmount(e.target.value)} required />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>M-Pesa Amount</label>
+                      <input type="number" className="input" min="0" value={mpesaAmount} onChange={e => setMpesaAmount(e.target.value)} required />
+                    </div>
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>M-Pesa Amount</label>
-                    <input type="number" className="input" min="0" value={mpesaAmount} onChange={e => setMpesaAmount(e.target.value)} required />
-                  </div>
+                  {Number(mpesaAmount) > 0 && (
+                    <input type="text" className="input" placeholder="M-Pesa Transaction Code" style={{ border: '1px solid #25D366' }} value={mpesaReceipt} onChange={(e) => setMpesaReceipt(e.target.value)} required />
+                  )}
                 </div>
               )}
 
