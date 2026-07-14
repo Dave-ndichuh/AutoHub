@@ -23,6 +23,11 @@ function ProductsContent() {
 
   const [searchTerm, setSearchTerm] = useState('');
   
+  // Sorting and Pagination State
+  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -102,6 +107,46 @@ function ProductsContent() {
     return matchesSearch;
   });
 
+  // Handle Sorting
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    let valA = a[sortConfig.key];
+    let valB = b[sortConfig.key];
+
+    // Handle numeric values
+    if (['price', 'onHand'].includes(sortConfig.key)) {
+      valA = Number(valA) || 0;
+      valB = Number(valB) || 0;
+    } else {
+      valA = String(valA || '').toLowerCase();
+      valB = String(valB || '').toLowerCase();
+    }
+
+    if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  // Handle Pagination
+  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage) || 1;
+  
+  // Ensure current page is valid when filtering changes
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(totalPages);
+  }
+
+  const paginatedProducts = sortedProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   return (
     <>
       <div className="animate-fade-in">
@@ -135,13 +180,13 @@ function ProductsContent() {
         <table className="table">
           <thead>
             <tr>
-              <th>Code</th>
-              <th>Name</th>
-              <th>Category</th>
-              <th>Stock</th>
-              <th>Status</th>
-              <th>Price (Ksh)</th>
-              <th style={{ textAlign: 'right' }}>Actions</th>
+              <th onClick={() => handleSort('productCode')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>Code {sortConfig.key === 'productCode' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+              <th onClick={() => handleSort('name')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>Name {sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+              <th onClick={() => handleSort('categoryName')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>Category {sortConfig.key === 'categoryName' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+              <th onClick={() => handleSort('onHand')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>Stock {sortConfig.key === 'onHand' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+              <th onClick={() => handleSort('status')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>Status {sortConfig.key === 'status' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+              <th onClick={() => handleSort('price')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>Price (Ksh) {sortConfig.key === 'price' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+              <th style={{ textAlign: 'right', minWidth: '120px' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -149,12 +194,12 @@ function ProductsContent() {
               <tr>
                 <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>Loading products...</td>
               </tr>
-            ) : filteredProducts.length === 0 ? (
+            ) : paginatedProducts.length === 0 ? (
               <tr>
                 <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>No products found.</td>
               </tr>
             ) : (
-              filteredProducts.map((product) => (
+              paginatedProducts.map((product) => (
                 <tr key={product.id}>
                   <td><span className="badge badge-warning">{product.productCode}</span></td>
                   <td style={{ fontWeight: 500 }}>
@@ -210,6 +255,31 @@ function ProductsContent() {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            style={{ padding: '0.5rem 1rem' }}
+          >
+            Previous
+          </button>
+          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            style={{ padding: '0.5rem 1rem' }}
+          >
+            Next
+          </button>
+        </div>
+      )}
       </div>
 
       {/* Modal Overlay */}
