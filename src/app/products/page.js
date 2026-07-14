@@ -211,7 +211,7 @@ function ProductsContent() {
                   <td><span className="badge badge-warning">{product.productCode}</span></td>
                   <td style={{ fontWeight: 500 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                      {product.imageUrl ? (
+                      {product.imageUrl && (product.imageUrl.startsWith('http') || product.imageUrl.startsWith('/')) ? (
                         <Image src={product.imageUrl} alt={product.name} width={40} height={40} className="image-hover-zoom" style={{ borderRadius: '8px', objectFit: 'cover' }} />
                       ) : (
                         <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
