@@ -5,11 +5,14 @@ import { Plus, Edit, Trash2, Search, X, Image as ImageIcon } from 'lucide-react'
 import { UploadButton } from '@/utils/uploadthing';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useProducts } from '@/hooks/useProducts';
+import BranchSelect from '@/components/forms/BranchSelect';
+import { useAuth } from '@/components/AuthGuard';
 
 function ProductsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const filterParam = searchParams.get('filter');
+  const { branchId } = useAuth();
 
   const {
     products,
@@ -33,7 +36,7 @@ function ProductsContent() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     PRODUCT_CODE: '', NAME: '', DESCRIPTION: '', ON_HAND: '', PRICE: '', CATEGORY_ID: '', SUPPLIER_ID: '',
-    STATUS: 'active', UOM: 'pcs', REORDER_THRESHOLD: 5, COST_PRICE: '', BARCODE: '', IMAGE_URL: '', TAX_RATE: 16.0, BRAND: '', MODEL: '', WEIGHT: ''
+    STATUS: 'active', UOM: 'pcs', REORDER_THRESHOLD: 5, COST_PRICE: '', BARCODE: '', IMAGE_URL: '', TAX_RATE: 16.0, BRAND: '', MODEL: '', WEIGHT: '', BRANCH_ID: ''
   });
 
   const handleDelete = async (id) => {
@@ -69,13 +72,14 @@ function ProductsContent() {
         TAX_RATE: product.taxRate,
         BRAND: product.brand,
         MODEL: product.model,
-        WEIGHT: product.weight
+        WEIGHT: product.weight,
+        BRANCH_ID: product.branchId || ''
       });
     } else {
       setEditingId(null);
       setFormData({ 
         PRODUCT_CODE: '', NAME: '', DESCRIPTION: '', ON_HAND: '', PRICE: '', CATEGORY_ID: '', SUPPLIER_ID: '',
-        STATUS: 'active', UOM: 'pcs', REORDER_THRESHOLD: 5, COST_PRICE: '', BARCODE: '', IMAGE_URL: '', TAX_RATE: 16.0, BRAND: '', MODEL: '', WEIGHT: ''
+        STATUS: 'active', UOM: 'pcs', REORDER_THRESHOLD: 5, COST_PRICE: '', BARCODE: '', IMAGE_URL: '', TAX_RATE: 16.0, BRAND: '', MODEL: '', WEIGHT: '', BRANCH_ID: ''
       });
     }
     setShowModal(true);
@@ -83,6 +87,10 @@ function ProductsContent() {
 
   const saveProduct = async (e) => {
     e.preventDefault();
+    if (!formData.BRANCH_ID || formData.BRANCH_ID === 'ALL') {
+      alert("Please select a specific branch");
+      return;
+    }
     const { success, error: saveError } = await saveProductHook(editingId, formData);
     
     if (!success) {
@@ -344,6 +352,16 @@ function ProductsContent() {
                   <div>
                     <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Description</label>
                     <textarea className="input" placeholder="Product details..." rows={3} value={formData.DESCRIPTION} onChange={e => setFormData({...formData, DESCRIPTION: e.target.value})} style={{ resize: 'vertical' }} />
+                  </div>
+
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <BranchSelect 
+                      value={formData.BRANCH_ID}
+                      onChange={(val) => setFormData({...formData, BRANCH_ID: val})}
+                      disabled={!!editingId}
+                      topbarBranch={branchId}
+                      required={true}
+                    />
                   </div>
                 </div>
 

@@ -1,18 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Loader2, ArrowLeft, User, KeyRound, Delete } from 'lucide-react';
 import Link from 'next/link';
 import InstallPrompt from '@/components/InstallPrompt';
 import { logAction } from '@/lib/logger';
+import { useBranch } from '@/context/BranchContext';
 
 export default function EmployeeLoginPage() {
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const branchParam = searchParams.get('branch');
+  const { setBranch } = useBranch();
 
   const handleKeypadPress = (num) => {
     if (pin.length < 6) {
@@ -62,6 +66,10 @@ export default function EmployeeLoginPage() {
         employeeId: data.employeeId,
         userEmail: data.email
       });
+
+      if (branchParam) {
+        setBranch(branchParam);
+      }
 
       router.push('/pos');
     } catch (err) {
@@ -312,7 +320,7 @@ export default function EmployeeLoginPage() {
             <img src="/logo.png" alt="Jobea Auto Logo" style={{ height: '76px', objectFit: 'contain', filter: 'drop-shadow(0 6px 16px rgba(16, 185, 129, 0.2))', opacity: 0.95, transition: 'all 0.3s ease', transform: 'translateZ(0)' }} />
           </div>
           <h1 style={{ fontSize: '3.5rem', fontWeight: 800, lineHeight: 1.1, marginBottom: '1rem', letterSpacing: '-0.02em' }}>
-            Staff Access<br/>Terminal
+            Staff Access<br/>Terminal {branchParam ? <span style={{ fontSize: '1.5rem', display: 'block', color: '#10b981' }}>Jobea {branchParam === 'local' ? 'Local' : 'Ex-Japan'}</span> : ''}
           </h1>
           <p style={{ fontSize: '1.25rem', color: '#94a3b8', maxWidth: '400px', lineHeight: 1.6, margin: '0 auto' }}>
             Tap your PIN to access the POS and Service Center.
@@ -323,7 +331,7 @@ export default function EmployeeLoginPage() {
       {/* Right Form Panel */}
       <div className="form-panel animate-fade-in">
         
-        <Link href="/login" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--muted-foreground)', textDecoration: 'none', marginBottom: '3rem', fontSize: '0.875rem', fontWeight: 500, width: 'fit-content' }}>
+        <Link href={branchParam ? `/login?branch=${branchParam}` : '/login'} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--muted-foreground)', textDecoration: 'none', marginBottom: '3rem', fontSize: '0.875rem', fontWeight: 500, width: 'fit-content' }}>
           <ArrowLeft size={16} /> Back to Admin
         </Link>
 

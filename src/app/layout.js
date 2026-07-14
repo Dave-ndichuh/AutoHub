@@ -2,6 +2,7 @@ import './globals.css';
 import Sidebar from '@/components/Sidebar';
 import Topbar from '@/components/Topbar';
 import { ThemeProvider } from '@/context/ThemeContext';
+import { BranchProvider } from '@/context/BranchContext';
 import AuthProvider from '@/components/AuthGuard';
 
 export const metadata = {
@@ -22,17 +23,19 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <ThemeProvider>
-          <AuthProvider>
-            <div className="app-layout">
-              <Sidebar />
-              <div className="main-content">
-                <Topbar />
-                <main className="page-content">
-                  {children}
-                </main>
+          <BranchProvider>
+            <AuthProvider>
+              <div className="app-layout">
+                <Sidebar />
+                <div className="main-content">
+                  <Topbar />
+                  <main className="page-content">
+                    {children}
+                  </main>
+                </div>
               </div>
-            </div>
-          </AuthProvider>
+            </AuthProvider>
+          </BranchProvider>
         </ThemeProvider>
       </body>
     </html>

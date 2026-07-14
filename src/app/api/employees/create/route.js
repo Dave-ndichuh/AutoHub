@@ -11,6 +11,10 @@ export async function POST(request) {
     const body = await request.json();
     const { email, pin, firstName, lastName, phone, gender, jobId, locationId, branchId } = body;
 
+    if (!branchId || branchId === 'ALL') {
+      return NextResponse.json({ error: 'A specific Branch ID is required' }, { status: 400 });
+    }
+
     // 1. Generate Username
     const rawUsername = `${firstName.charAt(0)}${lastName}`.toLowerCase().replace(/[^a-z0-9]/g, '');
     let username = rawUsername;
@@ -44,7 +48,7 @@ export async function POST(request) {
       LOCATION_ID: locationId,
       USERNAME: username,
       PIN: pin, // Stored for fast lookup/recovery if needed by admin
-      BRANCH_ID: branchId || 1
+      BRANCH_ID: branchId
     };
 
     const { error: dbError } = await supabaseAdmin.from('employee').insert([payload]);

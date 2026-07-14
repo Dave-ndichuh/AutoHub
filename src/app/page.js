@@ -241,7 +241,7 @@ export default function LandingPage() {
               </div>
               <div style={{ textAlign: 'center' }}>
                 <h3 style={{ color: '#ffffff', fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.2rem' }}>Jobea Local</h3>
-                <p style={{ color: '#d8b4fe', fontSize: '0.75rem', fontWeight: 500 }}>Brand New Parts</p>
+                <p style={{ color: '#d8b4fe', fontSize: '0.75rem', fontWeight: 500 }}>Local Inventory & Sales</p>
               </div>
             </button>
 
@@ -274,8 +274,8 @@ export default function LandingPage() {
                 <Recycle size={32} color="#ffffff" strokeWidth={2.5} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
               </div>
               <div style={{ textAlign: 'center' }}>
-                <h3 style={{ color: '#ffffff', fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.2rem' }}>Ex-Japan</h3>
-                <p style={{ color: '#d8b4fe', fontSize: '0.75rem', fontWeight: 500 }}>Quality Used Parts</p>
+                <h3 style={{ color: '#ffffff', fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.2rem' }}>Jobea Ex-Japan</h3>
+                <p style={{ color: '#d8b4fe', fontSize: '0.75rem', fontWeight: 500 }}>Imported Parts Terminal</p>
               </div>
             </button>
 

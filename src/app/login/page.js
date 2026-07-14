@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Lock, Mail, Loader2, Sparkles, UserCheck, ArrowRight, Settings, Wrench, Battery, Gauge, Zap, Car, Bike, Truck } from 'lucide-react';
 import Link from 'next/link';
 import InstallPrompt from '@/components/InstallPrompt';
 import { logAction } from '@/lib/logger';
+import { useBranch } from '@/context/BranchContext';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -14,6 +15,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const branchParam = searchParams.get('branch');
+  const { setBranch } = useBranch();
 
   const handleAdminLogin = async (e) => {
     e.preventDefault();
@@ -33,7 +37,11 @@ export default function LoginPage() {
         userEmail: email
       });
 
-      router.push('/');
+      if (branchParam) {
+        setBranch(branchParam);
+      }
+
+      router.push('/dashboard');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -93,7 +101,9 @@ export default function LoginPage() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', transition: 'all 0.3s ease' }}>
             <img src="/logo.png" alt="Jobea Auto Logo" style={{ height: '72px', borderRadius: '12px', objectFit: 'contain', filter: 'drop-shadow(0 4px 12px rgba(16, 185, 129, 0.15))', opacity: 0.95, transition: 'all 0.3s ease' }} />
           </div>
-          <p className="text-muted" style={{ fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)' }}>Admin Portal</p>
+          <p className="text-muted" style={{ fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)' }}>
+            Admin Portal {branchParam ? `- Jobea ${branchParam === 'local' ? 'Local' : 'Ex-Japan'}` : ''}
+          </p>
         </div>
 
         {error && (
@@ -156,7 +166,7 @@ export default function LoginPage() {
             type="button" 
             className="btn btn-secondary" 
             style={{ width: '100%', height: '48px', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}
-            onClick={() => router.push('/employee-login')}
+            onClick={() => router.push(branchParam ? `/employee-login?branch=${branchParam}` : '/employee-login')}
           >
             <UserCheck size={18} /> Employee Portal Access <ArrowRight size={16} />
           </button>

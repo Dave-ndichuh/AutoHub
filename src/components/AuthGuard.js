@@ -52,7 +52,16 @@ export default function AuthProvider({ children }) {
       
       // Default to 'ALL' for admins, or the employee's specific branch for staff
       if (!branchId) {
-        setBranchId(isEmployee ? (empData?.BRANCH_ID || 1) : 'ALL');
+        let initialBranchId = 'ALL';
+        const storedBranch = typeof window !== 'undefined' ? localStorage.getItem('jobea_branch') : null;
+        
+        if (isEmployee) {
+          initialBranchId = empData?.BRANCH_ID || (storedBranch === 'ex-japan' ? 2 : 1);
+        } else if (storedBranch) {
+          initialBranchId = storedBranch === 'local' ? 1 : (storedBranch === 'ex-japan' ? 2 : 'ALL');
+        }
+        
+        setBranchId(initialBranchId);
       }
 
       if (isEmployee) {
@@ -75,7 +84,7 @@ export default function AuthProvider({ children }) {
         setRole(null);
         setEmployeeId(null);
         setBranchId(null);
-        router.push('/login');
+        router.push('/');
       }
     });
 

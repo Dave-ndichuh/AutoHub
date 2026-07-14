@@ -5,12 +5,13 @@ import { User, Palette, Menu, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/context/ThemeContext';
-
+import { useBranch } from '@/context/BranchContext';
 import { useAuth } from '@/components/AuthGuard';
 
 export default function Topbar() {
   const pathname = usePathname();
   const { theme, changeTheme } = useTheme();
+  const { currentBranch, setBranch } = useBranch();
   const { user, role, branchId, setBranchId } = useAuth();
   const userEmail = user?.email || '';
 
@@ -61,16 +62,51 @@ export default function Topbar() {
         {/* Branch Switcher for Admins */}
         {role === 'admin' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--card)', padding: '0.25rem 0.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Branch:</span>
+            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Data Branch:</span>
             <select 
               value={branchId} 
-              onChange={(e) => setBranchId(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+              onChange={(e) => {
+                const val = e.target.value;
+                setBranchId(val === 'ALL' ? 'ALL' : Number(val));
+                if (val === '1') setBranch('local');
+                else if (val === '2') setBranch('ex-japan');
+                else setBranch(null);
+              }}
               style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
             >
-              <option value="ALL">All Branches</option>
-              <option value="1">Jobea Local</option>
-              <option value="2">Jobea Ex-Japan</option>
+              <option value="ALL" style={{ background: 'var(--card)', color: 'var(--foreground)' }}>All Branches</option>
+              <option value="1" style={{ background: 'var(--card)', color: 'var(--foreground)' }}>Jobea Local</option>
+              <option value="2" style={{ background: 'var(--card)', color: 'var(--foreground)' }}>Jobea Ex-Japan</option>
             </select>
+          </div>
+        )}
+
+        {/* Branch Persistence Indicator Badge */}
+        {currentBranch && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            padding: '0.25rem 0.75rem',
+            borderRadius: '9999px',
+            background: 'rgba(167, 139, 250, 0.1)',
+            border: '1px solid rgba(167, 139, 250, 0.3)',
+            boxShadow: '0 0 10px rgba(167, 139, 250, 0.2)',
+          }}>
+            <div style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: '#a78bfa',
+              boxShadow: '0 0 8px #a78bfa',
+            }} />
+            <span style={{
+              fontSize: '0.875rem',
+              fontWeight: 600,
+              color: '#d8b4fe',
+            }}>
+              Jobea {currentBranch === 'local' ? 'Local' : 'Ex-Japan'}
+            </span>
           </div>
         )}
 

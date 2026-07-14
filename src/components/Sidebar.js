@@ -38,7 +38,7 @@ export default function Sidebar() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     document.body.classList.remove('sidebar-open');
-    router.push('/login');
+    router.push('/');
   };
 
   const closeSidebar = () => {
@@ -66,7 +66,7 @@ export default function Sidebar() {
   }, []);
 
   let navItems = [
-    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Point of Sale', path: '/pos', icon: ShoppingCart },
     { name: 'Products', path: '/products', icon: Package },
     { name: 'Invoices', path: '/invoices', icon: FileSpreadsheet },

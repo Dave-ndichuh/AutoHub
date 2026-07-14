@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit, Trash2, Search, X } from 'lucide-react';
 import { useAuth } from '@/components/AuthGuard';
+import BranchSelect from '@/components/forms/BranchSelect';
 
 export default function EmployeesPage() {
   const { branchId } = useAuth();
@@ -16,7 +17,7 @@ export default function EmployeesPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
-    FIRST_NAME: '', LAST_NAME: '', GENDER: 'Male', EMAIL: '', PHONE_NUMBER: '', JOB_TITLE: '', LOCATION_CITY: '', PIN: ''
+    FIRST_NAME: '', LAST_NAME: '', GENDER: 'Male', EMAIL: '', PHONE_NUMBER: '', JOB_TITLE: '', LOCATION_CITY: '', PIN: '', BRANCH_ID: ''
   });
 
   const fetchEmployees = async () => {
@@ -63,17 +64,22 @@ export default function EmployeesPage() {
         PHONE_NUMBER: employee.PHONE_NUMBER || '',
         JOB_TITLE: employee.job?.JOB_TITLE || '',
         LOCATION_CITY: employee.location?.CITY || '',
-        PIN: employee.PIN || ''
+        PIN: employee.PIN || '',
+        BRANCH_ID: employee.BRANCH_ID || ''
       });
     } else {
       setEditingId(null);
-      setFormData({ FIRST_NAME: '', LAST_NAME: '', GENDER: 'Male', EMAIL: '', PHONE_NUMBER: '', JOB_TITLE: '', LOCATION_CITY: '', PIN: '' });
+      setFormData({ FIRST_NAME: '', LAST_NAME: '', GENDER: 'Male', EMAIL: '', PHONE_NUMBER: '', JOB_TITLE: '', LOCATION_CITY: '', PIN: '', BRANCH_ID: '' });
     }
     setShowModal(true);
   };
 
   const saveEmployee = async (e) => {
     e.preventDefault();
+    if (!formData.BRANCH_ID || formData.BRANCH_ID === 'ALL') {
+      alert("Please select a specific branch");
+      return;
+    }
     setLoading(true);
 
     // 1. Resolve or Create Job ID
@@ -108,7 +114,7 @@ export default function EmployeesPage() {
       PHONE_NUMBER: formData.PHONE_NUMBER,
       JOB_ID: jobId,
       LOCATION_ID: locId,
-      BRANCH_ID: branchId === 'ALL' ? 1 : branchId
+      BRANCH_ID: formData.BRANCH_ID
     };
 
     let errorMsg = null;
@@ -131,7 +137,7 @@ export default function EmployeesPage() {
           jobId: jobId,
           locationId: locId,
           pin: formData.PIN,
-          branchId: branchId === 'ALL' ? 1 : branchId
+          branchId: formData.BRANCH_ID
         })
       });
       const data = await res.json();
@@ -278,8 +284,22 @@ export default function EmployeesPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                  <input type="text" className="input" placeholder="Location City (e.g. Nairobi)" value={formData.LOCATION_CITY} onChange={e => setFormData({...formData, LOCATION_CITY: e.target.value})} required />
-                  <input type="text" className="input" placeholder={editingId ? "PIN cannot be edited here" : "Set 4-to-6 Digit PIN"} value={formData.PIN} onChange={e => setFormData({...formData, PIN: e.target.value})} required={!editingId} minLength="4" maxLength="6" pattern="\d+" title={editingId ? "Cannot change PIN after creation" : "Numeric PIN only"} disabled={!!editingId} />
+                  <div style={{ flex: 1 }}>
+                    <input type="text" className="input" placeholder="Location City (e.g. Nairobi)" value={formData.LOCATION_CITY} onChange={e => setFormData({...formData, LOCATION_CITY: e.target.value})} required />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <input type="text" className="input" placeholder={editingId ? "PIN cannot be edited here" : "Set 4-to-6 Digit PIN"} value={formData.PIN} onChange={e => setFormData({...formData, PIN: e.target.value})} required={!editingId} minLength="4" maxLength="6" pattern="\d+" title={editingId ? "Cannot change PIN after creation" : "Numeric PIN only"} disabled={!!editingId} />
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '0.5rem' }}>
+                  <BranchSelect 
+                    value={formData.BRANCH_ID}
+                    onChange={(val) => setFormData({...formData, BRANCH_ID: val})}
+                    disabled={!!editingId}
+                    topbarBranch={branchId}
+                    required={true}
+                  />
                 </div>
               </div>
 

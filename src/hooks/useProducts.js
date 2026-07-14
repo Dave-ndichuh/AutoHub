@@ -39,9 +39,10 @@ export function useProducts() {
 
   const saveProduct = async (id, formData) => {
     try {
-      // Inject branchId if we are creating a product and not in 'ALL' view
-      // If we are in 'ALL' view, the Admin should select it, but for simplicity default to branch 1
-      const payload = { ...formData, BRANCH_ID: branchId === 'ALL' ? 1 : branchId };
+      if (!formData.BRANCH_ID || formData.BRANCH_ID === 'ALL') {
+        throw new Error("BRANCH_ID is required and must be a specific branch");
+      }
+      const payload = { ...formData };
       await ProductService.saveProduct(id, payload);
       
       await logAction({
