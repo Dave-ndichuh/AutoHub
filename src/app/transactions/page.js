@@ -42,7 +42,7 @@ function TransactionsContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
   
-  const { role, employeeId } = useAuth();
+  const { role, employeeId, branchId } = useAuth();
 
   // Auto-trigger print when printData is fully rendered
   useEffect(() => {
@@ -68,6 +68,10 @@ function TransactionsContent() {
 
       if (role === 'employee' && employeeId) {
         query = query.eq('EMPLOYEE_ID', employeeId);
+      }
+      
+      if (branchId && branchId !== 'ALL') {
+        query = query.eq('BRANCH_ID', branchId);
       }
       
       const { data, error } = await query;
@@ -479,7 +483,10 @@ function TransactionsContent() {
               </div>
 
               {paymentMode === 'M-Pesa' && (
-                <input type="text" className="input" placeholder="M-Pesa Transaction Code" style={{ border: '1px solid #25D366' }} value={mpesaReceipt} onChange={(e) => setMpesaReceipt(e.target.value)} required />
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>M-Pesa Transaction Code</label>
+                  <input type="text" className="input" placeholder="e.g. QWE123RTYA" style={{ border: '2px solid #25D366' }} value={mpesaReceipt} onChange={(e) => setMpesaReceipt(e.target.value.toUpperCase())} minLength={10} maxLength={10} pattern="[A-Z0-9]{10}" title="M-Pesa code must be exactly 10 characters (letters and numbers)" required />
+                </div>
               )}
 
               {paymentMode === 'Hybrid' && (
@@ -495,7 +502,10 @@ function TransactionsContent() {
                     </div>
                   </div>
                   {Number(mpesaAmount) > 0 && (
-                    <input type="text" className="input" placeholder="M-Pesa Transaction Code" style={{ border: '1px solid #25D366' }} value={mpesaReceipt} onChange={(e) => setMpesaReceipt(e.target.value)} required />
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>M-Pesa Transaction Code</label>
+                      <input type="text" className="input" placeholder="e.g. QWE123RTYA" style={{ border: '2px solid #25D366' }} value={mpesaReceipt} onChange={(e) => setMpesaReceipt(e.target.value.toUpperCase())} minLength={10} maxLength={10} pattern="[A-Z0-9]{10}" title="M-Pesa code must be exactly 10 characters (letters and numbers)" required />
+                    </div>
                   )}
                 </div>
               )}

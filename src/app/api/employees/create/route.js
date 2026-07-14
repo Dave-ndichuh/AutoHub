@@ -9,7 +9,7 @@ const supabaseAdmin = createClient(
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { email, pin, firstName, lastName, phone, gender, jobId, locationId } = body;
+    const { email, pin, firstName, lastName, phone, gender, jobId, locationId, branchId } = body;
 
     // 1. Generate Username
     const rawUsername = `${firstName.charAt(0)}${lastName}`.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -43,7 +43,8 @@ export async function POST(request) {
       JOB_ID: jobId,
       LOCATION_ID: locationId,
       USERNAME: username,
-      PIN: pin // Stored for fast lookup/recovery if needed by admin
+      PIN: pin, // Stored for fast lookup/recovery if needed by admin
+      BRANCH_ID: branchId || 1
     };
 
     const { error: dbError } = await supabaseAdmin.from('employee').insert([payload]);

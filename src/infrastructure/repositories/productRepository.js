@@ -6,8 +6,8 @@ import { supabase } from '@/lib/supabase';
  * Returns raw data directly from the DB.
  */
 export const productRepository = {
-  async getAllProducts() {
-    const { data, error } = await supabase
+  async getAllProducts(branchId = 'ALL') {
+    let query = supabase
       .from('product')
       .select(`
         *,
@@ -15,6 +15,12 @@ export const productRepository = {
         supplier(COMPANY_NAME)
       `)
       .order('PRODUCT_ID', { ascending: false });
+      
+    if (branchId !== 'ALL') {
+      query = query.eq('BRANCH_ID', branchId);
+    }
+
+    const { data, error } = await query;
     
     if (error) throw new Error(error.message);
     return data || [];

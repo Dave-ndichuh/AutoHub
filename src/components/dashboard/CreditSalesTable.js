@@ -7,12 +7,14 @@ import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { logAction } from '@/lib/logger';
 import { formatTransId } from '@/utils/formatters';
+import { useAuth } from '@/components/AuthGuard';
 
 export default function CreditSalesTable() {
   const router = useRouter();
   const [creditSales, setCreditSales] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const { branchId } = useAuth();
   // Settlement Modal State
   const [settlingSale, setSettlingSale] = useState(null);
   const [settlementMode, setSettlementMode] = useState('Cash');
@@ -22,7 +24,7 @@ export default function CreditSalesTable() {
 
   const fetchCreditSales = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    let query = supabase
       .from('transaction')
       .select(`
         TRANS_ID,
@@ -37,6 +39,12 @@ export default function CreditSalesTable() {
       .eq('IS_CREDIT', true)
       .eq('IS_SETTLED', false)
       .order('CREDIT_DUE_DATE', { ascending: true });
+
+    if (branchId && branchId !== 'ALL') {
+      query = query.eq('BRANCH_ID', branchId);
+    }
+
+    const { data, error } = await query;
 
     if (!error && data) {
       setCreditSales(data);

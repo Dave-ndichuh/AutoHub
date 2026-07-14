@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ProductService } from '@/core/services/ProductService';
 import { logAction } from '@/lib/logger';
+import { useAuth } from '@/components/AuthGuard';
 
 /**
  * useProducts hook
@@ -8,6 +9,7 @@ import { logAction } from '@/lib/logger';
  * Handles React state, loading states, error boundaries, and orchestration.
  */
 export function useProducts() {
+  const { branchId } = useAuth();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
@@ -15,10 +17,11 @@ export function useProducts() {
   const [error, setError] = useState(null);
 
   const fetchProducts = useCallback(async () => {
+    if (!branchId) return; // Wait for branchId to be loaded
     setLoading(true);
     setError(null);
     try {
-      const data = await ProductService.fetchAllData();
+      const data = await ProductService.fetchAllData(branchId);
       setProducts(data.products);
       setCategories(data.categories);
       setSuppliers(data.suppliers);
@@ -28,7 +31,7 @@ export function useProducts() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [branchId]);
 
   useEffect(() => {
     fetchProducts();
@@ -36,11 +39,14 @@ export function useProducts() {
 
   const saveProduct = async (id, formData) => {
     try {
-      await ProductService.saveProduct(id, formData);
+      // Inject branchId if we are creating a product and not in 'ALL' view
+      // If we are in 'ALL' view, the Admin should select it, but for simplicity default to branch 1
+      const payload = { ...formData, BRANCH_ID: branchId === 'ALL' ? 1 : branchId };
+      await ProductService.saveProduct(id, payload);
       
       await logAction({
         action: id ? 'Updated Product' : 'Added Product',
-        details: `${id ? 'Updated' : 'Added'} product: ${formData.NAME} (Code: ${formData.PRODUCT_CODE})`,
+        details: `${id ? 'Updated' : 'Added'} product: ${payload.NAME} (Code: ${payload.PRODUCT_CODE})`,
         severity: 'info'
       });
       

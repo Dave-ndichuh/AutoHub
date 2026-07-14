@@ -11,7 +11,7 @@ import { useAuth } from '@/components/AuthGuard';
 export default function Topbar() {
   const pathname = usePathname();
   const { theme, changeTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, role, branchId, setBranchId } = useAuth();
   const userEmail = user?.email || '';
 
   // Hide topbar on login pages
@@ -57,6 +57,22 @@ export default function Topbar() {
         >
           <RefreshCw size={16} />
         </button>
+
+        {/* Branch Switcher for Admins */}
+        {role === 'admin' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'var(--card)', padding: '0.25rem 0.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Branch:</span>
+            <select 
+              value={branchId} 
+              onChange={(e) => setBranchId(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+              style={{ background: 'transparent', border: 'none', color: 'var(--foreground)', fontSize: '0.875rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+            >
+              <option value="ALL">All Branches</option>
+              <option value="1">Jobea Local</option>
+              <option value="2">Jobea Ex-Japan</option>
+            </select>
+          </div>
+        )}
 
         {/* Theme Switcher */}
         <div className="theme-switcher-container">

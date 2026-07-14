@@ -8,9 +8,11 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import MetricCard from '@/components/dashboard/MetricCard';
 import InsightCard from '@/components/dashboard/InsightCard';
 import CreditSalesTable from '@/components/dashboard/CreditSalesTable';
+import { useAuth } from '@/components/AuthGuard';
 
 export default function Dashboard() {
   const router = useRouter();
+  const { branchId } = useAuth();
   const [loading, setLoading] = useState(true);
 
   // Metrics
@@ -47,7 +49,11 @@ export default function Dashboard() {
       
       try {
         // Fetch all products for stock value & low stock
-        const { data: products } = await supabase.from('product').select('PRODUCT_ID, NAME, ON_HAND, COST_PRICE');
+        let prodQuery = supabase.from('product').select('PRODUCT_ID, NAME, ON_HAND, COST_PRICE');
+        if (branchId && branchId !== 'ALL') {
+          prodQuery = prodQuery.eq('BRANCH_ID', branchId);
+        }
+        const { data: products } = await prodQuery;
         
         let stockVal = 0;
         let lowStock = 0;
@@ -61,7 +67,7 @@ export default function Dashboard() {
         }
 
         // Fetch transactions for this month WITH details for profit math
-        const { data: currentMonthTrans } = await supabase
+        let transQuery = supabase
           .from('transaction')
           .select(`
             *,
@@ -75,6 +81,12 @@ export default function Dashboard() {
           .gte('CREATED_AT', firstDayOfMonth)
           .or('IS_CREDIT.eq.false,IS_SETTLED.eq.true')
           .order('CREATED_AT', { ascending: true }); // Ascending helps with trend chart
+
+        if (branchId && branchId !== 'ALL') {
+          transQuery = transQuery.eq('BRANCH_ID', branchId);
+        }
+
+        const { data: currentMonthTrans } = await transQuery;
 
         let tSales = 0;
         let tCost = 0;
@@ -180,7 +192,7 @@ export default function Dashboard() {
     };
 
     fetchDashboardData();
-  }, [router]);
+  }, [router, branchId]);
 
   if (loading) {
     return <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>Loading advanced analytics...</div>;

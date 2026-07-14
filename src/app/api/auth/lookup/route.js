@@ -13,7 +13,7 @@ export async function POST(request) {
 
     const { data, error } = await supabaseAdmin
       .from('employee')
-      .select('EMAIL, FIRST_NAME, LAST_NAME, EMPLOYEE_ID')
+      .select('EMAIL, FIRST_NAME, LAST_NAME, EMPLOYEE_ID, BRANCH_ID')
       .eq('PIN', pin)
       .maybeSingle();
 
@@ -25,7 +25,8 @@ export async function POST(request) {
       email: data.EMAIL,
       firstName: data.FIRST_NAME,
       lastName: data.LAST_NAME,
-      employeeId: data.EMPLOYEE_ID
+      employeeId: data.EMPLOYEE_ID,
+      branchId: data.BRANCH_ID
     });
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 });

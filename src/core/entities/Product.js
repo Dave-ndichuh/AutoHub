@@ -27,6 +27,7 @@ export const mapToProductEntity = (dbRow) => {
     model: dbRow.MODEL || '',
     weight: dbRow.WEIGHT || '',
     dateStockIn: dbRow.DATE_STOCK_IN,
+    branchId: dbRow.BRANCH_ID,
     // Keep raw data for backward compatibility during transition
     _raw: dbRow
   };
@@ -51,6 +52,7 @@ export const mapFromProductForm = (formData) => {
     BRAND: formData.BRAND || '',
     MODEL: formData.MODEL || '',
     WEIGHT: formData.WEIGHT || '',
+    BRANCH_ID: formData.BRANCH_ID || 1,
     DATE_STOCK_IN: new Date().toISOString()
   };
 };

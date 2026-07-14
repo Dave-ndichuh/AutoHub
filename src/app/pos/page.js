@@ -70,7 +70,7 @@ export default function POSPage() {
   const [printFormat, setPrintFormat] = useState('THERMAL'); // 'THERMAL' or 'A4'
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [quoteData, setQuoteData] = useState(null);
-  const { employeeId } = useAuth();
+  const { employeeId, branchId } = useAuth();
   
   const [isMobile, setIsMobile] = useState(false);
 
@@ -102,8 +102,13 @@ export default function POSPage() {
   const fetchData = async () => {
     setLoading(true);
     setFetchError(null);
+    let prodQuery = supabase.from('product').select('*');
+    if (branchId && branchId !== 'ALL') {
+      prodQuery = prodQuery.eq('BRANCH_ID', branchId);
+    }
+    
     const [prodRes, catRes, custRes] = await Promise.all([
-      supabase.from('product').select('*'),
+      prodQuery,
       supabase.from('category').select('*').order('CNAME', { ascending: true }),
       supabase.from('customer').select('*')
     ]);
@@ -448,7 +453,8 @@ export default function POSPage() {
           TAX_AMOUNT: 0,
           GRAND_TOTAL: grandTotal,
           STATUS: 'Pending',
-          EMPLOYEE_ID: employeeId
+          EMPLOYEE_ID: employeeId,
+          BRANCH_ID: branchId === 'ALL' ? 1 : branchId
         }]).select().single();
 
         if (invError) throw invError;
@@ -524,7 +530,8 @@ export default function POSPage() {
         CREDIT_TERMS: isCredit ? creditTerms : null,
         
         CASH_TENDERED: isCredit ? 0 : grandTotal,
-        EMPLOYEE_ID: employeeId
+        EMPLOYEE_ID: employeeId,
+        BRANCH_ID: branchId === 'ALL' ? 1 : branchId
       }]).select().single();
 
       if (transErr) throw transErr;
@@ -536,7 +543,8 @@ export default function POSPage() {
           PRODUCT_ID: item.PRODUCT_ID,
           QTY: item.quantity,
           UNIT_PRICE: effectivePrice,
-          SUBTOTAL: effectivePrice * item.quantity
+          SUBTOTAL: effectivePrice * item.quantity,
+          BRANCH_ID: branchId === 'ALL' ? 1 : branchId
         };
       });
 

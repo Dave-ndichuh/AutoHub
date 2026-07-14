@@ -3,8 +3,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit, Trash2, Search, X } from 'lucide-react';
+import { useAuth } from '@/components/AuthGuard';
 
 export default function EmployeesPage() {
+  const { branchId } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -26,6 +28,12 @@ export default function EmployeesPage() {
           location(CITY, PROVINCE)
         `)
         .order('EMPLOYEE_ID', { ascending: false });
+
+      if (branchId && branchId !== 'ALL') {
+        query = query.eq('BRANCH_ID', branchId);
+      }
+
+      const { data, error } = await query;
 
       if (!error && data) {
         setEmployees(data);
@@ -99,7 +107,8 @@ export default function EmployeesPage() {
       EMAIL: formData.EMAIL,
       PHONE_NUMBER: formData.PHONE_NUMBER,
       JOB_ID: jobId,
-      LOCATION_ID: locId
+      LOCATION_ID: locId,
+      BRANCH_ID: branchId === 'ALL' ? 1 : branchId
     };
 
     let errorMsg = null;
@@ -121,7 +130,8 @@ export default function EmployeesPage() {
           phone: formData.PHONE_NUMBER,
           jobId: jobId,
           locationId: locId,
-          pin: formData.PIN
+          pin: formData.PIN,
+          branchId: branchId === 'ALL' ? 1 : branchId
         })
       });
       const data = await res.json();

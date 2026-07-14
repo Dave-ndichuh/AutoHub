@@ -5,8 +5,10 @@ import { supabase } from '@/lib/supabase';
 import { BarChart3, TrendingUp, AlertCircle, PackageSearch, Download, DollarSign, Calendar, RefreshCcw } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import { formatItemName } from '@/utils/formatters';
+import { useAuth } from '@/components/AuthGuard';
 
 export default function ReportsPage() {
+  const { branchId } = useAuth();
   const [loading, setLoading] = useState(true);
   
   // Custom Date Range
@@ -60,7 +62,7 @@ export default function ReportsPage() {
     const endDateTime = new Date(`${endDate}T23:59:59.999`).toISOString();
 
     // 1. Fetch Transactions
-    const { data: transData } = await supabase
+    let transQuery = supabase
       .from('transaction')
       .select(`
         *,
@@ -75,10 +77,22 @@ export default function ReportsPage() {
       .lte('CREATED_AT', endDateTime)
       .or('IS_CREDIT.eq.false,IS_SETTLED.eq.true');
 
+    if (branchId && branchId !== 'ALL') {
+      transQuery = transQuery.eq('BRANCH_ID', branchId);
+    }
+
+    const { data: transData } = await transQuery;
+
     // 2. Fetch All Products (for dead stock and total stock value)
-    const { data: prodData } = await supabase
+    let prodQuery = supabase
       .from('product')
       .select(`*, category(CNAME)`);
+
+    if (branchId && branchId !== 'ALL') {
+      prodQuery = prodQuery.eq('BRANCH_ID', branchId);
+    }
+    
+    const { data: prodData } = await prodQuery;
 
     let tSales = 0;
     let tCost = 0;
@@ -187,7 +201,7 @@ export default function ReportsPage() {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [startDate, endDate]);
+  }, [startDate, endDate, branchId]);
 
   const exportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";

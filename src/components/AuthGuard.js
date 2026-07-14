@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-const AuthContext = createContext({ user: null, role: null, employeeId: null, loading: true });
+const AuthContext = createContext({ user: null, role: null, employeeId: null, branchId: null, setBranchId: () => {}, loading: true });
 
 export const useAuth = () => useContext(AuthContext);
 
@@ -16,6 +16,7 @@ export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [employeeId, setEmployeeId] = useState(null);
+  const [branchId, setBranchId] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -26,6 +27,7 @@ export default function AuthProvider({ children }) {
         setUser(null);
         setRole(null);
         setEmployeeId(null);
+        setBranchId(null);
         if (pathname !== '/login' && pathname !== '/employee-login') {
           router.push('/login');
         } else {
@@ -39,7 +41,7 @@ export default function AuthProvider({ children }) {
 
       const { data: empData, error: empError } = await supabase
         .from('employee')
-        .select('EMAIL, EMPLOYEE_ID')
+        .select('EMAIL, EMPLOYEE_ID, BRANCH_ID')
         .ilike('EMAIL', user.email)
         .maybeSingle();
 
@@ -47,6 +49,11 @@ export default function AuthProvider({ children }) {
       const currentRole = isEmployee ? 'employee' : 'admin';
       setRole(currentRole);
       setEmployeeId(empData?.EMPLOYEE_ID || null);
+      
+      // Default to 'ALL' for admins, or the employee's specific branch for staff
+      if (!branchId) {
+        setBranchId(isEmployee ? (empData?.BRANCH_ID || 1) : 'ALL');
+      }
 
       if (isEmployee) {
         const allowedEmployeeRoutes = ['/pos', '/customers', '/transactions', '/services', '/invoices', '/login', '/employee-login'];
@@ -67,6 +74,7 @@ export default function AuthProvider({ children }) {
         setUser(null);
         setRole(null);
         setEmployeeId(null);
+        setBranchId(null);
         router.push('/login');
       }
     });
@@ -74,7 +82,7 @@ export default function AuthProvider({ children }) {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [pathname, router]);
+  }, [pathname, router, branchId]);
 
   if (loading) {
     return <div style={{ minHeight: '100vh', background: 'var(--background)' }} />;
@@ -83,7 +91,7 @@ export default function AuthProvider({ children }) {
   if (!authorized && pathname !== '/login' && pathname !== '/employee-login') return null;
 
   return (
-    <AuthContext.Provider value={{ user, role, employeeId, loading }}>
+    <AuthContext.Provider value={{ user, role, employeeId, branchId, setBranchId, loading }}>
       {children}
     </AuthContext.Provider>
   );

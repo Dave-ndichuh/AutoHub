@@ -10,7 +10,7 @@ import { logAction } from '@/lib/logger';
 import { createPortal } from 'react-dom';
 
 export default function InvoicesPage() {
-  const { role, employeeId } = useAuth();
+  const { role, employeeId, branchId } = useAuth();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,13 +65,21 @@ export default function InvoicesPage() {
       query = query.eq('EMPLOYEE_ID', employeeId);
     }
     
+    if (branchId && branchId !== 'ALL') {
+      query = query.eq('BRANCH_ID', branchId);
+    }
+    
     const { data, error } = await query;
     if (data) setInvoices(data);
     setLoading(false);
   };
 
   const fetchProducts = async () => {
-    const { data } = await supabase.from('product').select('*').eq('STATUS', 'active');
+    let query = supabase.from('product').select('*').eq('STATUS', 'active');
+    if (branchId && branchId !== 'ALL') {
+      query = query.eq('BRANCH_ID', branchId);
+    }
+    const { data } = await query;
     if (data) setProducts(data);
   };
 
@@ -129,7 +137,8 @@ export default function InvoicesPage() {
       TAX_AMOUNT: tax,
       GRAND_TOTAL: grandTotal,
       STATUS: 'Pending',
-      EMPLOYEE_ID: employeeId
+      EMPLOYEE_ID: employeeId,
+      BRANCH_ID: branchId === 'ALL' ? 1 : branchId
     }]).select().single();
 
     if (invError) {
@@ -144,7 +153,8 @@ export default function InvoicesPage() {
       DESCRIPTION: i.DESCRIPTION,
       QTY: i.QTY,
       UNIT_PRICE: i.UNIT_PRICE,
-      TOTAL_PRICE: i.TOTAL_PRICE
+      TOTAL_PRICE: i.TOTAL_PRICE,
+      BRANCH_ID: branchId === 'ALL' ? 1 : branchId
     }));
 
     await supabase.from('invoice_details').insert(itemsToInsert);
@@ -227,7 +237,9 @@ export default function InvoicesPage() {
       IS_CREDIT: false,
       IS_SETTLED: true,
       CASH_TENDERED: inv.GRAND_TOTAL,
-      CREDIT_TERMS: `INV-${inv.INVOICE_ID} | ${inv.CUSTOMER_NAME || 'Walk-in'}`
+      RECEIPT_NUMBER: (paymentMethod === 'M-Pesa' || (paymentMethod === 'Hybrid' && mpesaAmt > 0)) ? mpesaReceipt : null,
+      CREDIT_TERMS: `INV-${inv.INVOICE_ID} | ${inv.CUSTOMER_NAME || 'Walk-in'}`,
+      BRANCH_ID: branchId === 'ALL' ? 1 : branchId
     }]).select().single();
 
     if (tErr) {
@@ -242,7 +254,8 @@ export default function InvoicesPage() {
       PRODUCT_ID: i.PRODUCT_ID,
       QTY: i.QTY,
       UNIT_PRICE: i.UNIT_PRICE,
-      SUBTOTAL: i.TOTAL_PRICE
+      SUBTOTAL: i.TOTAL_PRICE,
+      BRANCH_ID: branchId === 'ALL' ? 1 : branchId
     }));
     await supabase.from('transaction_details').insert(tItems);
 
@@ -546,23 +559,31 @@ export default function InvoicesPage() {
               </select>
             </div>
 
-            {paymentMethod === 'Hybrid' && (
-              <div style={{ display: 'flex', gap: '1rem' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Cash Amount</label>
-                  <input type="number" className="input" value={hybridCash} onChange={e => setHybridCash(e.target.value)} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>M-Pesa Amount</label>
-                  <input type="number" className="input" value={hybridMpesa} onChange={e => setHybridMpesa(e.target.value)} />
-                </div>
+            {paymentMethod === 'M-Pesa' && (
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>M-Pesa Transaction Code</label>
+                <input type="text" className="input" placeholder="e.g. QWE123RTYA" style={{ border: '2px solid #25D366' }} value={mpesaReceipt} onChange={e => setMpesaReceipt(e.target.value.toUpperCase())} minLength={10} maxLength={10} pattern="[A-Z0-9]{10}" title="M-Pesa code must be exactly 10 characters (letters and numbers)" required />
               </div>
             )}
 
-            {(paymentMethod === 'M-Pesa' || paymentMethod === 'Hybrid') && (
-              <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>M-Pesa Receipt (Optional)</label>
-                <input type="text" className="input" placeholder="e.g. QWE123RTY" value={mpesaReceipt} onChange={e => setMpesaReceipt(e.target.value.toUpperCase())} />
+            {paymentMethod === 'Hybrid' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', gap: '1rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Cash Amount</label>
+                    <input type="number" className="input" value={hybridCash} onChange={e => setHybridCash(e.target.value)} required />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>M-Pesa Amount</label>
+                    <input type="number" className="input" value={hybridMpesa} onChange={e => setHybridMpesa(e.target.value)} required />
+                  </div>
+                </div>
+                {Number(hybridMpesa) > 0 && (
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>M-Pesa Transaction Code</label>
+                    <input type="text" className="input" placeholder="e.g. QWE123RTYA" style={{ border: '2px solid #25D366' }} value={mpesaReceipt} onChange={e => setMpesaReceipt(e.target.value.toUpperCase())} minLength={10} maxLength={10} pattern="[A-Z0-9]{10}" title="M-Pesa code must be exactly 10 characters (letters and numbers)" required />
+                  </div>
+                )}
               </div>
             )}
 
