@@ -9,9 +9,9 @@ export const ourFileRouter = {
     // Set permissions and file types for this FileRoute
     .onUploadComplete(async ({ metadata, file }) => {
       // This code RUNS ON YOUR SERVER after upload
-      console.log("Upload complete for file:", file.url);
+      console.log("Upload complete for file:", file.ufsUrl);
 
       // Whatever is returned here is sent to the clientside `onClientUploadComplete` callback
-      return { uploadedBy: "admin", url: file.url };
+      return { uploadedBy: "admin", url: file.ufsUrl };
     }),
 };

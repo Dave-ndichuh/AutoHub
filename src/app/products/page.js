@@ -456,7 +456,7 @@ function ProductsContent() {
                       headers={{ "x-branch-id": String(formData.BRANCH_ID || branchId) }}
                       onClientUploadComplete={(res) => {
                         if (res && res[0]) {
-                          setFormData({...formData, IMAGE_URL: res[0].url});
+                          setFormData({...formData, IMAGE_URL: res[0].ufsUrl});
                         }
                       }}
                       onUploadError={(error) => {
