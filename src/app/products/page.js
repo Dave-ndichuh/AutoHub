@@ -27,7 +27,7 @@ function ProductsContent() {
   const [searchTerm, setSearchTerm] = useState('');
   
   // Sorting and Pagination State
-  const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
+  const [sortConfig, setSortConfig] = useState({ key: 'dateStockIn', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   
@@ -129,9 +129,12 @@ function ProductsContent() {
     let valB = b[sortConfig.key];
 
     // Handle numeric values
-    if (['price', 'onHand'].includes(sortConfig.key)) {
+    if (['price', 'costPrice', 'onHand', 'reorderThreshold'].includes(sortConfig.key)) {
       valA = Number(valA) || 0;
       valB = Number(valB) || 0;
+    } else if (sortConfig.key === 'dateStockIn') {
+      valA = valA ? new Date(valA).getTime() : 0;
+      valB = valB ? new Date(valB).getTime() : 0;
     } else {
       valA = String(valA || '').toLowerCase();
       valB = String(valB || '').toLowerCase();
@@ -178,10 +181,39 @@ function ProductsContent() {
           </div>
         )}
 
-        <button className="btn btn-primary" onClick={() => openModal()}>
-          <Plus size={18} />
-          Add Product
-        </button>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Sort by:</span>
+            <select 
+              className="input" 
+              style={{ background: 'var(--card)', padding: '0.5rem 2rem 0.5rem 1rem', minWidth: '150px' }}
+              value={`${sortConfig.key}-${sortConfig.direction}`}
+              onChange={(e) => {
+                const [key, direction] = e.target.value.split('-');
+                setSortConfig({ key, direction });
+              }}
+            >
+              <option value="dateStockIn-desc">Recently Added</option>
+              <option value="dateStockIn-asc">Oldest Added</option>
+              <option value="name-asc">Name (A-Z)</option>
+              <option value="name-desc">Name (Z-A)</option>
+              <option value="price-asc">Selling Price (Low to High)</option>
+              <option value="price-desc">Selling Price (High to Low)</option>
+              <option value="costPrice-asc">Cost Price (Low to High)</option>
+              <option value="costPrice-desc">Cost Price (High to Low)</option>
+              <option value="onHand-asc">Stock (Low to High)</option>
+              <option value="onHand-desc">Stock (High to Low)</option>
+              <option value="supplierName-asc">Supplier (A-Z)</option>
+              <option value="supplierName-desc">Supplier (Z-A)</option>
+              <option value="categoryName-asc">Category (A-Z)</option>
+            </select>
+          </div>
+
+          <button className="btn btn-primary" onClick={() => openModal()}>
+            <Plus size={18} />
+            Add Product
+          </button>
+        </div>
       </div>
 
       <div className="glass table-wrapper">
