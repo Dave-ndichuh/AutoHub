@@ -60,7 +60,7 @@ export function useProducts() {
 
   const deleteProduct = async (id, productData) => {
     try {
-      const result = await ProductService.deleteProduct(id);
+      const result = await ProductService.deleteProduct(id, productData);
       
       if (productData) {
         await logAction({

@@ -33,7 +33,27 @@ export const ProductService = {
     }
   },
 
-  async deleteProduct(id) {
-    return await productRepository.deleteProduct(id);
+  async deleteProduct(id, productData) {
+    const result = await productRepository.deleteProduct(id);
+    
+    // If the delete was successful (not archived) and there is an imageUrl, delete it from UploadThing
+    if (result.success && productData?.imageUrl) {
+      try {
+        await fetch('/api/uploadthing/delete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            fileUrl: productData.imageUrl,
+            branchId: productData.branchId
+          })
+        });
+      } catch (err) {
+        console.error("Failed to delete image from UploadThing:", err);
+      }
+    }
+    
+    return result;
   }
 };
