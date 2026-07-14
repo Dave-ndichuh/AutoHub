@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, X, Image as ImageIcon } from 'lucide-react';
 import { UploadButton } from '@/utils/uploadthing';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useProducts } from '@/hooks/useProducts';
 import BranchSelect from '@/components/forms/BranchSelect';
 import { useAuth } from '@/components/AuthGuard';
+import Image from 'next/image';
 
 function ProductsContent() {
   const router = useRouter();
@@ -14,22 +15,32 @@ function ProductsContent() {
   const filterParam = searchParams.get('filter');
   const { branchId } = useAuth();
 
-  const {
-    products,
-    categories,
-    suppliers,
-    loading,
-    error,
-    saveProduct: saveProductHook,
-    deleteProduct: deleteProductHook
-  } = useProducts();
-
+  const [searchInput, setSearchInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   
   // Sorting and Pagination State
   const [sortConfig, setSortConfig] = useState({ key: 'dateStockIn', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchInput);
+      setCurrentPage(1); // Reset to page 1 on new search
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  const {
+    products,
+    totalCount,
+    categories,
+    suppliers,
+    loading,
+    error,
+    saveProduct: saveProductHook,
+    deleteProduct: deleteProductHook
+  } = useProducts({ page: currentPage, limit: itemsPerPage, searchTerm, sortConfig });
   
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -101,20 +112,6 @@ function ProductsContent() {
     setShowModal(false);
   };
 
-  const filteredProducts = products.filter(p => {
-    const term = searchTerm.toLowerCase();
-    const matchesSearch = 
-      p.name?.toLowerCase().includes(term) || 
-      p.productCode?.toLowerCase().includes(term) ||
-      p.brand?.toLowerCase().includes(term) ||
-      p.model?.toLowerCase().includes(term) ||
-      p.barcode?.toLowerCase().includes(term);
-    if (filterParam === 'low-stock') {
-      return matchesSearch && p.onHand <= p.reorderThreshold;
-    }
-    return matchesSearch;
-  });
-
   // Handle Sorting
   const handleSort = (key) => {
     let direction = 'asc';
@@ -122,41 +119,11 @@ function ProductsContent() {
       direction = 'desc';
     }
     setSortConfig({ key, direction });
+    setCurrentPage(1);
   };
 
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    let valA = a[sortConfig.key];
-    let valB = b[sortConfig.key];
-
-    // Handle numeric values
-    if (['price', 'costPrice', 'onHand', 'reorderThreshold'].includes(sortConfig.key)) {
-      valA = Number(valA) || 0;
-      valB = Number(valB) || 0;
-    } else if (sortConfig.key === 'dateStockIn') {
-      valA = valA ? new Date(valA).getTime() : 0;
-      valB = valB ? new Date(valB).getTime() : 0;
-    } else {
-      valA = String(valA || '').toLowerCase();
-      valB = String(valB || '').toLowerCase();
-    }
-
-    if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-    if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
-    return 0;
-  });
-
   // Handle Pagination
-  const totalPages = Math.ceil(sortedProducts.length / itemsPerPage) || 1;
-  
-  // Ensure current page is valid when filtering changes
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(totalPages);
-  }
-
-  const paginatedProducts = sortedProducts.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const totalPages = Math.ceil(totalCount / itemsPerPage) || 1;
 
   return (
     <>
@@ -169,8 +136,8 @@ function ProductsContent() {
             placeholder="Search products..." 
             className="input" 
             style={{ paddingLeft: '2.5rem' }}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
         
@@ -234,18 +201,18 @@ function ProductsContent() {
               <tr>
                 <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>Loading products...</td>
               </tr>
-            ) : paginatedProducts.length === 0 ? (
+            ) : products.length === 0 ? (
               <tr>
                 <td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>No products found.</td>
               </tr>
             ) : (
-              paginatedProducts.map((product) => (
+              products.map((product) => (
                 <tr key={product.id}>
                   <td><span className="badge badge-warning">{product.productCode}</span></td>
                   <td style={{ fontWeight: 500 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                       {product.imageUrl ? (
-                        <img src={product.imageUrl} alt={product.name} className="image-hover-zoom" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
+                        <Image src={product.imageUrl} alt={product.name} width={40} height={40} className="image-hover-zoom" style={{ borderRadius: '8px', objectFit: 'cover' }} />
                       ) : (
                         <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <ImageIcon size={20} className="text-muted" />
@@ -450,7 +417,7 @@ function ProductsContent() {
 
                   <div style={{ marginTop: '1rem', padding: '1rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
                     <h5 style={{ fontWeight: 500, margin: 0 }}>Product Image</h5>
-                    {formData.IMAGE_URL && <img src={formData.IMAGE_URL} alt="Preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }} />}
+                    {formData.IMAGE_URL && <Image src={formData.IMAGE_URL} alt="Preview" width={80} height={80} style={{ objectFit: 'cover', borderRadius: '8px' }} />}
                     <UploadButton
                       endpoint="imageUploader"
                       headers={{ "x-branch-id": String(formData.BRANCH_ID || branchId) }}

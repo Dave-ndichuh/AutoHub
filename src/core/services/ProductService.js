@@ -6,18 +6,18 @@ import { mapToProductEntity, mapFromProductForm } from '@/core/entities/Product'
  * Pure business logic layer. Orchestrates repositories and handles business rules.
  */
 export const ProductService = {
-  async fetchAllData(branchId = 'ALL') {
-    // Fetch products, categories, and suppliers concurrently
-    const [rawProducts, categories, suppliers] = await Promise.all([
-      productRepository.getAllProducts(branchId),
+  async fetchProducts(options = {}) {
+    const { data: rawProducts, count } = await productRepository.getAllProducts(options);
+    const products = rawProducts.map(mapToProductEntity);
+    return { products, count };
+  },
+
+  async fetchMetadata() {
+    const [categories, suppliers] = await Promise.all([
       productRepository.getAllCategories(),
       productRepository.getAllSuppliers()
     ]);
-
-    // Map raw database rows to domain entities
-    const products = rawProducts.map(mapToProductEntity);
-
-    return { products, categories, suppliers };
+    return { categories, suppliers };
   },
 
   async saveProduct(id, formData) {

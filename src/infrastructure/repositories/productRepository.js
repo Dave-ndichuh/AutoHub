@@ -6,24 +6,45 @@ import { supabase } from '@/lib/supabase';
  * Returns raw data directly from the DB.
  */
 export const productRepository = {
-  async getAllProducts(branchId = 'ALL') {
+  async getAllProducts(options = {}) {
+    const { branchId = 'ALL', page = 1, limit = 10, searchTerm = '', sortKey = 'dateStockIn', sortDir = 'desc' } = options;
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const sortMap = {
+      productCode: 'PRODUCT_CODE',
+      name: 'NAME',
+      onHand: 'ON_HAND',
+      status: 'STATUS',
+      price: 'PRICE',
+      costPrice: 'COST_PRICE',
+      dateStockIn: 'DATE_STOCK_IN',
+    };
+    const dbSortKey = sortMap[sortKey] || 'PRODUCT_ID';
+
     let query = supabase
       .from('product')
       .select(`
         *,
         category(CNAME),
         supplier(COMPANY_NAME)
-      `)
-      .order('PRODUCT_ID', { ascending: false });
+      `, { count: 'exact' });
       
     if (branchId !== 'ALL') {
       query = query.eq('BRANCH_ID', branchId);
     }
 
-    const { data, error } = await query;
+    if (searchTerm) {
+      query = query.or(`NAME.ilike.%${searchTerm}%,PRODUCT_CODE.ilike.%${searchTerm}%,BRAND.ilike.%${searchTerm}%,MODEL.ilike.%${searchTerm}%,BARCODE.ilike.%${searchTerm}%`);
+    }
+
+    query = query.order(dbSortKey, { ascending: sortDir === 'asc' });
+    query = query.range(from, to);
+
+    const { data, count, error } = await query;
     
     if (error) throw new Error(error.message);
-    return data || [];
+    return { data: data || [], count: count || 0 };
   },
 
   async getAllCategories() {

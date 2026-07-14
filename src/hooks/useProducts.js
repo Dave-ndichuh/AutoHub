@@ -8,30 +8,51 @@ import { useAuth } from '@/components/AuthGuard';
  * Bridges the gap between UI components and Application business logic.
  * Handles React state, loading states, error boundaries, and orchestration.
  */
-export function useProducts() {
+export function useProducts({ page = 1, limit = 10, searchTerm = '', sortConfig = { key: 'dateStockIn', direction: 'desc' } } = {}) {
   const { branchId } = useAuth();
   const [products, setProducts] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [categories, setCategories] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const fetchMetadata = useCallback(async () => {
+    try {
+      const meta = await ProductService.fetchMetadata();
+      setCategories(meta.categories);
+      setSuppliers(meta.suppliers);
+    } catch (err) {
+      console.error("Error fetching metadata:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMetadata();
+  }, [fetchMetadata]);
 
   const fetchProducts = useCallback(async () => {
     if (!branchId) return; // Wait for branchId to be loaded
     setLoading(true);
     setError(null);
     try {
-      const data = await ProductService.fetchAllData(branchId);
-      setProducts(data.products);
-      setCategories(data.categories);
-      setSuppliers(data.suppliers);
+      const { products: fetchedProducts, count } = await ProductService.fetchProducts({
+        branchId,
+        page,
+        limit,
+        searchTerm,
+        sortKey: sortConfig.key,
+        sortDir: sortConfig.direction
+      });
+      setProducts(fetchedProducts);
+      setTotalCount(count);
     } catch (err) {
       setError(err.message);
       console.error("Error fetching products:", err);
     } finally {
       setLoading(false);
     }
-  }, [branchId]);
+  }, [branchId, page, limit, searchTerm, sortConfig.key, sortConfig.direction]);
 
   useEffect(() => {
     fetchProducts();
@@ -79,6 +100,7 @@ export function useProducts() {
 
   return {
     products,
+    totalCount,
     categories,
     suppliers,
     loading,
