@@ -1,392 +1,353 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { TrendingUp, DollarSign, Activity, ShoppingCart, PackageOpen, Tag, BarChart3, AlertTriangle } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import MetricCard from '@/components/dashboard/MetricCard';
-import InsightCard from '@/components/dashboard/InsightCard';
-import CreditSalesTable from '@/components/dashboard/CreditSalesTable';
-import { useAuth } from '@/components/AuthGuard';
+import { Power, Sparkles, Recycle, Clock, ChevronDown } from 'lucide-react';
 
-export default function Dashboard() {
+export default function LandingPage() {
+  const [isActive, setIsActive] = useState(false);
+  const [time, setTime] = useState('');
   const router = useRouter();
-  const { branchId } = useAuth();
-  const [loading, setLoading] = useState(true);
-
-  // Metrics
-  const [metrics, setMetrics] = useState({
-    totalSales: 0,
-    grossProfit: 0,
-    profitMargin: 0,
-    transactionCount: 0,
-    atv: 0,
-    stockValue: 0,
-    lowStockCount: 0,
-    topProduct: { name: 'N/A', units: 0 }
-  });
-
-  // Chart Data
-  const [salesTrend, setSalesTrend] = useState([]);
-  const [paymentData, setPaymentData] = useState([]);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.push('/login');
-        return;
-      }
-
-      setLoading(true);
-
-      // Date ranges
-      const today = new Date();
-      const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString();
-      const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(today.getDate() - 6); // Last 7 days including today
-      
-      try {
-        // Fetch all products for stock value & low stock
-        let prodQuery = supabase.from('product').select('PRODUCT_ID, NAME, ON_HAND, COST_PRICE');
-        if (branchId && branchId !== 'ALL') {
-          prodQuery = prodQuery.eq('BRANCH_ID', branchId);
-        }
-        const { data: products } = await prodQuery;
-        
-        let stockVal = 0;
-        let lowStock = 0;
-        if (products) {
-          products.forEach(p => {
-            const onHand = Number(p.ON_HAND) || 0;
-            const cost = Number(p.COST_PRICE) || 0;
-            if (onHand > 0) stockVal += (onHand * cost);
-            if (onHand <= 5) lowStock++;
-          });
-        }
-
-        // Fetch transactions for this month WITH details for profit math
-        let transQuery = supabase
-          .from('transaction')
-          .select(`
-            *,
-            transaction_details (
-              PRODUCT_ID,
-              QTY,
-              UNIT_PRICE,
-              product (NAME, COST_PRICE)
-            )
-          `)
-          .gte('CREATED_AT', firstDayOfMonth)
-          .or('IS_CREDIT.eq.false,IS_SETTLED.eq.true')
-          .order('CREATED_AT', { ascending: true }); // Ascending helps with trend chart
-
-        if (branchId && branchId !== 'ALL') {
-          transQuery = transQuery.eq('BRANCH_ID', branchId);
-        }
-
-        const { data: currentMonthTrans } = await transQuery;
-
-        let tSales = 0;
-        let tCost = 0;
-        let tCount = 0;
-        const productSales = {};
-        
-        // For Payment Breakdown Pie Chart
-        let cashTotal = 0;
-        let mpesaTotal = 0;
-        let creditTotal = 0;
-
-        // For Sales Trend Line Chart (Last 7 Days)
-        const trendMap = {};
-        for(let i=0; i<7; i++) {
-          const d = new Date(sevenDaysAgo);
-          d.setDate(d.getDate() + i);
-          const yyyy = d.getFullYear();
-          const mm = String(d.getMonth() + 1).padStart(2, '0');
-          const dd = String(d.getDate()).padStart(2, '0');
-          trendMap[`${yyyy}-${mm}-${dd}`] = 0;
-        }
-
-        if (currentMonthTrans) {
-          currentMonthTrans.forEach(t => {
-            // Locally filter out reversed transactions to prevent DB crashes if column is missing
-            if (t.status === 'Reversed') return;
-
-            // Skip purely voided or 0-value returns that shouldn't inflate count
-            const saleTotal = Number(t.ADJUSTED_TOTAL) || Number(t.GRAND_TOTAL) || 0;
-            tCount++;
-            tSales += saleTotal;
-
-            // Trend Chart
-            const tD = new Date(t.CREATED_AT);
-            const tDate = `${tD.getFullYear()}-${String(tD.getMonth() + 1).padStart(2, '0')}-${String(tD.getDate()).padStart(2, '0')}`;
-            
-            if (trendMap[tDate] !== undefined) {
-              trendMap[tDate] += saleTotal;
-            }
-
-            // Payment Methods
-            if (t.PAYMENT_METHOD === 'Cash') cashTotal += saleTotal;
-            else if (t.PAYMENT_METHOD === 'M-Pesa') mpesaTotal += saleTotal;
-            else if (t.PAYMENT_METHOD === 'Credit') creditTotal += saleTotal;
-            else if (t.PAYMENT_METHOD === 'Hybrid') {
-              cashTotal += Number(t.CASH_AMOUNT) || 0;
-              mpesaTotal += Number(t.MPESA_AMOUNT) || 0;
-            }
-
-            // Details for COGS & Top Product
-            if (t.transaction_details) {
-              t.transaction_details.forEach(d => {
-                const cost = Number(d.product?.COST_PRICE) || 0;
-                const qty = Number(d.QTY) || 0;
-                tCost += (cost * qty);
-
-                if (!productSales[d.PRODUCT_ID]) {
-                  productSales[d.PRODUCT_ID] = { name: d.product?.NAME || 'Unknown Part', qty: 0 };
-                }
-                productSales[d.PRODUCT_ID].qty += qty;
-              });
-            }
-          });
-        }
-
-        // Calculations
-        const grossProfit = tSales - tCost;
-        const profitMargin = tSales > 0 ? (grossProfit / tSales) * 100 : 0;
-        const atv = tCount > 0 ? tSales / tCount : 0;
-
-        const topP = Object.values(productSales).sort((a, b) => b.qty - a.qty)[0] || { name: 'N/A', units: 0 };
-
-        // Formatting Chart Data
-        const trendData = Object.keys(trendMap).sort().map(date => {
-          const [, month, day] = date.split('-');
-          return { name: `${day}/${month}`, Sales: trendMap[date] };
-        });
-
-        const payData = [
-          { name: 'Cash', value: cashTotal, color: '#3b82f6' },
-          { name: 'M-Pesa', value: mpesaTotal, color: '#25D366' },
-          { name: 'Credit', value: creditTotal, color: '#f59e0b' }
-        ].filter(d => d.value > 0);
-
-        setMetrics({
-          totalSales: tSales,
-          grossProfit,
-          profitMargin,
-          transactionCount: tCount,
-          atv,
-          stockValue: stockVal,
-          lowStockCount: lowStock,
-          topProduct: topP
-        });
-        setSalesTrend(trendData);
-        setPaymentData(payData);
-
-      } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
-      } finally {
-        setLoading(false);
-      }
+    const updateTime = () => {
+      const now = new Date();
+      setTime(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
     };
-
-    fetchDashboardData();
-  }, [router, branchId]);
-
-  if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>Loading advanced analytics...</div>;
-  }
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+    <div style={{
+      minHeight: '100vh',
+      margin: '-2rem',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#170833',
+      position: 'relative',
+      overflow: 'hidden', // It's okay to hide overflow on the main page wrapper
+      color: '#ffffff',
+      paddingBottom: '5rem' // Buffer to ensure it never touches the footer
+    }}>
+      {/* 1. Global Background */}
+      <div style={{ 
+        position: 'absolute', 
+        inset: 0, 
+        background: 'radial-gradient(ellipse at center, #4c1d95 0%, #2e1065 50%, #170833 100%)',
+        zIndex: 0 
+      }} />
       
-      <style jsx global>{`
-        .dashboard-grid {
-          display: grid;
-          grid-template-columns: repeat(12, 1fr);
-          gap: 1.5rem;
-        }
-        .col-3 { grid-column: span 3 / span 3; }
-        .col-4 { grid-column: span 4 / span 4; }
-        .col-8 { grid-column: span 8 / span 8; }
-        .col-12 { grid-column: span 12 / span 12; }
+      {/* Subtle Dot Matrix Texture */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px)',
+        backgroundSize: '24px 24px',
+        zIndex: 1,
+        pointerEvents: 'none'
+      }} />
 
-        @media (max-width: 1024px) {
-          .dashboard-grid {
-            grid-template-columns: repeat(6, 1fr);
-          }
-          .col-3 { grid-column: span 3 / span 3; }
-          .col-4 { grid-column: span 6 / span 6; }
-          .col-8 { grid-column: span 6 / span 6; }
-        }
-
-        @media (max-width: 640px) {
-          .dashboard-grid {
-            grid-template-columns: 1fr;
-          }
-          .col-3, .col-4, .col-8, .col-12 { 
-            grid-column: span 1 / span 1; 
-          }
-        }
-      `}</style>
-
-      {/* Row 1: Executive KPIs */}
-      <div>
-        <h2 className="heading-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Executive Dashboard</h2>
-        <div className="dashboard-grid">
-          <div className="col-3">
-            <MetricCard 
-              title="Total Sales" 
-              icon={<TrendingUp size={18} />} 
-              value={`Ksh ${metrics.totalSales.toLocaleString()}`} 
-              subline="This month's revenue"
-              accentColor="#3b82f6"
-            />
-          </div>
-          <div className="col-3">
-            <MetricCard 
-              title="Gross Profit" 
-              icon={<DollarSign size={18} />} 
-              value={`Ksh ${metrics.grossProfit.toLocaleString()}`} 
-              subline="Before operating expenses"
-              accentColor="#10b981"
-            />
-          </div>
-          <div className="col-3">
-            <MetricCard 
-              title="Profit Margin" 
-              icon={<Activity size={18} />} 
-              value={`${metrics.profitMargin.toFixed(1)}%`} 
-              subline="Average yield per sale"
-              accentColor="#8b5cf6"
-            />
-          </div>
-          <div className="col-3">
-            <MetricCard 
-              title="Transactions" 
-              icon={<ShoppingCart size={18} />} 
-              value={metrics.transactionCount.toLocaleString()} 
-              subline="Total closed orders"
-              accentColor="#f59e0b"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Row 2: Operational Insights */}
-      <div>
-        <h2 className="heading-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Operational Insights</h2>
-        <div className="dashboard-grid">
-          <div className="col-3">
-            <InsightCard 
-              title="Low Stock Items"
-              value={metrics.lowStockCount.toLocaleString()}
-              context="Items with ≤ 5 units left"
-              status={metrics.lowStockCount > 0 ? 'danger' : 'success'}
-              onClick={() => router.push('/products?filter=low-stock')}
-            />
-          </div>
-          <div className="col-3">
-            <InsightCard 
-              title="Top Selling Product"
-              value={metrics.topProduct.name}
-              context={`${metrics.topProduct.qty} units sold this month`}
-              status="neutral"
-            />
-          </div>
-          <div className="col-3">
-            <InsightCard 
-              title="Avg. Transaction Value"
-              value={`Ksh ${metrics.atv.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
-              context="Average order size"
-              status="neutral"
-            />
-          </div>
-          <div className="col-3">
-            <InsightCard 
-              title="Stock Value at Risk"
-              value={`Ksh ${metrics.stockValue.toLocaleString()}`}
-              context="Total inventory valuation"
-              status="warning"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Row 3: Visual Charts */}
-      <div>
-        <h2 className="heading-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Performance Trends</h2>
-        <div className="dashboard-grid" style={{ minHeight: '350px' }}>
+      {/* Main Content */}
+      <main style={{
+        position: 'relative',
+        zIndex: 10,
+        width: '100%',
+        maxWidth: '42rem', // max-w-2xl
+        margin: '0 1rem'
+      }}>
+        {/* 2. Main Container (Dashboard Panel Color) */}
+        <div style={{
+          background: 'rgba(28, 36, 49, 0.8)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          border: '1px solid rgba(45, 55, 72, 0.5)',
+          borderRadius: '2rem',
+          padding: '2.5rem',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          boxShadow: '0 8px 32px 0 rgba(0,0,0,0.37)',
+          position: 'relative',
+          width: '100%',
+          // No overflow-hidden so button glows are not clipped!
+        }}>
           
-          <div className="col-8 glass" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: 'var(--muted-foreground)' }}>
-              <BarChart3 size={18} className="text-primary" /> 
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sales Trend (Last 7 Days)</h3>
-            </div>
-            <div className="chart-container" style={{ flex: 1 }}>
-              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                <LineChart data={salesTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={12} tickFormatter={(value) => `${value / 1000}k`} tickLine={false} axisLine={false} dx={-10} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                    itemStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
-                    formatter={(value) => [`Ksh ${value.toLocaleString()}`, 'Sales']}
-                    cursor={{ stroke: 'var(--muted-foreground)', strokeWidth: 1, strokeDasharray: '4 4' }}
-                  />
-                  <Line type="monotone" dataKey="Sales" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6', strokeWidth: 2, stroke: 'var(--background)' }} activeDot={{ r: 6, strokeWidth: 0 }} />
-                </LineChart>
-              </ResponsiveContainer>
+          {/* Integrated Card Header (Clock) */}
+          <div style={{
+            position: 'absolute',
+            top: '1.5rem',
+            right: '2rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontFamily: 'monospace',
+            fontSize: '0.8rem',
+            color: 'rgba(255, 255, 255, 0.6)'
+          }}>
+            <Clock size={14} />
+            {time}
+          </div>
+
+          {/* 3. Typography & Branding */}
+          <div style={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center', 
+            marginBottom: '3rem',
+            opacity: isActive ? 0.8 : 1, 
+            transition: 'all 0.5s ease',
+            marginTop: '0.5rem'
+          }}>
+            <img 
+              src="/logo.png" 
+              alt="Jobea Logo" 
+              style={{ 
+                height: '80px', 
+                objectFit: 'contain', 
+                marginBottom: '1.25rem',
+                filter: 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))'
+              }} 
+            />
+            <h1 style={{ 
+              fontSize: '2.25rem', 
+              fontWeight: 700, 
+              letterSpacing: '-0.025em', 
+              marginBottom: '0.75rem',
+              lineHeight: 1.2,
+              color: '#ffffff'
+            }}>
+              Welcome to Jobea Autospares
+            </h1>
+            
+            <p style={{ 
+              color: '#94a3b8', 
+              fontSize: '1rem',
+              fontWeight: 500,
+              marginTop: '0.75rem'
+            }}>
+              Please select your branch to sign in.
+            </p>
+            
+            {/* Animated Arrow */}
+            <div style={{
+              marginTop: '1.5rem',
+              opacity: isActive ? 0 : 1,
+              transition: 'opacity 0.3s ease',
+              animation: 'bounce-subtle 2s infinite ease-in-out',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}>
+              <ChevronDown size={32} color="#94a3b8" strokeWidth={2.5} />
             </div>
           </div>
 
-          <div className="col-4 glass" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: 'var(--muted-foreground)' }}>
-              <Tag size={18} className="text-primary" /> 
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue by Payment</h3>
-            </div>
-            <div className="chart-container" style={{ flex: 1 }}>
-              {paymentData.length === 0 ? (
-                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted-foreground)' }}>No Data</div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                  <PieChart>
-                    <Pie
-                      data={paymentData}
-                      cx="50%"
-                      cy="45%"
-                      innerRadius={65}
-                      outerRadius={85}
-                      paddingAngle={5}
-                      dataKey="value"
-                      stroke="none"
-                    >
-                      {paymentData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value) => `Ksh ${value.toLocaleString()}`}
-                      contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                      itemStyle={{ color: 'var(--foreground)', fontWeight: 600 }}
-                    />
-                    <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </div>
+          {/* 4. The Power Button (Primary Action) */}
+          <div style={{ position: 'relative' }}>
+            {/* Outer glow ring when active */}
+            <div style={{
+              position: 'absolute',
+              inset: '-20px',
+              borderRadius: '50%',
+              background: 'conic-gradient(from 0deg, transparent, rgba(167, 139, 250, 0.6), transparent)',
+              animation: isActive ? 'spin 3s linear infinite' : 'none',
+              opacity: isActive ? 1 : 0,
+              transition: 'opacity 0.5s ease',
+              filter: 'blur(12px)'
+            }} />
+            
+            <button 
+              onClick={() => setIsActive(!isActive)}
+              style={{
+                position: 'relative',
+                width: '120px',
+                height: '120px',
+                borderRadius: '50%',
+                background: 'linear-gradient(to top right, #9333ea, #a78bfa)',
+                border: 'none',
+                boxShadow: isActive 
+                  ? '0 0 60px -10px rgba(167, 139, 250, 0.9), inset 0 2px 4px rgba(255, 255, 255, 0.4)' 
+                  : '0 0 40px -10px rgba(167, 139, 250, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease-in-out',
+                transform: isActive ? 'scale(1.05)' : 'scale(1)',
+                zIndex: 2
+              }}
+              onMouseOver={(e) => {
+                if (!isActive) e.currentTarget.style.boxShadow = '0 0 60px -10px rgba(167, 139, 250, 0.9), inset 0 2px 4px rgba(255, 255, 255, 0.4)';
+              }}
+              onMouseOut={(e) => {
+                if (!isActive) e.currentTarget.style.boxShadow = '0 0 40px -10px rgba(167, 139, 250, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.4)';
+              }}
+            >
+              <Power 
+                size={48} 
+                color="#ffffff" 
+                style={{ 
+                  filter: isActive ? 'drop-shadow(0 0 12px rgba(255,255,255,0.8))' : 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
+                  transition: 'all 0.4s ease'
+                }} 
+              />
+            </button>
+          </div>
+
+          {/* 5. Routing Cards ("Jobea Local" & "Ex-Japan") */}
+          <div style={{ 
+            display: 'flex',
+            gap: '1.5rem',
+            width: '100%',
+            justifyContent: 'center',
+            maxHeight: isActive ? '300px' : '0px',
+            opacity: isActive ? 1 : 0,
+            transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+            pointerEvents: isActive ? 'auto' : 'none',
+            paddingTop: isActive ? '3rem' : '0'
+          }}>
+            
+            <button 
+              onClick={() => router.push('/login?branch=local')}
+              className={`routing-card ${isActive ? 'animate-slide-up-1' : ''}`}
+              style={{
+                padding: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '1rem',
+                borderRadius: '1rem',
+                cursor: 'pointer',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'rgba(0, 0, 0, 0.2)',
+                transition: 'all 0.3s ease',
+                width: '180px'
+              }}
+            >
+              <div style={{ 
+                padding: '1rem', 
+                borderRadius: '50%', 
+                background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Sparkles size={32} color="#ffffff" strokeWidth={2.5} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <h3 style={{ color: '#ffffff', fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.2rem' }}>Jobea Local</h3>
+                <p style={{ color: '#d8b4fe', fontSize: '0.75rem', fontWeight: 500 }}>Brand New Parts</p>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => router.push('/login?branch=ex-japan')}
+              className={`routing-card ${isActive ? 'animate-slide-up-2' : ''}`}
+              style={{
+                padding: '1.5rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '1rem',
+                borderRadius: '1rem',
+                cursor: 'pointer',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                background: 'rgba(0, 0, 0, 0.2)',
+                transition: 'all 0.3s ease',
+                width: '180px'
+              }}
+            >
+              <div style={{ 
+                padding: '1rem', 
+                borderRadius: '50%', 
+                background: 'linear-gradient(135deg, #a855f7, #7e22ce)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                <Recycle size={32} color="#ffffff" strokeWidth={2.5} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <h3 style={{ color: '#ffffff', fontWeight: 600, fontSize: '1.1rem', marginBottom: '0.2rem' }}>Ex-Japan</h3>
+                <p style={{ color: '#d8b4fe', fontSize: '0.75rem', fontWeight: 500 }}>Quality Used Parts</p>
+              </div>
+            </button>
+
           </div>
         </div>
-      </div>
+      </main>
 
-      {/* Row 4: Active Credit Sales */}
-      <div>
-        <h2 className="heading-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Outstanding Credit Sales</h2>
-        <CreditSalesTable />
-      </div>
+      {/* Distinct Footer */}
+      <footer style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+        padding: '1.25rem',
+        textAlign: 'center',
+        borderTop: '1px solid rgba(45, 55, 72, 0.5)',
+        background: 'rgba(28, 36, 49, 0.6)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        color: '#94a3b8',
+        fontSize: '0.875rem',
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '0.5rem',
+        width: '100%'
+      }}>
+        <span style={{ fontWeight: 500 }}>&copy; {new Date().getFullYear()} Jobea Autospares</span>
+        <span>&bull;</span>
+        <span>
+          System by <a href="https://machariandichu.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ color: '#e2e8f0', textDecoration: 'none', fontWeight: 600, transition: 'color 0.2s' }} onMouseOver={(e) => e.target.style.color = '#ffffff'} onMouseOut={(e) => e.target.style.color = '#e2e8f0'}>Nexus Solutions</a>
+        </span>
+      </footer>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        
+        @keyframes bounce-subtle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(10px); }
+        }
+        
+        .animate-slide-up-1 {
+          animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+          animation-delay: 0.1s;
+          opacity: 0;
+          transform: translateY(20px);
+        }
 
+        .animate-slide-up-2 {
+          animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+          animation-delay: 0.25s;
+          opacity: 0;
+          transform: translateY(20px);
+        }
+
+        @keyframes slideUp {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .routing-card:hover {
+          transform: translateY(-4px) !important;
+          border-color: rgba(192, 132, 252, 0.5) !important;
+          background: rgba(0, 0, 0, 0.3) !important;
+        }
+      `}} />
     </div>
   );
 }

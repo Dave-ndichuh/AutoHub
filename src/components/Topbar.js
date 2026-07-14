@@ -14,8 +14,8 @@ export default function Topbar() {
   const { user, role, branchId, setBranchId } = useAuth();
   const userEmail = user?.email || '';
 
-  // Hide topbar on login pages
-  if (pathname === '/login' || pathname === '/employee-login') return null;
+  // Hide topbar on login pages and landing page
+  if (pathname === '/login' || pathname === '/employee-login' || pathname === '/') return null;
 
   // Format the title based on the path
   const getTitle = () => {
