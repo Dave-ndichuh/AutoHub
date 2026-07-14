@@ -453,6 +453,7 @@ function ProductsContent() {
                     {formData.IMAGE_URL && <img src={formData.IMAGE_URL} alt="Preview" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px' }} />}
                     <UploadButton
                       endpoint="imageUploader"
+                      headers={{ "x-branch-id": String(formData.BRANCH_ID || branchId) }}
                       onClientUploadComplete={(res) => {
                         if (res && res[0]) {
                           setFormData({...formData, IMAGE_URL: res[0].url});
