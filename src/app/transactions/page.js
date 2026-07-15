@@ -18,6 +18,7 @@ function TransactionsContent() {
   const [searchId, setSearchId] = useState(searchParams.get('searchId') || '');
   const [searchDate, setSearchDate] = useState('');
   const [filterStatus, setFilterStatus] = useState('Active'); // Active, Reversed, All
+  const [sortConfig, setSortConfig] = useState({ key: 'CREATED_AT', direction: 'desc' });
   
   // Print State
   const [printData, setPrintData] = useState(null);
@@ -112,13 +113,49 @@ function TransactionsContent() {
     return matchesId && matchesDate && matchesStatus;
   });
 
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+    setCurrentPage(1);
+  };
+
+  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+    let valA, valB;
+    if (sortConfig.key === 'customer') {
+      valA = (a.customer || a.credit_customer) ? `${(a.customer || a.credit_customer).FIRST_NAME} ${(a.customer || a.credit_customer).LAST_NAME}` : (a.CREDIT_TERMS && a.CREDIT_TERMS.includes('|') ? a.CREDIT_TERMS.split('|')[1].trim() : 'Walk-in');
+      valB = (b.customer || b.credit_customer) ? `${(b.customer || b.credit_customer).FIRST_NAME} ${(b.customer || b.credit_customer).LAST_NAME}` : (b.CREDIT_TERMS && b.CREDIT_TERMS.includes('|') ? b.CREDIT_TERMS.split('|')[1].trim() : 'Walk-in');
+    } else if (sortConfig.key === 'total') {
+      valA = a.ADJUSTED_TOTAL || a.GRAND_TOTAL || 0;
+      valB = b.ADJUSTED_TOTAL || b.GRAND_TOTAL || 0;
+    } else if (sortConfig.key === 'items') {
+      valA = a.transaction_details?.reduce((acc, d) => acc + d.QTY, 0) || 0;
+      valB = b.transaction_details?.reduce((acc, d) => acc + d.QTY, 0) || 0;
+    } else if (sortConfig.key === 'CREATED_AT') {
+      valA = new Date(a.CREATED_AT).getTime();
+      valB = new Date(b.CREATED_AT).getTime();
+    } else {
+      valA = a[sortConfig.key];
+      valB = b[sortConfig.key];
+    }
+    
+    if (typeof valA === 'string') valA = valA.toLowerCase();
+    if (typeof valB === 'string') valB = valB.toLowerCase();
+
+    if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
   // Pagination Logic
   useEffect(() => {
     setCurrentPage(1);
   }, [searchId, searchDate]);
 
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-  const currentItems = filteredTransactions.slice(
+  const totalPages = Math.ceil(sortedTransactions.length / itemsPerPage);
+  const currentItems = sortedTransactions.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -263,6 +300,31 @@ function TransactionsContent() {
           />
         </div>
 
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 200px' }}>
+          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Sort by:</span>
+          <select 
+            className="input" 
+            style={{ background: 'var(--card)', padding: '0.5rem 2rem 0.5rem 1rem', minWidth: '180px' }}
+            value={`${sortConfig.key}-${sortConfig.direction}`}
+            onChange={(e) => {
+              const [key, direction] = e.target.value.split('-');
+              setSortConfig({ key, direction });
+              setCurrentPage(1);
+            }}
+          >
+            <option value="CREATED_AT-desc">Date (Newest First)</option>
+            <option value="CREATED_AT-asc">Date (Oldest First)</option>
+            <option value="TRANS_ID-desc">Transaction ID (Highest)</option>
+            <option value="TRANS_ID-asc">Transaction ID (Lowest)</option>
+            <option value="total-desc">Amount (High to Low)</option>
+            <option value="total-asc">Amount (Low to High)</option>
+            <option value="customer-asc">Customer (A-Z)</option>
+            <option value="customer-desc">Customer (Z-A)</option>
+            <option value="items-desc">Items (Most)</option>
+            <option value="items-asc">Items (Least)</option>
+          </select>
+        </div>
+
         {(searchId || searchDate || filterStatus !== 'Active') && (
           <button className="btn btn-secondary" onClick={() => { setSearchId(''); setSearchDate(''); setFilterStatus('Active'); }}>
             Clear Filters
@@ -296,12 +358,12 @@ function TransactionsContent() {
         <table className="table">
           <thead>
             <tr>
-              <th>Transaction ID</th>
-              <th>Date & Time</th>
-              <th>Customer</th>
-              <th>Items</th>
-              <th>Payment Info</th>
-              <th>Total (Ksh)</th>
+              <th onClick={() => handleSort('TRANS_ID')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>Transaction ID {sortConfig.key === 'TRANS_ID' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+              <th onClick={() => handleSort('CREATED_AT')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>Date & Time {sortConfig.key === 'CREATED_AT' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+              <th onClick={() => handleSort('customer')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>Customer {sortConfig.key === 'customer' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+              <th onClick={() => handleSort('items')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>Items {sortConfig.key === 'items' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+              <th onClick={() => handleSort('PAYMENT_METHOD')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>Payment Info {sortConfig.key === 'PAYMENT_METHOD' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
+              <th onClick={() => handleSort('total')} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>Total (Ksh) {sortConfig.key === 'total' ? (sortConfig.direction === 'asc' ? '↑' : '↓') : ''}</th>
               <th style={{ textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
