@@ -117,7 +117,7 @@ export default function CreditSalesTable() {
         
         await logAction({
           action: 'Returned Credit Sale',
-          details: `Transaction #TRX-${formatTransId(transId)} was returned. Items added back to stock and amounts zeroed out.`,
+          details: `Transaction #TRX-${formatTransId(sale.SERIAL_NUMBER || transId)} was returned. Items added back to stock and amounts zeroed out.`,
           severity: 'warning'
         });
 
@@ -149,7 +149,7 @@ export default function CreditSalesTable() {
         
         await logAction({
           action: 'Settled Credit Sale',
-          details: `Transaction #TRX-${formatTransId(transId)} was settled via ${settlementMode}.`,
+          details: `Transaction #TRX-${formatTransId(sale.SERIAL_NUMBER || transId)} was settled via ${settlementMode}.`,
           severity: 'info'
         });
       }
@@ -222,7 +222,7 @@ export default function CreditSalesTable() {
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                     title="View Transaction Details"
                   >
-                    TRX-{formatTransId(sale.TRANS_ID)}
+                   <span className="font-medium">TRX-{formatTransId(sale.SERIAL_NUMBER || sale.TRANS_ID)}</span>
                     <ExternalLink size={12} />
                   </button>
                 </td>

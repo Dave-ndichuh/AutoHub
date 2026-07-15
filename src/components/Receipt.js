@@ -42,8 +42,8 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
       {/* 2. Metadata Block */}
       <div className="receipt-meta">
         <div className="meta-row">
-          <span>Receipt #:</span>
-          <span className="meta-val">TRX-{formatTransId(transaction.TRANS_ID)}</span>
+          <span className="meta-label">Transaction:</span>
+          <span className="meta-val">TRX-{formatTransId(transaction.SERIAL_NUMBER || transaction.TRANS_ID)}</span>
         </div>
         <div className="meta-row">
           <span>Date:</span>

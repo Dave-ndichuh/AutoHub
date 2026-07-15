@@ -1,7 +1,16 @@
 export const formatTransId = (transId) => {
   if (!transId) return '';
   const idStr = String(transId);
-  return idStr.includes('-') ? idStr.split('-')[0].toUpperCase() : idStr.toUpperCase();
+  
+  if (idStr.includes('-')) {
+    return idStr.split('-')[0].toUpperCase();
+  }
+  
+  if (!isNaN(idStr)) {
+    return idStr.padStart(3, '0');
+  }
+  
+  return idStr.toUpperCase();
 };
 
 export const formatItemName = (product) => {

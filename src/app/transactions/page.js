@@ -94,7 +94,8 @@ function TransactionsContent() {
     if (searchId) {
       const sId = searchId.toLowerCase();
       matchesId = t.TRANS_ID?.toString().toLowerCase().includes(sId) || 
-                  (t.TRANS_ID && formatTransId(t.TRANS_ID).toLowerCase().includes(sId));
+                  (t.SERIAL_NUMBER && t.SERIAL_NUMBER.toString().includes(sId)) ||
+                  (t.TRANS_ID && formatTransId(t.SERIAL_NUMBER || t.TRANS_ID).toLowerCase().includes(sId));
     }
     
     if (searchDate) {
@@ -259,7 +260,7 @@ function TransactionsContent() {
     // Log action
     await supabase.from('system_logs').insert([{
       ACTION: 'Reversed Transaction',
-      DETAILS: `Reversed TRX-${formatTransId(selectedTransaction.TRANS_ID)}. Reason: ${reversalReason}`,
+      DETAILS: `Reversed TRX-${formatTransId(selectedTransaction.SERIAL_NUMBER || selectedTransaction.TRANS_ID)}. Reason: ${reversalReason}`,
       SEVERITY: 'warning',
       EMPLOYEE_ID: employeeId || null
     }]);
@@ -380,7 +381,7 @@ function TransactionsContent() {
               currentItems.map((trans) => (
                 <tr key={trans.TRANS_ID}>
                   <td>
-                    <span className={`badge ${trans.status === 'Reversed' ? 'badge-secondary' : 'badge-warning'}`} style={{ opacity: trans.status === 'Reversed' ? 0.6 : 1, textDecoration: trans.status === 'Reversed' ? 'line-through' : 'none' }}>TRX-{formatTransId(trans.TRANS_ID)}</span>
+                    <span className={`badge ${trans.status === 'Reversed' ? 'badge-secondary' : 'badge-warning'}`} style={{ opacity: trans.status === 'Reversed' ? 0.6 : 1, textDecoration: trans.status === 'Reversed' ? 'line-through' : 'none' }}>TRX-{formatTransId(trans.SERIAL_NUMBER || trans.TRANS_ID)}</span>
                     {trans.status === 'Reversed' && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem', background: '#ef4444', color: 'white' }}>Reversed</span>}
                     {trans.IS_CREDIT && trans.status !== 'Reversed' && !trans.IS_SETTLED && <span className="badge badge-destructive" style={{ marginLeft: '0.5rem' }}>Credit</span>}
                     {trans.CREDIT_TERMS && trans.CREDIT_TERMS.startsWith('INV-') && trans.status !== 'Reversed' && !trans.IS_SETTLED && (
@@ -604,7 +605,7 @@ function TransactionsContent() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', borderBottom: '1px solid var(--border)' }}>
               <div>
                 <h3 className="heading-2" style={{ margin: 0 }}>Transaction Details</h3>
-                <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>TRX-{formatTransId(selectedTransaction.TRANS_ID)}   {new Date(selectedTransaction.CREATED_AT).toLocaleString()}</div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>TRX-{formatTransId(selectedTransaction.SERIAL_NUMBER || selectedTransaction.TRANS_ID)}   {new Date(selectedTransaction.CREATED_AT).toLocaleString()}</div>
               </div>
               <button onClick={() => setSelectedTransaction(null)} style={{ background: 'transparent', border: 'none', color: 'var(--muted-foreground)', cursor: 'pointer', display: 'flex' }}><X size={20} /></button>
             </div>
