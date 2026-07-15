@@ -35,7 +35,11 @@ export const productRepository = {
     }
 
     if (searchTerm) {
-      query = query.or(`NAME.ilike.%${searchTerm}%,PRODUCT_CODE.ilike.%${searchTerm}%,BRAND.ilike.%${searchTerm}%,MODEL.ilike.%${searchTerm}%,BARCODE.ilike.%${searchTerm}%`);
+      const words = searchTerm.trim().split(/\s+/).filter(Boolean);
+      words.forEach(word => {
+        // Each word must appear in at least one of these fields
+        query = query.or(`NAME.ilike.%${word}%,PRODUCT_CODE.ilike.%${word}%,BRAND.ilike.%${word}%,MODEL.ilike.%${word}%,BARCODE.ilike.%${word}%`);
+      });
     }
 
     query = query.order(dbSortKey, { ascending: sortDir === 'asc' });
