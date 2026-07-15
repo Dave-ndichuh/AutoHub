@@ -28,6 +28,7 @@ export default function CreditSalesTable() {
       .from('transaction')
       .select(`
         TRANS_ID,
+        SERIAL_NUMBER,
         CREATED_AT,
         ADJUSTED_TOTAL,
         GRAND_TOTAL,
@@ -117,7 +118,7 @@ export default function CreditSalesTable() {
         
         await logAction({
           action: 'Returned Credit Sale',
-          details: `Transaction #TRX-${formatTransId(sale.SERIAL_NUMBER || transId)} was returned. Items added back to stock and amounts zeroed out.`,
+          details: `Transaction #TRX-${formatTransId(settlingSale.SERIAL_NUMBER || transId)} was returned. Items added back to stock and amounts zeroed out.`,
           severity: 'warning'
         });
 
@@ -149,7 +150,7 @@ export default function CreditSalesTable() {
         
         await logAction({
           action: 'Settled Credit Sale',
-          details: `Transaction #TRX-${formatTransId(sale.SERIAL_NUMBER || transId)} was settled via ${settlementMode}.`,
+          details: `Transaction #TRX-${formatTransId(settlingSale.SERIAL_NUMBER || transId)} was settled via ${settlementMode}.`,
           severity: 'info'
         });
       }
@@ -270,7 +271,7 @@ export default function CreditSalesTable() {
             </div>
 
             <p style={{ color: 'var(--muted-foreground)', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
-              You are about to clear the debt for <strong>TRX-{formatTransId(settlingSale.TRANS_ID)}</strong> amounting to 
+              You are about to clear the debt for <strong>TRX-{formatTransId(settlingSale.SERIAL_NUMBER || settlingSale.TRANS_ID)}</strong> amounting to 
               <span style={{ color: 'var(--primary)', fontWeight: 700, marginLeft: '0.25rem' }}>
                 Ksh {(settlingSale.ADJUSTED_TOTAL || settlingSale.GRAND_TOTAL).toLocaleString()}
               </span>.
