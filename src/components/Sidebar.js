@@ -90,8 +90,8 @@ export default function Sidebar() {
     ];
   }
 
-  // Hide sidebar on login pages and landing page
-  if (pathname === '/login' || pathname === '/employee-login' || pathname === '/') return null;
+  // Hide sidebar on login pages and landing page, and shop
+  if (pathname === '/login' || pathname === '/employee-login' || pathname === '/' || pathname?.startsWith('/shop') || pathname === '/about' || pathname === '/contact') return null;
 
   return (
     <aside className="sidebar glass-panel">

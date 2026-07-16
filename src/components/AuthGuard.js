@@ -28,7 +28,7 @@ export default function AuthProvider({ children }) {
         setRole(null);
         setEmployeeId(null);
         setBranchId(null);
-        if (pathname !== '/login' && pathname !== '/employee-login' && pathname !== '/') {
+        if (pathname !== '/login' && pathname !== '/employee-login' && pathname !== '/' && !pathname.startsWith('/shop') && pathname !== '/about' && pathname !== '/contact') {
           router.push('/login');
         } else {
           setAuthorized(true);
@@ -97,7 +97,7 @@ export default function AuthProvider({ children }) {
     return <div style={{ minHeight: '100vh', background: 'var(--background)' }} />;
   }
 
-  if (!authorized && pathname !== '/login' && pathname !== '/employee-login' && pathname !== '/') return null;
+  if (!authorized && pathname !== '/login' && pathname !== '/employee-login' && pathname !== '/' && !pathname.startsWith('/shop') && pathname !== '/about' && pathname !== '/contact') return null;
 
   return (
     <AuthContext.Provider value={{ user, role, employeeId, branchId, setBranchId, loading }}>
