@@ -102,28 +102,52 @@ export default function POSPage() {
   const fetchData = async () => {
     setLoading(true);
     setFetchError(null);
-    let prodQuery = supabase.from('product').select('*');
-    if (branchId && branchId !== 'ALL') {
-      prodQuery = prodQuery.eq('BRANCH_ID', branchId);
-    }
     
-    const [prodRes, catRes, custRes] = await Promise.all([
-      prodQuery,
-      supabase.from('category').select('*').order('CNAME', { ascending: true }),
-      supabase.from('customer').select('*')
-    ]);
-    
-    if (prodRes.error || catRes.error || custRes.error) {
-      const errorMessage = prodRes.error?.message || catRes.error?.message || custRes.error?.message || 'Unable to load POS data';
-      console.error('POS fetch error:', prodRes.error || catRes.error || custRes.error);
-      setFetchError(errorMessage);
-    }
+    try {
+      let allProducts = [];
+      let page = 0;
+      const limit = 1000;
+      let hasMore = true;
 
-    if (prodRes.data) setProducts(prodRes.data);
-    if (catRes.data) setCategories(catRes.data);
-    if (custRes.data) setCustomers(custRes.data);
-    
-    setLoading(false);
+      while (hasMore) {
+        let prodQuery = supabase.from('product').select('*').range(page * limit, (page + 1) * limit - 1);
+        if (branchId && branchId !== 'ALL') {
+          prodQuery = prodQuery.eq('BRANCH_ID', branchId);
+        }
+        
+        const { data, error } = await prodQuery;
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          allProducts = [...allProducts, ...data];
+          if (data.length < limit) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const [catRes, custRes] = await Promise.all([
+        supabase.from('category').select('*').order('CNAME', { ascending: true }),
+        supabase.from('customer').select('*')
+      ]);
+      
+      if (catRes.error) throw catRes.error;
+      if (custRes.error) throw custRes.error;
+
+      setProducts(allProducts);
+      if (catRes.data) setCategories(catRes.data);
+      if (custRes.data) setCustomers(custRes.data);
+      
+    } catch (error) {
+      console.error('POS fetch error:', error);
+      setFetchError(error.message || 'Unable to load POS data');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
