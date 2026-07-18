@@ -8,7 +8,7 @@ import { useAuth } from '@/components/AuthGuard';
  * Bridges the gap between UI components and Application business logic.
  * Handles React state, loading states, error boundaries, and orchestration.
  */
-export function useProducts({ page = 1, limit = 10, searchTerm = '', sortConfig = { key: 'dateStockIn', direction: 'desc' } } = {}) {
+export function useProducts({ page = 1, limit = 10, searchTerm = '', sortConfig = { key: 'dateStockIn', direction: 'desc' }, filter = '' } = {}) {
   const { branchId } = useAuth();
   const [products, setProducts] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -42,7 +42,8 @@ export function useProducts({ page = 1, limit = 10, searchTerm = '', sortConfig 
         limit,
         searchTerm,
         sortKey: sortConfig.key,
-        sortDir: sortConfig.direction
+        sortDir: sortConfig.direction,
+        filter
       });
       setProducts(fetchedProducts);
       setTotalCount(count);
@@ -52,7 +53,7 @@ export function useProducts({ page = 1, limit = 10, searchTerm = '', sortConfig 
     } finally {
       setLoading(false);
     }
-  }, [branchId, page, limit, searchTerm, sortConfig.key, sortConfig.direction]);
+  }, [branchId, page, limit, searchTerm, sortConfig.key, sortConfig.direction, filter]);
 
   useEffect(() => {
     fetchProducts();

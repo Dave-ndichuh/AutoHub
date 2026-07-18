@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
  */
 export const productRepository = {
   async getAllProducts(options = {}) {
-    const { branchId = 'ALL', page = 1, limit = 10, searchTerm = '', sortKey = 'dateStockIn', sortDir = 'desc' } = options;
+    const { branchId = 'ALL', page = 1, limit = 10, searchTerm = '', sortKey = 'dateStockIn', sortDir = 'desc', filter = '' } = options;
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
@@ -42,6 +42,36 @@ export const productRepository = {
       });
     }
 
+    if (filter === 'low-stock') {
+      // For low stock, we need to compare two columns (ON_HAND <= REORDER_THRESHOLD)
+      // Since Supabase/PostgREST JS client doesn't support column-to-column comparisons easily
+      // without an RPC, we fetch all matching records and filter/paginate in memory.
+      const { data, error } = await query;
+      if (error) throw new Error(error.message);
+      
+      let allData = data || [];
+      // Filter low stock
+      allData = allData.filter(p => (Number(p.ON_HAND) || 0) <= (Number(p.REORDER_THRESHOLD) || 0));
+      
+      // Sort in memory
+      allData.sort((a, b) => {
+        let valA = a[dbSortKey];
+        let valB = b[dbSortKey];
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        
+        if (valA < valB) return sortDir === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDir === 'asc' ? 1 : -1;
+        return 0;
+      });
+      
+      const count = allData.length;
+      const paginatedData = allData.slice(from, to + 1);
+      
+      return { data: paginatedData, count };
+    }
+
+    // Normal DB pagination
     query = query.order(dbSortKey, { ascending: sortDir === 'asc' });
     query = query.range(from, to);
 

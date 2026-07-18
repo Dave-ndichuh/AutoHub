@@ -40,7 +40,7 @@ function ProductsContent() {
     error,
     saveProduct: saveProductHook,
     deleteProduct: deleteProductHook
-  } = useProducts({ page: currentPage, limit: itemsPerPage, searchTerm, sortConfig });
+  } = useProducts({ page: currentPage, limit: itemsPerPage, searchTerm, sortConfig, filter: filterParam });
   
   // Modal State
   const [showModal, setShowModal] = useState(false);
