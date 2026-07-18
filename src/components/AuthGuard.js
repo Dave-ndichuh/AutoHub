@@ -29,7 +29,7 @@ export default function AuthProvider({ children }) {
         setEmployeeId(null);
         setBranchId(null);
         if (pathname !== '/login' && pathname !== '/employee-login' && pathname !== '/' && !pathname.startsWith('/shop') && pathname !== '/about' && pathname !== '/contact') {
-          router.push('/login');
+          router.push('/');
         } else {
           setAuthorized(true);
         }
