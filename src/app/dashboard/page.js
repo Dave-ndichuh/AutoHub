@@ -16,6 +16,9 @@ export default function Dashboard() {
   const { branchId } = useAuth();
   const [loading, setLoading] = useState(true);
 
+  // Animation Orchestrator State
+  const [animationTriggers, setAnimationTriggers] = useState([0, 0, 0, 0]);
+
   // Metrics
   const [metrics, setMetrics] = useState({
     totalSales: 0,
@@ -198,6 +201,51 @@ export default function Dashboard() {
     fetchDashboardData();
   }, [router, branchId]);
 
+  // Orchestrator for Animated Numbers
+  useEffect(() => {
+    let isMounted = true;
+    
+    // The sequences defined by the user
+    const sequences = [
+      [0, 1, 2, 3], // Left to right
+      [3, 2, 1, 0], // Right to left
+      [0, 3, 1, 2]  // Outside in
+    ];
+
+    const runOrchestrator = async () => {
+      // First, wait 30 seconds before running the loop
+      await new Promise(r => setTimeout(r, 30000));
+      
+      while (isMounted) {
+        const seq = sequences[Math.floor(Math.random() * sequences.length)];
+        
+        for (let i = 0; i < seq.length; i++) {
+          if (!isMounted) break;
+          const targetIndex = seq[i];
+          
+          setAnimationTriggers(prev => {
+            const next = [...prev];
+            next[targetIndex] += 1;
+            return next;
+          });
+          
+          // Wait 1.5 seconds between triggering each number (gives them time to count smoothly)
+          await new Promise(r => setTimeout(r, 1500));
+        }
+
+        if (!isMounted) break;
+        // Wait 30 seconds after the sequence finishes
+        await new Promise(r => setTimeout(r, 30000));
+      }
+    };
+
+    runOrchestrator();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem', flexWrap: 'wrap', gap: '1.5rem', width: '100%' }}>
@@ -277,6 +325,7 @@ export default function Dashboard() {
               value={metrics.totalSales} 
               prefix="Ksh "
               decimals={0}
+              trigger={animationTriggers[0]}
               subline="This month's revenue"
               accentColor="#3b82f6"
             />
@@ -288,6 +337,7 @@ export default function Dashboard() {
               value={metrics.grossProfit} 
               prefix="Ksh "
               decimals={0}
+              trigger={animationTriggers[1]}
               subline="Before operating expenses"
               accentColor="#10b981"
             />
@@ -299,6 +349,7 @@ export default function Dashboard() {
               value={metrics.profitMargin} 
               suffix="%"
               decimals={1}
+              trigger={animationTriggers[2]}
               subline="Average yield per sale"
               accentColor="#8b5cf6"
             />
@@ -309,6 +360,7 @@ export default function Dashboard() {
               icon={<ShoppingCart size={18} />} 
               value={metrics.transactionCount} 
               decimals={0}
+              trigger={animationTriggers[3]}
               subline="Total closed orders"
               accentColor="#f59e0b"
             />

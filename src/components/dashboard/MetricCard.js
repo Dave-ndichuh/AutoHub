@@ -1,6 +1,6 @@
 import AnimatedNumber from './AnimatedNumber';
 
-export default function MetricCard({ title, icon, value, prefix = '', suffix = '', decimals = 0, subline, accentColor = 'var(--primary)', className = '' }) {
+export default function MetricCard({ title, icon, value, prefix = '', suffix = '', decimals = 0, trigger = 0, subline, accentColor = 'var(--primary)', className = '' }) {
   return (
     <div 
       className={`glass metric-card card-lift ${className}`} 
@@ -19,7 +19,7 @@ export default function MetricCard({ title, icon, value, prefix = '', suffix = '
       </div>
       
       <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--foreground)', lineHeight: 1.1, marginBottom: '0.5rem' }}>
-        <AnimatedNumber value={value} prefix={prefix} suffix={suffix} decimals={decimals} />
+        <AnimatedNumber value={value} prefix={prefix} suffix={suffix} decimals={decimals} trigger={trigger} />
       </div>
       
       {subline && (

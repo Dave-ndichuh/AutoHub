@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 
-export default function AnimatedNumber({ value, prefix = '', suffix = '', decimals = 0, duration = 2500 }) {
+export default function AnimatedNumber({ value, prefix = '', suffix = '', decimals = 0, duration = 2500, trigger = 0 }) {
   // If value is a string with formatting (like "Ksh 50,000" or "50%"), 
   // extract the raw number for animation. We handle formatting mostly via prefix/suffix or toLocaleString.
   
@@ -18,7 +18,6 @@ export default function AnimatedNumber({ value, prefix = '', suffix = '', decima
       (entries) => {
         if (entries[0].isIntersecting) {
           setIsVisible(true);
-          observer.disconnect(); // Only animate once when scrolled into view
         }
       },
       { threshold: 0.1 }
@@ -39,6 +38,8 @@ export default function AnimatedNumber({ value, prefix = '', suffix = '', decima
     }
 
     let startTimestamp = null;
+    let animationFrameId = null;
+
     const step = (timestamp) => {
       if (!startTimestamp) startTimestamp = timestamp;
       const progress = Math.min((timestamp - startTimestamp) / duration, 1);
@@ -49,14 +50,18 @@ export default function AnimatedNumber({ value, prefix = '', suffix = '', decima
       setDisplayValue(targetValue * easeProgress);
 
       if (progress < 1) {
-        window.requestAnimationFrame(step);
+        animationFrameId = window.requestAnimationFrame(step);
       } else {
         setDisplayValue(targetValue); // Ensure it ends exactly on the target
       }
     };
 
-    window.requestAnimationFrame(step);
-  }, [targetValue, duration, isVisible]);
+    animationFrameId = window.requestAnimationFrame(step);
+
+    return () => {
+      if (animationFrameId) window.cancelAnimationFrame(animationFrameId);
+    };
+  }, [targetValue, duration, isVisible, trigger]);
 
   // Format the display value
   const formattedValue = displayValue.toLocaleString(undefined, {
