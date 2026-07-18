@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 
-export default function AnimatedNumber({ value, prefix = '', suffix = '', decimals = 0, duration = 1000 }) {
+export default function AnimatedNumber({ value, prefix = '', suffix = '', decimals = 0, duration = 2500 }) {
   // If value is a string with formatting (like "Ksh 50,000" or "50%"), 
   // extract the raw number for animation. We handle formatting mostly via prefix/suffix or toLocaleString.
   
