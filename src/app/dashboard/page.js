@@ -281,8 +281,10 @@ export default function Dashboard() {
       {/* Row 2: Operational Insights */}
       <div>
         <h2 className="heading-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Operational Insights</h2>
-        <div className="dashboard-grid">
-          <div className="col-3">
+        
+        {/* Inventory Insights (3 cards) */}
+        <div className="dashboard-grid" style={{ marginBottom: '1.5rem' }}>
+          <div className="col-4">
             <InsightCard 
               title="Low Stock Items"
               value={metrics.lowStockCount.toLocaleString()}
@@ -291,7 +293,7 @@ export default function Dashboard() {
               onClick={() => router.push('/products?filter=low-stock')}
             />
           </div>
-          <div className="col-3">
+          <div className="col-4">
             <InsightCard 
               title="Out of Stock Items"
               value={metrics.outOfStockCount.toLocaleString()}
@@ -300,7 +302,19 @@ export default function Dashboard() {
               onClick={() => router.push('/products?filter=out-of-stock')}
             />
           </div>
-          <div className="col-3">
+          <div className="col-4">
+            <InsightCard 
+              title="Stock Value at Risk"
+              value={`Ksh ${metrics.stockValue.toLocaleString()}`}
+              context="Total inventory valuation"
+              status="warning"
+            />
+          </div>
+        </div>
+
+        {/* Sales Insights (2 cards) */}
+        <div className="dashboard-grid">
+          <div className="col-6" style={{ gridColumn: 'span 6 / span 6' }}>
             <InsightCard 
               title="Top Selling Product"
               value={metrics.topProduct.name}
@@ -308,20 +322,12 @@ export default function Dashboard() {
               status="neutral"
             />
           </div>
-          <div className="col-3">
+          <div className="col-6" style={{ gridColumn: 'span 6 / span 6' }}>
             <InsightCard 
               title="Avg. Transaction Value"
               value={`Ksh ${metrics.atv.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
               context="Average order size"
               status="neutral"
-            />
-          </div>
-          <div className="col-3">
-            <InsightCard 
-              title="Stock Value at Risk"
-              value={`Ksh ${metrics.stockValue.toLocaleString()}`}
-              context="Total inventory valuation"
-              status="warning"
             />
           </div>
         </div>
