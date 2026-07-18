@@ -233,6 +233,30 @@ export default function Dashboard() {
             grid-column: span 1 / span 1; 
           }
         }
+
+        .five-col-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 1.5rem;
+        }
+
+        @media (max-width: 1280px) {
+          .five-col-grid {
+            grid-template-columns: repeat(3, 1fr);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .five-col-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 640px) {
+          .five-col-grid {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
 
       {/* Row 1: Executive KPIs */}
@@ -282,9 +306,8 @@ export default function Dashboard() {
       <div>
         <h2 className="heading-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Operational Insights</h2>
         
-        {/* Inventory Insights (3 cards) */}
-        <div className="dashboard-grid" style={{ marginBottom: '1.5rem' }}>
-          <div className="col-4">
+        <div className="five-col-grid">
+          <div>
             <InsightCard 
               title="Low Stock Items"
               value={metrics.lowStockCount.toLocaleString()}
@@ -293,7 +316,7 @@ export default function Dashboard() {
               onClick={() => router.push('/products?filter=low-stock')}
             />
           </div>
-          <div className="col-4">
+          <div>
             <InsightCard 
               title="Out of Stock Items"
               value={metrics.outOfStockCount.toLocaleString()}
@@ -302,7 +325,7 @@ export default function Dashboard() {
               onClick={() => router.push('/products?filter=out-of-stock')}
             />
           </div>
-          <div className="col-4">
+          <div>
             <InsightCard 
               title="Stock Value at Risk"
               value={`Ksh ${metrics.stockValue.toLocaleString()}`}
@@ -310,11 +333,7 @@ export default function Dashboard() {
               status="warning"
             />
           </div>
-        </div>
-
-        {/* Sales Insights (2 cards) */}
-        <div className="dashboard-grid">
-          <div className="col-6" style={{ gridColumn: 'span 6 / span 6' }}>
+          <div>
             <InsightCard 
               title="Top Selling Product"
               value={metrics.topProduct.name}
@@ -322,7 +341,7 @@ export default function Dashboard() {
               status="neutral"
             />
           </div>
-          <div className="col-6" style={{ gridColumn: 'span 6 / span 6' }}>
+          <div>
             <InsightCard 
               title="Avg. Transaction Value"
               value={`Ksh ${metrics.atv.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
