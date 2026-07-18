@@ -26,7 +26,7 @@ export default function LandingPage() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#170833',
+      backgroundColor: 'var(--background)',
       position: 'relative',
       overflow: 'hidden', // It's okay to hide overflow on the main page wrapper
       color: '#ffffff',
@@ -36,7 +36,7 @@ export default function LandingPage() {
       <div style={{ 
         position: 'absolute', 
         inset: 0, 
-        background: 'radial-gradient(ellipse at center, #4c1d95 0%, #2e1065 50%, #170833 100%)',
+        background: 'radial-gradient(ellipse at center, var(--card) 0%, var(--background) 50%, var(--deep) 100%)',
         zIndex: 0 
       }} />
       
@@ -60,10 +60,10 @@ export default function LandingPage() {
       }}>
         {/* 2. Main Container (Dashboard Panel Color) */}
         <div style={{
-          background: 'rgba(28, 36, 49, 0.8)',
+          background: 'var(--card)',
           backdropFilter: 'blur(12px)',
           WebkitBackdropFilter: 'blur(12px)',
-          border: '1px solid rgba(45, 55, 72, 0.5)',
+          border: '1px solid var(--border)',
           borderRadius: '2rem',
           padding: '2.5rem',
           display: 'flex',
@@ -167,11 +167,11 @@ export default function LandingPage() {
                 width: '120px',
                 height: '120px',
                 borderRadius: '50%',
-                background: 'linear-gradient(to top right, #9333ea, #a78bfa)',
+                background: 'linear-gradient(to top right, var(--primary), var(--accent))',
                 border: 'none',
                 boxShadow: isActive 
-                  ? '0 0 60px -10px rgba(167, 139, 250, 0.9), inset 0 2px 4px rgba(255, 255, 255, 0.4)' 
-                  : '0 0 40px -10px rgba(167, 139, 250, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.4)',
+                  ? '0 0 60px -10px var(--ring), inset 0 2px 4px rgba(255, 255, 255, 0.4)' 
+                  : '0 0 40px -10px var(--ring), inset 0 2px 4px rgba(255, 255, 255, 0.4)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -181,10 +181,10 @@ export default function LandingPage() {
                 zIndex: 2
               }}
               onMouseOver={(e) => {
-                if (!isActive) e.currentTarget.style.boxShadow = '0 0 60px -10px rgba(167, 139, 250, 0.9), inset 0 2px 4px rgba(255, 255, 255, 0.4)';
+                if (!isActive) e.currentTarget.style.boxShadow = '0 0 60px -10px var(--ring), inset 0 2px 4px rgba(255, 255, 255, 0.4)';
               }}
               onMouseOut={(e) => {
-                if (!isActive) e.currentTarget.style.boxShadow = '0 0 40px -10px rgba(167, 139, 250, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.4)';
+                if (!isActive) e.currentTarget.style.boxShadow = '0 0 40px -10px var(--ring), inset 0 2px 4px rgba(255, 255, 255, 0.4)';
               }}
             >
               <Power 
@@ -203,8 +203,9 @@ export default function LandingPage() {
             display: 'flex',
             gap: '1.5rem',
             width: '100%',
+            flexWrap: 'wrap',
             justifyContent: 'center',
-            maxHeight: isActive ? '300px' : '0px',
+            maxHeight: isActive ? '800px' : '0px',
             opacity: isActive ? 1 : 0,
             transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
             pointerEvents: isActive ? 'auto' : 'none',
@@ -231,7 +232,7 @@ export default function LandingPage() {
               <div style={{ 
                 padding: '1rem', 
                 borderRadius: '50%', 
-                background: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                background: 'linear-gradient(135deg, var(--primary), var(--accent))',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.3)',
                 display: 'flex',
                 alignItems: 'center',
@@ -265,7 +266,7 @@ export default function LandingPage() {
               <div style={{ 
                 padding: '1rem', 
                 borderRadius: '50%', 
-                background: 'linear-gradient(135deg, #a855f7, #7e22ce)',
+                background: 'linear-gradient(135deg, var(--primary), var(--accent))',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.3)',
                 display: 'flex',
                 alignItems: 'center',
@@ -292,8 +293,8 @@ export default function LandingPage() {
         zIndex: 10,
         padding: '1.25rem',
         textAlign: 'center',
-        borderTop: '1px solid rgba(45, 55, 72, 0.5)',
-        background: 'rgba(28, 36, 49, 0.6)',
+        borderTop: '1px solid var(--border)',
+        background: 'var(--card)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
         color: '#94a3b8',

@@ -90,7 +90,7 @@ export default function EmployeeLoginPage() {
         }
         .brand-panel {
           flex: 1;
-          background: linear-gradient(135deg, #0f172a 0%, #064e3b 100%);
+          background: linear-gradient(135deg, var(--background) 0%, #064e3b 100%);
           display: flex;
           flex-direction: column;
           justify-content: center;
