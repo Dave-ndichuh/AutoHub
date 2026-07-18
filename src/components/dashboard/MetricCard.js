@@ -1,9 +1,9 @@
-import React from 'react';
+import AnimatedNumber from './AnimatedNumber';
 
-export default function MetricCard({ title, icon, value, subline, accentColor = 'var(--primary)', className = '' }) {
+export default function MetricCard({ title, icon, value, prefix = '', suffix = '', decimals = 0, subline, accentColor = 'var(--primary)', className = '' }) {
   return (
     <div 
-      className={`glass metric-card ${className}`} 
+      className={`glass metric-card card-lift ${className}`} 
       style={{ 
         padding: '1.5rem', 
         borderTop: `4px solid ${accentColor}`,
@@ -19,7 +19,7 @@ export default function MetricCard({ title, icon, value, subline, accentColor = 
       </div>
       
       <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--foreground)', lineHeight: 1.1, marginBottom: '0.5rem' }}>
-        {value}
+        <AnimatedNumber value={value} prefix={prefix} suffix={suffix} decimals={decimals} />
       </div>
       
       {subline && (

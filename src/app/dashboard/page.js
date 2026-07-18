@@ -8,6 +8,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import MetricCard from '@/components/dashboard/MetricCard';
 import InsightCard from '@/components/dashboard/InsightCard';
 import CreditSalesTable from '@/components/dashboard/CreditSalesTable';
+import AnimatedNumber from '@/components/dashboard/AnimatedNumber';
 import { useAuth } from '@/components/AuthGuard';
 
 export default function Dashboard() {
@@ -198,7 +199,14 @@ export default function Dashboard() {
   }, [router, branchId]);
 
   if (loading) {
-    return <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>Loading advanced analytics...</div>;
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem', flexWrap: 'wrap', gap: '1.5rem', width: '100%' }}>
+        <div className="skeleton-shimmer glass" style={{ height: '120px', width: '22%', borderRadius: '12px' }}></div>
+        <div className="skeleton-shimmer glass" style={{ height: '120px', width: '22%', borderRadius: '12px' }}></div>
+        <div className="skeleton-shimmer glass" style={{ height: '120px', width: '22%', borderRadius: '12px' }}></div>
+        <div className="skeleton-shimmer glass" style={{ height: '120px', width: '22%', borderRadius: '12px' }}></div>
+      </div>
+    );
   }
 
   return (
@@ -260,40 +268,47 @@ export default function Dashboard() {
 
       {/* Row 1: Executive KPIs */}
       <div>
-        <h2 className="heading-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Executive Dashboard</h2>
+        <h2 className="heading-2 stagger-1" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Executive Dashboard</h2>
         <div className="dashboard-grid">
-          <div className="col-3">
+          <div className="col-3 stagger-1">
             <MetricCard 
               title="Total Sales" 
               icon={<TrendingUp size={18} />} 
-              value={`Ksh ${metrics.totalSales.toLocaleString()}`} 
+              value={metrics.totalSales} 
+              prefix="Ksh "
+              decimals={0}
               subline="This month's revenue"
               accentColor="#3b82f6"
             />
           </div>
-          <div className="col-3">
+          <div className="col-3 stagger-2">
             <MetricCard 
               title="Gross Profit" 
               icon={<DollarSign size={18} />} 
-              value={`Ksh ${metrics.grossProfit.toLocaleString()}`} 
+              value={metrics.grossProfit} 
+              prefix="Ksh "
+              decimals={0}
               subline="Before operating expenses"
               accentColor="#10b981"
             />
           </div>
-          <div className="col-3">
+          <div className="col-3 stagger-3">
             <MetricCard 
               title="Profit Margin" 
               icon={<Activity size={18} />} 
-              value={`${metrics.profitMargin.toFixed(1)}%`} 
+              value={metrics.profitMargin} 
+              suffix="%"
+              decimals={1}
               subline="Average yield per sale"
               accentColor="#8b5cf6"
             />
           </div>
-          <div className="col-3">
+          <div className="col-3 stagger-4">
             <MetricCard 
               title="Transactions" 
               icon={<ShoppingCart size={18} />} 
-              value={metrics.transactionCount.toLocaleString()} 
+              value={metrics.transactionCount} 
+              decimals={0}
               subline="Total closed orders"
               accentColor="#f59e0b"
             />
@@ -303,36 +318,36 @@ export default function Dashboard() {
 
       {/* Row 2: Operational Insights */}
       <div>
-        <h2 className="heading-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Operational Insights</h2>
+        <h2 className="heading-2 stagger-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Operational Insights</h2>
         
         <div className="five-col-grid">
-          <div>
+          <div className="stagger-1">
             <InsightCard 
               title="Low Stock Items"
-              value={metrics.lowStockCount.toLocaleString()}
+              value={<AnimatedNumber value={metrics.lowStockCount} />}
               context="Items with ≤ 5 units left"
               status={metrics.lowStockCount > 0 ? 'warning' : 'success'}
               onClick={() => router.push('/products?filter=low-stock')}
             />
           </div>
-          <div>
+          <div className="stagger-2">
             <InsightCard 
               title="Out of Stock Items"
-              value={metrics.outOfStockCount.toLocaleString()}
+              value={<AnimatedNumber value={metrics.outOfStockCount} />}
               context="Items with 0 units left"
               status={metrics.outOfStockCount > 0 ? 'danger' : 'success'}
               onClick={() => router.push('/products?filter=out-of-stock')}
             />
           </div>
-          <div>
+          <div className="stagger-3">
             <InsightCard 
               title="Stock Value at Risk"
-              value={`Ksh ${metrics.stockValue.toLocaleString()}`}
+              value={<AnimatedNumber value={metrics.stockValue} prefix="Ksh " decimals={0} />}
               context="Total inventory valuation"
               status="warning"
             />
           </div>
-          <div>
+          <div className="stagger-4">
             <InsightCard 
               title="Top Selling Product"
               value={metrics.topProduct.name}
@@ -340,10 +355,10 @@ export default function Dashboard() {
               status="neutral"
             />
           </div>
-          <div>
+          <div className="stagger-4">
             <InsightCard 
               title="Avg. Transaction Value"
-              value={`Ksh ${metrics.atv.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+              value={<AnimatedNumber value={metrics.atv} prefix="Ksh " decimals={0} />}
               context="Average order size"
               status="neutral"
             />
@@ -353,10 +368,10 @@ export default function Dashboard() {
 
       {/* Row 3: Visual Charts */}
       <div>
-        <h2 className="heading-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Performance Trends</h2>
+        <h2 className="heading-2 stagger-3" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Performance Trends</h2>
         <div className="dashboard-grid" style={{ minHeight: '350px' }}>
           
-          <div className="col-8 glass" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+          <div className="col-8 glass stagger-3 card-lift" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: 'var(--muted-foreground)' }}>
               <BarChart3 size={18} className="text-primary" /> 
               <h3 style={{ fontSize: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sales Trend (Last 7 Days)</h3>
@@ -379,7 +394,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="col-4 glass" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+          <div className="col-4 glass stagger-4 card-lift" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: 'var(--muted-foreground)' }}>
               <Tag size={18} className="text-primary" /> 
               <h3 style={{ fontSize: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Revenue by Payment</h3>
@@ -419,7 +434,7 @@ export default function Dashboard() {
       </div>
 
       {/* Row 4: Active Credit Sales */}
-      <div>
+      <div className="stagger-4">
         <h2 className="heading-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Outstanding Credit Sales</h2>
         <CreditSalesTable />
       </div>

@@ -595,3 +595,58 @@ button {
   background: var(--card);
   border-radius: 8px;
 }
+
+/* Liveness Animations */
+@keyframes slideUpFade {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.stagger-1 { animation: slideUpFade 0.5s ease-out forwards; animation-delay: 0.1s; opacity: 0; }
+.stagger-2 { animation: slideUpFade 0.5s ease-out forwards; animation-delay: 0.2s; opacity: 0; }
+.stagger-3 { animation: slideUpFade 0.5s ease-out forwards; animation-delay: 0.3s; opacity: 0; }
+.stagger-4 { animation: slideUpFade 0.5s ease-out forwards; animation-delay: 0.4s; opacity: 0; }
+
+@keyframes subtlePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.02); box-shadow: 0 0 20px 0 rgba(239, 68, 68, 0.4); }
+}
+
+.animate-pulse-subtle {
+  animation: subtlePulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+
+.skeleton-shimmer {
+  animation: shimmer 2s infinite linear;
+  background: linear-gradient(to right, rgba(255,255,255,0.05) 4%, rgba(255,255,255,0.1) 25%, rgba(255,255,255,0.05) 36%);
+  background-size: 1000px 100%;
+}
+
+/* Enhanced Interactions */
+.table-row-interactive {
+  transition: all 0.2s ease;
+}
+.table-row-interactive:hover td {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+.table-row-interactive:hover {
+  transform: translateX(4px);
+}
+
+.card-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-press:active {
+  transform: scale(0.97);
+}

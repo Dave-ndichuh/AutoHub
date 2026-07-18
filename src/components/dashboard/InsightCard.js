@@ -17,7 +17,7 @@ export default function InsightCard({ title, value, context, status = 'neutral',
 
   return (
     <div 
-      className={`glass insight-card ${className}`} 
+      className={`glass insight-card card-lift ${(status === 'danger' || status === 'warning') ? 'animate-pulse-subtle' : ''} ${className}`} 
       style={{ 
         padding: '1.25rem', 
         borderLeft: `3px solid ${config.color}`,
