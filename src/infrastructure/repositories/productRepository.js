@@ -42,6 +42,10 @@ export const productRepository = {
       });
     }
 
+    if (filter === 'out-of-stock') {
+      query = query.lte('ON_HAND', 0);
+    }
+
     if (filter === 'low-stock') {
       // For low stock, we need to compare two columns (ON_HAND <= REORDER_THRESHOLD)
       // Since Supabase/PostgREST JS client doesn't support column-to-column comparisons easily

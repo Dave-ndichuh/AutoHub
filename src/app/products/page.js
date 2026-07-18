@@ -141,9 +141,9 @@ function ProductsContent() {
           />
         </div>
         
-        {filterParam === 'low-stock' && (
+        {(filterParam === 'low-stock' || filterParam === 'out-of-stock') && (
           <div style={{ padding: '0.5rem 1rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
-             Showing Low Stock Items
+             Showing {filterParam === 'low-stock' ? 'Low Stock' : 'Out of Stock'} Items
              <button onClick={() => router.push('/products')} style={{ background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', display: 'flex', padding: 0 }}><X size={16}/></button>
           </div>
         )}

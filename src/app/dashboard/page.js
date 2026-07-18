@@ -24,6 +24,7 @@ export default function Dashboard() {
     atv: 0,
     stockValue: 0,
     lowStockCount: 0,
+    outOfStockCount: 0,
     topProduct: { name: 'N/A', units: 0 }
   });
 
@@ -57,12 +58,14 @@ export default function Dashboard() {
         
         let stockVal = 0;
         let lowStock = 0;
+        let outOfStock = 0;
         if (products) {
           products.forEach(p => {
             const onHand = Number(p.ON_HAND) || 0;
             const cost = Number(p.COST_PRICE) || 0;
             if (onHand > 0) stockVal += (onHand * cost);
-            if (onHand <= 5) lowStock++;
+            if (onHand <= 5 && onHand > 0) lowStock++;
+            if (onHand <= 0) outOfStock++;
           });
         }
 
@@ -179,6 +182,7 @@ export default function Dashboard() {
           atv,
           stockValue: stockVal,
           lowStockCount: lowStock,
+          outOfStockCount: outOfStock,
           topProduct: topP
         });
         setSalesTrend(trendData);
@@ -283,8 +287,17 @@ export default function Dashboard() {
               title="Low Stock Items"
               value={metrics.lowStockCount.toLocaleString()}
               context="Items with ≤ 5 units left"
-              status={metrics.lowStockCount > 0 ? 'danger' : 'success'}
+              status={metrics.lowStockCount > 0 ? 'warning' : 'success'}
               onClick={() => router.push('/products?filter=low-stock')}
+            />
+          </div>
+          <div className="col-3">
+            <InsightCard 
+              title="Out of Stock Items"
+              value={metrics.outOfStockCount.toLocaleString()}
+              context="Items with 0 units left"
+              status={metrics.outOfStockCount > 0 ? 'danger' : 'success'}
+              onClick={() => router.push('/products?filter=out-of-stock')}
             />
           </div>
           <div className="col-3">
