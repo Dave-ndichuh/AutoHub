@@ -35,6 +35,8 @@ export default function CreditSalesTable() {
         CREDIT_DUE_DATE,
         CREDIT_TERMS,
         IS_SETTLED,
+        CASH_AMOUNT,
+        MPESA_AMOUNT,
         credit_customer:customer!transaction_CREDIT_CUSTOMER_ID_fkey(FIRST_NAME, LAST_NAME)
       `)
       .eq('IS_CREDIT', true)
@@ -123,23 +125,39 @@ export default function CreditSalesTable() {
         });
 
       } else {
-        // Normal settlement (Cash, M-Pesa, Hybrid)
-        let updateData = {
-          IS_SETTLED: true,
-          PAYMENT_METHOD: settlementMode
-        };
-
-        if (settlementMode === 'Hybrid') {
-          updateData.CASH_AMOUNT = parseFloat(cashAmount) || 0;
-          updateData.MPESA_AMOUNT = parseFloat(mpesaAmount) || 0;
-          
-          // Verify hybrid totals match
-          const totalPaid = updateData.CASH_AMOUNT + updateData.MPESA_AMOUNT;
-          const due = settlingSale.ADJUSTED_TOTAL || settlingSale.GRAND_TOTAL;
-          if (Math.abs(totalPaid - due) > 1) { // 1 Ksh tolerance
-            throw new Error(`Hybrid payment total (Ksh ${totalPaid}) must equal the amount due (Ksh ${due})`);
-          }
+        // Partial or Full Settlement
+        const currentCash = settlingSale.CASH_AMOUNT || 0;
+        const currentMpesa = settlingSale.MPESA_AMOUNT || 0;
+        
+        const payingCash = parseFloat(cashAmount) || 0;
+        const payingMpesa = parseFloat(mpesaAmount) || 0;
+        
+        const totalPayingNow = payingCash + payingMpesa;
+        const amountDue = (settlingSale.ADJUSTED_TOTAL || settlingSale.GRAND_TOTAL) - (currentCash + currentMpesa);
+        
+        if (totalPayingNow === 0 && settlementMode !== 'Return') {
+          throw new Error('Please enter a payment amount.');
         }
+        
+        if (totalPayingNow > amountDue + 1) { // 1 Ksh tolerance
+          throw new Error(`Payment amount (Ksh ${totalPayingNow}) exceeds the amount due (Ksh ${amountDue}).`);
+        }
+
+        const isFullySettled = Math.abs(totalPayingNow - amountDue) <= 1;
+
+        const newCash = currentCash + payingCash;
+        const newMpesa = currentMpesa + payingMpesa;
+        
+        let determinedPaymentMethod = 'Hybrid';
+        if (newCash > 0 && newMpesa === 0) determinedPaymentMethod = 'Cash';
+        if (newMpesa > 0 && newCash === 0) determinedPaymentMethod = 'M-Pesa';
+
+        const updateData = {
+          IS_SETTLED: isFullySettled,
+          PAYMENT_METHOD: determinedPaymentMethod,
+          CASH_AMOUNT: newCash,
+          MPESA_AMOUNT: newMpesa
+        };
 
         const { error } = await supabase
           .from('transaction')
@@ -149,8 +167,8 @@ export default function CreditSalesTable() {
         if (error) throw error;
         
         await logAction({
-          action: 'Settled Credit Sale',
-          details: `Transaction #TRX-${formatTransId(settlingSale.SERIAL_NUMBER || transId)} was settled via ${settlementMode}.`,
+          action: isFullySettled ? 'Settled Credit Sale' : 'Partial Credit Payment',
+          details: `Transaction #TRX-${formatTransId(settlingSale.SERIAL_NUMBER || transId)} received Ksh ${totalPayingNow} via ${determinedPaymentMethod}. ${isFullySettled ? 'Fully Settled.' : 'Remaining due: Ksh ' + (amountDue - totalPayingNow)}`,
           severity: 'info'
         });
       }
@@ -210,10 +228,13 @@ export default function CreditSalesTable() {
         </thead>
         <tbody>
           {creditSales.map(sale => {
-            const amount = sale.ADJUSTED_TOTAL || sale.GRAND_TOTAL;
+            const totalAmount = sale.ADJUSTED_TOTAL || sale.GRAND_TOTAL;
+            const amountPaid = (sale.CASH_AMOUNT || 0) + (sale.MPESA_AMOUNT || 0);
+            const amountDue = totalAmount - amountPaid;
+            
             const customerName = sale.credit_customer ? `${sale.credit_customer.FIRST_NAME} ${sale.credit_customer.LAST_NAME}` : 'Unknown';
             return (
-              <tr key={sale.TRANS_ID}>
+              <tr key={sale.TRANS_ID} className="table-row-interactive">
                 <td>
                   <button 
                     className="badge badge-warning" 
@@ -231,7 +252,12 @@ export default function CreditSalesTable() {
                 <td className="text-muted">{new Date(sale.CREATED_AT).toLocaleDateString()}</td>
                 <td style={{ fontWeight: 500 }}>{sale.CREDIT_DUE_DATE ? new Date(sale.CREDIT_DUE_DATE).toLocaleDateString() : 'N/A'}</td>
                 <td>{getStatusBadge(sale.CREDIT_DUE_DATE)}</td>
-                <td style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1.1rem' }}>Ksh {amount.toLocaleString()}</td>
+                <td>
+                  <div style={{ fontWeight: 800, color: 'var(--primary)', fontSize: '1.1rem' }}>Ksh {amountDue.toLocaleString()}</div>
+                  {amountPaid > 0 && (
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Paid: Ksh {amountPaid.toLocaleString()}</div>
+                  )}
+                </td>
                 <td style={{ textAlign: 'right' }}>
                   <button 
                     className="btn btn-primary" 
@@ -240,7 +266,7 @@ export default function CreditSalesTable() {
                     onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                     onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                   >
-                    Mark Settled
+                    {amountPaid > 0 ? 'Make Payment' : 'Mark Settled'}
                   </button>
                 </td>
               </tr>
@@ -271,21 +297,35 @@ export default function CreditSalesTable() {
             </div>
 
             <p style={{ color: 'var(--muted-foreground)', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
-              You are about to clear the debt for <strong>TRX-{formatTransId(settlingSale.SERIAL_NUMBER || settlingSale.TRANS_ID)}</strong> amounting to 
-              <span style={{ color: 'var(--primary)', fontWeight: 700, marginLeft: '0.25rem' }}>
-                Ksh {(settlingSale.ADJUSTED_TOTAL || settlingSale.GRAND_TOTAL).toLocaleString()}
-              </span>.
+              Transaction <strong>TRX-{formatTransId(settlingSale.SERIAL_NUMBER || settlingSale.TRANS_ID)}</strong>.
+              Total invoice: Ksh {(settlingSale.ADJUSTED_TOTAL || settlingSale.GRAND_TOTAL).toLocaleString()}.<br/>
+              Amount Due: 
+              <span style={{ color: 'var(--primary)', fontWeight: 700, marginLeft: '0.25rem', fontSize: '1.1rem' }}>
+                Ksh {((settlingSale.ADJUSTED_TOTAL || settlingSale.GRAND_TOTAL) - ((settlingSale.CASH_AMOUNT || 0) + (settlingSale.MPESA_AMOUNT || 0))).toLocaleString()}
+              </span>
             </p>
 
             <form onSubmit={confirmSettlement} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--foreground)' }}>Mode of Resolution</label>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: 'var(--foreground)' }}>Action / Payment Method</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
                   {['Cash', 'M-Pesa', 'Hybrid', 'Return'].map(mode => (
                     <button
                       key={mode}
                       type="button"
-                      onClick={() => setSettlementMode(mode)}
+                      onClick={() => {
+                        setSettlementMode(mode);
+                        if (mode === 'Cash') {
+                          setCashAmount(((settlingSale.ADJUSTED_TOTAL || settlingSale.GRAND_TOTAL) - ((settlingSale.CASH_AMOUNT || 0) + (settlingSale.MPESA_AMOUNT || 0))).toString());
+                          setMpesaAmount('');
+                        } else if (mode === 'M-Pesa') {
+                          setMpesaAmount(((settlingSale.ADJUSTED_TOTAL || settlingSale.GRAND_TOTAL) - ((settlingSale.CASH_AMOUNT || 0) + (settlingSale.MPESA_AMOUNT || 0))).toString());
+                          setCashAmount('');
+                        } else {
+                          setCashAmount('');
+                          setMpesaAmount('');
+                        }
+                      }}
                       style={{
                         padding: '0.75rem',
                         borderRadius: '8px',
@@ -303,15 +343,15 @@ export default function CreditSalesTable() {
                 </div>
               </div>
 
-              {settlementMode === 'Hybrid' && (
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem' }}>Cash (Ksh)</label>
-                    <input type="number" className="input" value={cashAmount} onChange={e => setCashAmount(e.target.value)} required min="0" step="0.01" />
+              {settlementMode !== 'Return' && (
+                <div style={{ display: 'flex', gap: '1rem', background: 'rgba(0,0,0,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                  <div style={{ flex: 1, opacity: settlementMode === 'M-Pesa' ? 0.5 : 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem' }}>Cash Paid</label>
+                    <input type="number" className="input" value={cashAmount} onChange={e => setCashAmount(e.target.value)} min="0" step="0.01" disabled={settlementMode === 'M-Pesa'} placeholder="0" />
                   </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem' }}>M-Pesa (Ksh)</label>
-                    <input type="number" className="input" value={mpesaAmount} onChange={e => setMpesaAmount(e.target.value)} required min="0" step="0.01" />
+                  <div style={{ flex: 1, opacity: settlementMode === 'Cash' ? 0.5 : 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem' }}>M-Pesa Paid</label>
+                    <input type="number" className="input" value={mpesaAmount} onChange={e => setMpesaAmount(e.target.value)} min="0" step="0.01" disabled={settlementMode === 'Cash'} placeholder="0" />
                   </div>
                 </div>
               )}

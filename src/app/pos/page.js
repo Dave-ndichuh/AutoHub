@@ -56,6 +56,7 @@ export default function POSPage() {
   const [creditCustomerId, setCreditCustomerId] = useState('');
   const [creditDueDate, setCreditDueDate] = useState('');
   const [creditTerms, setCreditTerms] = useState('');
+  const [customerOutstandingCredit, setCustomerOutstandingCredit] = useState(null);
   
   // Adjustments (Moved to item-level)
   
@@ -98,6 +99,37 @@ export default function POSPage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (paymentMethod !== 'Credit' && paymentMethod !== 'Invoice') {
+      setCustomerOutstandingCredit(null);
+      return;
+    }
+    
+    if (creditCustomerId && creditCustomerId !== 'new') {
+      const fetchCredit = async () => {
+        const { data, error } = await supabase
+          .from('transaction')
+          .select('ADJUSTED_TOTAL, GRAND_TOTAL, CASH_AMOUNT, MPESA_AMOUNT')
+          .eq('CREDIT_CUSTOMER_ID', creditCustomerId)
+          .eq('IS_CREDIT', true)
+          .eq('IS_SETTLED', false);
+          
+        if (!error && data) {
+          let total = 0;
+          data.forEach(sale => {
+            const saleTotal = sale.ADJUSTED_TOTAL || sale.GRAND_TOTAL;
+            const salePaid = (sale.CASH_AMOUNT || 0) + (sale.MPESA_AMOUNT || 0);
+            total += (saleTotal - salePaid);
+          });
+          setCustomerOutstandingCredit(total);
+        }
+      };
+      fetchCredit();
+    } else {
+      setCustomerOutstandingCredit(null);
+    }
+  }, [creditCustomerId, paymentMethod]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -995,6 +1027,16 @@ export default function POSPage() {
                 <option value="new" style={{ fontWeight: 600, color: 'var(--primary)' }}>+ Add New Customer...</option>
                 {customers.map(c => <option key={c.CUST_ID} value={c.CUST_ID}>{c.FIRST_NAME} {c.LAST_NAME}</option>)}
               </select>
+
+              {customerOutstandingCredit !== null && customerOutstandingCredit > 0 && (
+                <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '0.75rem 1rem', borderRadius: '8px', color: '#b45309', fontSize: '0.875rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                  <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: '2px', color: '#f59e0b' }} />
+                  <div>
+                    <strong>Outstanding Balance: Ksh {customerOutstandingCredit.toLocaleString()}</strong><br/>
+                    This customer currently has unpaid credit. Approving this transaction will bring their total debt to Ksh {(customerOutstandingCredit + grandTotal).toLocaleString()}.
+                  </div>
+                </div>
+              )}
 
               {showAddCustomer && (
                 <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', gap: '0.75rem', border: '1px solid var(--border)' }}>
