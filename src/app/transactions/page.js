@@ -194,32 +194,49 @@ function TransactionsContent() {
     e.preventDefault();
     if (!transactionToSettle) return;
 
-    let finalCash = 0;
-    let finalMpesa = 0;
-    let isHybrid = false;
+    const currentCash = transactionToSettle.CASH_AMOUNT || 0;
+    const currentMpesa = transactionToSettle.MPESA_AMOUNT || 0;
 
-    const totalDue = transactionToSettle.ADJUSTED_TOTAL || transactionToSettle.GRAND_TOTAL;
-
-    if (paymentMode === 'Cash') finalCash = totalDue;
-    else if (paymentMode === 'M-Pesa') finalMpesa = totalDue;
+    let payingCash = 0;
+    let payingMpesa = 0;
+    
+    if (paymentMode === 'Cash') payingCash = Number(cashAmount) || 0;
+    else if (paymentMode === 'M-Pesa') payingMpesa = Number(mpesaAmount) || 0;
     else if (paymentMode === 'Hybrid') {
-      finalCash = Number(cashAmount);
-      finalMpesa = Number(mpesaAmount);
-      isHybrid = true;
-      if (finalCash + finalMpesa !== totalDue) {
-        alert(`Hybrid amounts (Ksh ${finalCash + finalMpesa}) must equal the total due (Ksh ${totalDue}).`);
-        return;
-      }
+      payingCash = Number(cashAmount) || 0;
+      payingMpesa = Number(mpesaAmount) || 0;
     }
 
+    const totalPayingNow = payingCash + payingMpesa;
+    const totalAmount = transactionToSettle.ADJUSTED_TOTAL || transactionToSettle.GRAND_TOTAL;
+    const amountDue = totalAmount - (currentCash + currentMpesa);
+
+    if (totalPayingNow === 0) {
+      alert('Please enter a payment amount.');
+      return;
+    }
+
+    if (totalPayingNow > amountDue + 1) {
+      alert(`Payment amount (Ksh ${totalPayingNow}) exceeds the amount due (Ksh ${amountDue}).`);
+      return;
+    }
+
+    const isFullySettled = Math.abs(totalPayingNow - amountDue) <= 1;
+    const newCash = currentCash + payingCash;
+    const newMpesa = currentMpesa + payingMpesa;
+
+    let determinedPaymentMethod = 'Hybrid';
+    if (newCash > 0 && newMpesa === 0) determinedPaymentMethod = 'Cash';
+    if (newMpesa > 0 && newCash === 0) determinedPaymentMethod = 'M-Pesa';
+
     const { error } = await supabase.from('transaction').update({
-      PAYMENT_METHOD: paymentMode,
-      CASH_AMOUNT: finalCash,
-      MPESA_AMOUNT: finalMpesa,
-      HYBRID_PAYMENT: isHybrid,
-      IS_SETTLED: true,
-      CASH_TENDERED: totalDue,
-      RECEIPT_NUMBER: (paymentMode === 'M-Pesa' || (paymentMode === 'Hybrid' && finalMpesa > 0)) ? mpesaReceipt : null
+      PAYMENT_METHOD: determinedPaymentMethod,
+      CASH_AMOUNT: newCash,
+      MPESA_AMOUNT: newMpesa,
+      HYBRID_PAYMENT: (newCash > 0 && newMpesa > 0),
+      IS_SETTLED: isFullySettled,
+      CASH_TENDERED: totalAmount,
+      RECEIPT_NUMBER: ((paymentMode === 'M-Pesa' && payingMpesa > 0) || (paymentMode === 'Hybrid' && payingMpesa > 0)) ? mpesaReceipt : null
     }).eq('TRANS_ID', transactionToSettle.TRANS_ID);
 
     if (error) {
@@ -514,9 +531,9 @@ function TransactionsContent() {
             
             <form onSubmit={handleSettleSubmit} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div style={{ textAlign: 'center', padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: 'var(--radius)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                <div style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Total Amount Due</div>
+                <div style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem', marginBottom: '0.25rem' }}>Amount Due</div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#10b981' }}>
-                  Ksh { (transactionToSettle.ADJUSTED_TOTAL || transactionToSettle.GRAND_TOTAL).toLocaleString() }
+                  Ksh { ((transactionToSettle.ADJUSTED_TOTAL || transactionToSettle.GRAND_TOTAL) - ((transactionToSettle.CASH_AMOUNT || 0) + (transactionToSettle.MPESA_AMOUNT || 0))).toLocaleString() }
                 </div>
               </div>
 
@@ -547,8 +564,21 @@ function TransactionsContent() {
 
               {paymentMode === 'M-Pesa' && (
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>M-Pesa Transaction Code</label>
-                  <input type="text" className="input" placeholder="e.g. QWE123RTYA" style={{ border: '2px solid #25D366' }} value={mpesaReceipt} onChange={(e) => setMpesaReceipt(e.target.value.toUpperCase())} minLength={10} maxLength={10} pattern="[A-Z0-9]{10}" title="M-Pesa code must be exactly 10 characters (letters and numbers)" required />
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Amount Paying</label>
+                    <input type="number" className="input" value={mpesaAmount} onChange={e => setMpesaAmount(e.target.value)} required />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>M-Pesa Transaction Code</label>
+                    <input type="text" className="input" placeholder="e.g. QWE123RTYA" style={{ border: '2px solid #25D366' }} value={mpesaReceipt} onChange={(e) => setMpesaReceipt(e.target.value.toUpperCase())} minLength={10} maxLength={10} pattern="[A-Z0-9]{10}" title="M-Pesa code must be exactly 10 characters" />
+                  </div>
+                </div>
+              )}
+              
+              {paymentMode === 'Cash' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Amount Paying</label>
+                  <input type="number" className="input" value={cashAmount} onChange={e => setCashAmount(e.target.value)} required />
                 </div>
               )}
 
@@ -567,7 +597,7 @@ function TransactionsContent() {
                   {Number(mpesaAmount) > 0 && (
                     <div>
                       <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>M-Pesa Transaction Code</label>
-                      <input type="text" className="input" placeholder="e.g. QWE123RTYA" style={{ border: '2px solid #25D366' }} value={mpesaReceipt} onChange={(e) => setMpesaReceipt(e.target.value.toUpperCase())} minLength={10} maxLength={10} pattern="[A-Z0-9]{10}" title="M-Pesa code must be exactly 10 characters (letters and numbers)" required />
+                      <input type="text" className="input" placeholder="e.g. QWE123RTYA" style={{ border: '2px solid #25D366' }} value={mpesaReceipt} onChange={(e) => setMpesaReceipt(e.target.value.toUpperCase())} minLength={10} maxLength={10} pattern="[A-Z0-9]{10}" title="M-Pesa code must be exactly 10 characters" />
                     </div>
                   )}
                 </div>
