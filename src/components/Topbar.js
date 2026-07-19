@@ -76,6 +76,18 @@ export default function Topbar() {
     document.body.classList.toggle('sidebar-open');
   };
 
+  const toggleTimeFormat = () => {
+    const newVal = timeFormat === '12h' ? '24h' : '12h';
+    setTimeFormat(newVal);
+    localStorage.setItem('timeFormat', newVal);
+  };
+
+  const toggleDateFormat = () => {
+    const newVal = dateFormat === 'long' ? 'short' : 'long';
+    setDateFormat(newVal);
+    localStorage.setItem('dateFormat', newVal);
+  };
+
   return (
     <header className="topbar">
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -88,7 +100,6 @@ export default function Topbar() {
           <Menu size={20} />
         </button>
 
-
         <h1 className="heading-2 title-text">
           {getTitle()}
         </h1>
@@ -96,48 +107,6 @@ export default function Topbar() {
       
       <div className="topbar-right">
         
-        {/* Date & Time Display */}
-        {currentTime && (
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.25rem 0.5rem', gap: '0.75rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted-foreground)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                {formatDate()}
-              </span>
-              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--foreground)', fontVariantNumeric: 'tabular-nums' }}>
-                {formatTime()}
-              </span>
-            </div>
-            
-            <button 
-              onClick={() => setShowTimeSettings(!showTimeSettings)}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '4px', padding: '0.25rem', color: 'var(--muted-foreground)', cursor: 'pointer', transition: 'all 0.2s' }}
-              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--primary)'}
-              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted-foreground)'}
-            >
-              <Settings2 size={14} />
-            </button>
-
-            {showTimeSettings && (
-              <div style={{ position: 'absolute', top: 'calc(100% + 0.5rem)', right: 0, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '1rem', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 50, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Time Format</label>
-                  <select className="input" style={{ width: '100%', padding: '0.5rem' }} value={timeFormat} onChange={(e) => handleTimeFormatChange(e.target.value)}>
-                    <option value="12h">12-Hour (AM/PM)</option>
-                    <option value="24h">24-Hour</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Date Format</label>
-                  <select className="input" style={{ width: '100%', padding: '0.5rem' }} value={dateFormat} onChange={(e) => handleDateFormatChange(e.target.value)}>
-                    <option value="long">Long (Fri, Oct 20, 2023)</option>
-                    <option value="short">Short (20/10/2023)</option>
-                  </select>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
         {/* Refresh Button */}
         <button 
           onClick={() => window.location.reload()}
@@ -230,7 +199,33 @@ export default function Topbar() {
         </div>
 
         <div className="badge badge-success online-badge">Online</div>
-        <div className="user-badge">
+        
+        {/* Minimalist Date & Time Display */}
+        {currentTime && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderLeft: '1px solid var(--border)', paddingLeft: '1rem', marginLeft: '0.25rem' }}>
+            <span 
+              onClick={toggleDateFormat}
+              style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--muted-foreground)', cursor: 'pointer', transition: 'color 0.2s' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--foreground)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted-foreground)'}
+              title="Click to toggle date format"
+            >
+              {formatDate()}
+            </span>
+            <span style={{ color: 'var(--muted-foreground)', fontSize: '0.8rem' }}>•</span>
+            <span 
+              onClick={toggleTimeFormat}
+              style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--foreground)', fontVariantNumeric: 'tabular-nums', cursor: 'pointer', transition: 'color 0.2s' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--primary)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--foreground)'}
+              title="Click to toggle time format"
+            >
+              {formatTime()}
+            </span>
+          </div>
+        )}
+
+        <div className="user-badge" style={{ marginLeft: '0.5rem' }}>
           <User size={16} className="text-muted" style={{ flexShrink: 0 }} />
           <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{userEmail || 'Admin'}</span>
         </div>
