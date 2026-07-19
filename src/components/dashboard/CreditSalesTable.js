@@ -213,8 +213,8 @@ export default function CreditSalesTable() {
   }
 
   return (
-    <div className="glass table-wrapper">
-      <table className="table">
+    <div className="glass table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+      <table className="table" style={{ width: '100%', position: 'relative' }}>
         <thead>
           <tr>
             <th>Trans ID</th>
