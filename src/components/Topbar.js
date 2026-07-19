@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { User, Palette, Menu, RefreshCw } from 'lucide-react';
+import { User, Palette, Menu, RefreshCw, Clock, Settings2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/context/ThemeContext';
@@ -14,6 +14,54 @@ export default function Topbar() {
   const { currentBranch, setBranch } = useBranch();
   const { user, role, branchId, setBranchId } = useAuth();
   const userEmail = user?.email || '';
+
+  // Clock State
+  const [currentTime, setCurrentTime] = useState(null);
+  const [timeFormat, setTimeFormat] = useState('12h');
+  const [dateFormat, setDateFormat] = useState('long');
+  const [showTimeSettings, setShowTimeSettings] = useState(false);
+
+  useEffect(() => {
+    // Load preferences
+    const savedTimeFormat = localStorage.getItem('timeFormat') || '12h';
+    const savedDateFormat = localStorage.getItem('dateFormat') || 'long';
+    setTimeFormat(savedTimeFormat);
+    setDateFormat(savedDateFormat);
+
+    setCurrentTime(new Date());
+
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleTimeFormatChange = (val) => {
+    setTimeFormat(val);
+    localStorage.setItem('timeFormat', val);
+  };
+
+  const handleDateFormatChange = (val) => {
+    setDateFormat(val);
+    localStorage.setItem('dateFormat', val);
+  };
+
+  const formatTime = () => {
+    if (!currentTime) return '';
+    return currentTime.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: timeFormat === '12h'
+    });
+  };
+
+  const formatDate = () => {
+    if (!currentTime) return '';
+    return dateFormat === 'short' 
+      ? currentTime.toLocaleDateString('en-GB') // DD/MM/YYYY
+      : currentTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+  };
 
   // Hide topbar on login pages and landing page, and shop
   if (pathname === '/login' || pathname === '/employee-login' || pathname === '/' || pathname?.startsWith('/shop') || pathname === '/about' || pathname === '/contact') return null;
@@ -48,6 +96,48 @@ export default function Topbar() {
       
       <div className="topbar-right">
         
+        {/* Date & Time Display */}
+        {currentTime && (
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '0.25rem 0.5rem', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted-foreground)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                {formatDate()}
+              </span>
+              <span style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--foreground)', fontVariantNumeric: 'tabular-nums' }}>
+                {formatTime()}
+              </span>
+            </div>
+            
+            <button 
+              onClick={() => setShowTimeSettings(!showTimeSettings)}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', border: 'none', borderRadius: '4px', padding: '0.25rem', color: 'var(--muted-foreground)', cursor: 'pointer', transition: 'all 0.2s' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = 'var(--primary)'}
+              onMouseLeave={(e) => e.currentTarget.style.color = 'var(--muted-foreground)'}
+            >
+              <Settings2 size={14} />
+            </button>
+
+            {showTimeSettings && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 0.5rem)', right: 0, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '1rem', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 50, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Time Format</label>
+                  <select className="input" style={{ width: '100%', padding: '0.5rem' }} value={timeFormat} onChange={(e) => handleTimeFormatChange(e.target.value)}>
+                    <option value="12h">12-Hour (AM/PM)</option>
+                    <option value="24h">24-Hour</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Date Format</label>
+                  <select className="input" style={{ width: '100%', padding: '0.5rem' }} value={dateFormat} onChange={(e) => handleDateFormatChange(e.target.value)}>
+                    <option value="long">Long (Fri, Oct 20, 2023)</option>
+                    <option value="short">Short (20/10/2023)</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Refresh Button */}
         <button 
           onClick={() => window.location.reload()}
