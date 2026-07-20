@@ -185,10 +185,10 @@ export default function CustomerLedgerPage({ params }) {
   const available = account.credit_limit - account.current_balance;
 
   return (
-    <div className="container animate-fade-in" style={{ padding: '2rem' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexShrink: 0 }}>
         <button className="btn btn-secondary" onClick={() => router.push('/credits')} style={{ padding: '0.5rem' }}>
           <ArrowLeft size={18} />
         </button>
@@ -198,8 +198,8 @@ export default function CustomerLedgerPage({ params }) {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid-cards" style={{ marginBottom: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-        <div className="glass" style={{ padding: '1.5rem', borderLeft: '4px solid var(--muted)' }}>
+      <div className="grid-cards" style={{ marginBottom: '1.5rem', flexShrink: 0, gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
+        <div className="glass" style={{ padding: '1.25rem', borderLeft: '4px solid var(--muted)' }}>
           <p className="text-muted" style={{ fontWeight: 600 }}>Credit Limit</p>
           <h2 style={{ fontSize: '1.75rem', fontWeight: 700 }}>Ksh. {Number(account.credit_limit).toLocaleString()}</h2>
         </div>
@@ -214,7 +214,7 @@ export default function CustomerLedgerPage({ params }) {
       </div>
 
       {/* Action Bar */}
-      <div className="glass" style={{ padding: '1rem 1.5rem', marginBottom: '1.5rem', display: 'flex', gap: '1rem' }}>
+      <div className="glass" style={{ padding: '1rem', marginBottom: '1.5rem', display: 'flex', gap: '1rem', flexShrink: 0 }}>
         <button className="btn btn-primary" onClick={() => setShowPaymentModal(true)}>
           <CreditCard size={18} /> Record Payment
         </button>
@@ -227,7 +227,7 @@ export default function CustomerLedgerPage({ params }) {
       </div>
 
       {/* Ledger Table */}
-      <div className="table-wrapper glass" style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid var(--border)' }}>
+      <div className="table-wrapper glass" style={{ flex: 1, overflowY: 'auto', border: '1px solid var(--border)', minHeight: 0 }}>
         <table className="table" style={{ margin: 0 }}>
           <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
             <tr>
