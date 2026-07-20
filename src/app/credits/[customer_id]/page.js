@@ -227,15 +227,15 @@ export default function CustomerLedgerPage({ params }) {
       </div>
 
       {/* Ledger Table */}
-      <div className="table-wrapper glass" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-        <table className="table">
-          <thead style={{ position: 'sticky', top: 0, background: 'var(--card)', zIndex: 10 }}>
+      <div className="table-wrapper glass" style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid var(--border)' }}>
+        <table className="table" style={{ margin: 0 }}>
+          <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
             <tr>
-              <th style={{ background: 'var(--card)' }}>Date</th>
-              <th style={{ background: 'var(--card)' }}>Description</th>
-              <th style={{ textAlign: 'right', background: 'var(--card)' }}>Debit (Increase)</th>
-              <th style={{ textAlign: 'right', background: 'var(--card)' }}>Credit (Payment)</th>
-              <th style={{ textAlign: 'right', background: 'var(--card)' }}>Balance</th>
+              <th style={{ background: 'var(--background)' }}>Date</th>
+              <th style={{ background: 'var(--background)' }}>Description</th>
+              <th style={{ textAlign: 'right', background: 'var(--background)' }}>Debit (Increase)</th>
+              <th style={{ textAlign: 'right', background: 'var(--background)' }}>Credit (Payment)</th>
+              <th style={{ textAlign: 'right', background: 'var(--background)' }}>Balance</th>
             </tr>
           </thead>
           <tbody>
