@@ -20,7 +20,8 @@ import {
   ShieldAlert, 
   FileSpreadsheet,
   Truck,
-  BarChart3
+  BarChart3,
+  Wallet
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -71,6 +72,7 @@ export default function Sidebar() {
     { name: 'Products', path: '/products', icon: Package },
     { name: 'Invoices', path: '/invoices', icon: FileSpreadsheet },
     { name: 'Customers', path: '/customers', icon: Users },
+    { name: 'Credit Docket', path: '/credits', icon: Wallet },
     { name: 'Suppliers', path: '/suppliers', icon: Truck },
     { name: 'Transactions', path: '/transactions', icon: FileText },
     { name: 'Services', path: '/services', icon: Wrench },
@@ -85,6 +87,7 @@ export default function Sidebar() {
       { name: 'Point of Sale', path: '/pos', icon: ShoppingCart },
       { name: 'Invoices', path: '/invoices', icon: FileSpreadsheet },
       { name: 'Customers', path: '/customers', icon: Users },
+      { name: 'Credit Docket', path: '/credits', icon: Wallet },
       { name: 'Transactions', path: '/transactions', icon: FileText },
       { name: 'Services', path: '/services', icon: Wrench },
     ];

@@ -493,6 +493,34 @@ export default function POSPage() {
       }
     }
 
+    let creditAccount = null;
+    if (paymentMethod === 'Credit') {
+      const { data: accData, error: accErr } = await supabase
+        .from('credit_accounts')
+        .select('*')
+        .eq('customer_id', creditCustomerId)
+        .single();
+        
+      if (accErr && accErr.code !== 'PGRST116') {
+         alert('Error checking credit account: ' + accErr.message);
+         return;
+      }
+      creditAccount = accData;
+      
+      if (!creditAccount) {
+         alert('Customer does not have a credit account. Please onboard them in the Credit Docket first.');
+         return;
+      }
+      if (creditAccount.status !== 'active') {
+         alert(`Customer credit account is ${creditAccount.status}.`);
+         return;
+      }
+      if (Number(creditAccount.current_balance) + grandTotal > Number(creditAccount.credit_limit)) {
+         alert(`Credit limit exceeded! Current Balance: Ksh. ${creditAccount.current_balance}, Limit: Ksh. ${creditAccount.credit_limit}. Sale is Ksh. ${grandTotal}.`);
+         return;
+      }
+    }
+
     setCheckingOut(true);
 
     try {
@@ -606,6 +634,21 @@ export default function POSPage() {
 
       const { error: detErr } = await supabase.from('transaction_details').insert(details);
       if (detErr) throw detErr;
+
+      if (paymentMethod === 'Credit' && creditAccount) {
+        const newBalance = Number(creditAccount.current_balance) + grandTotal;
+        await supabase.from('credit_accounts').update({ current_balance: newBalance, updated_at: new Date().toISOString() }).eq('id', creditAccount.id);
+        
+        await supabase.from('credit_transactions').insert([{
+           account_id: creditAccount.id,
+           type: 'debit',
+           amount: grandTotal,
+           created_by: employeeId,
+           reference_type: 'sale',
+           reference_id: transData.TRANS_ID,
+           notes: `Credit Sale #${transData.TRANS_ID.substring(0,8).toUpperCase()}`
+        }]);
+      }
 
       await logAction({
         action: 'Completed Sale',

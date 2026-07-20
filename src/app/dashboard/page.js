@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { TrendingUp, DollarSign, Activity, ShoppingCart, PackageOpen, Tag, BarChart3, AlertTriangle } from 'lucide-react';
+import { TrendingUp, DollarSign, Activity, ShoppingCart, PackageOpen, Tag, BarChart3, AlertTriangle, Wallet } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import MetricCard from '@/components/dashboard/MetricCard';
 import InsightCard from '@/components/dashboard/InsightCard';
@@ -29,7 +29,10 @@ export default function Dashboard() {
     stockValue: 0,
     lowStockCount: 0,
     outOfStockCount: 0,
-    topProduct: { name: 'N/A', units: 0 }
+    topProduct: { name: 'N/A', units: 0 },
+    arTotal: 0,
+    creditSalesMonth: 0,
+    creditPaymentsMonth: 0
   });
 
   // Chart Data
@@ -59,6 +62,21 @@ export default function Dashboard() {
         }
         const { data: products } = await prodQuery;
         
+        // Fetch Credit Ledger Data
+        const { data: accounts } = await supabase.from('credit_accounts').select('current_balance');
+        let arTotal = 0;
+        if (accounts) accounts.forEach(a => arTotal += Number(a.current_balance));
+
+        const { data: creditTrans } = await supabase.from('credit_transactions').select('type, amount').gte('date', firstDayOfMonth);
+        let creditSalesMonth = 0;
+        let creditPaymentsMonth = 0;
+        if (creditTrans) {
+           creditTrans.forEach(ct => {
+             if (ct.type === 'debit') creditSalesMonth += Number(ct.amount);
+             if (ct.type === 'credit') creditPaymentsMonth += Number(ct.amount);
+           });
+        }
+
         let stockVal = 0;
         let lowStock = 0;
         let outOfStock = 0;
@@ -186,7 +204,10 @@ export default function Dashboard() {
           stockValue: stockVal,
           lowStockCount: lowStock,
           outOfStockCount: outOfStock,
-          topProduct: topP
+          topProduct: topP,
+          arTotal,
+          creditSalesMonth,
+          creditPaymentsMonth
         });
         setSalesTrend(trendData);
         setPaymentData(payData);
@@ -363,6 +384,49 @@ export default function Dashboard() {
               trigger={animationTriggers[3]}
               subline="Total closed orders"
               accentColor="#f59e0b"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Row 1.5: Credit Performance */}
+      <div>
+        <h2 className="heading-2 stagger-2" style={{ marginBottom: '1rem', fontSize: '1.25rem', color: 'var(--foreground)' }}>Credit Performance</h2>
+        <div className="dashboard-grid">
+          <div className="col-4 stagger-1">
+            <MetricCard 
+              title="Accounts Receivable" 
+              icon={<Wallet size={18} />} 
+              value={metrics.arTotal || 0} 
+              prefix="Ksh "
+              decimals={0}
+              trigger={animationTriggers[0]}
+              subline="Total outstanding customer debt"
+              accentColor="#ef4444"
+            />
+          </div>
+          <div className="col-4 stagger-2">
+            <MetricCard 
+              title="Credit Sales (MTD)" 
+              icon={<TrendingUp size={18} />} 
+              value={metrics.creditSalesMonth || 0} 
+              prefix="Ksh "
+              decimals={0}
+              trigger={animationTriggers[1]}
+              subline="New credit issued this month"
+              accentColor="#f59e0b"
+            />
+          </div>
+          <div className="col-4 stagger-3">
+            <MetricCard 
+              title="Payments Received (MTD)" 
+              icon={<DollarSign size={18} />} 
+              value={metrics.creditPaymentsMonth || 0} 
+              prefix="Ksh "
+              decimals={0}
+              trigger={animationTriggers[2]}
+              subline="Debt recovered this month"
+              accentColor="#10b981"
             />
           </div>
         </div>
