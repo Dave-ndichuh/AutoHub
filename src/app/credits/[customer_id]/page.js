@@ -6,6 +6,7 @@ import { useAuth } from '@/components/AuthGuard';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, CreditCard, Printer, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import StatementPrint from '@/components/StatementPrint';
 
 export default function CustomerLedgerPage({ params }) {
   const unwrappedParams = use(params);
@@ -24,6 +25,17 @@ export default function CustomerLedgerPage({ params }) {
   const [paymentRef, setPaymentRef] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  useEffect(() => {
+    if (isPrinting) {
+      const timer = setTimeout(() => {
+        window.print();
+        setIsPrinting(false);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isPrinting]);
 
   useEffect(() => {
     fetchLedger();
@@ -201,7 +213,7 @@ export default function CustomerLedgerPage({ params }) {
         <button className="btn btn-secondary" onClick={() => router.push('/pos')}>
           <Plus size={18} /> New Credit Sale
         </button>
-        <button className="btn btn-secondary" onClick={() => window.print()}>
+        <button className="btn btn-secondary" onClick={() => setIsPrinting(true)}>
           <Printer size={18} /> Print Statement
         </button>
       </div>
@@ -355,6 +367,8 @@ export default function CustomerLedgerPage({ params }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {isPrinting && <StatementPrint account={account} transactions={transactions} />}
 
     </div>
   );
