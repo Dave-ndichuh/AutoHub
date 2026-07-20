@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, CreditCard, Printer, Plus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StatementPrint from '@/components/StatementPrint';
+import { formatTransId } from '@/utils/formatters';
 
 export default function CustomerLedgerPage({ params }) {
   const unwrappedParams = use(params);
@@ -76,7 +77,7 @@ export default function CustomerLedgerPage({ params }) {
       const { data: salesTrans, error: stErr } = await supabase
         .from('transaction')
         .select(`
-          TRANS_ID, CREATED_AT, ADJUSTED_TOTAL, GRAND_TOTAL, RECEIPT_NUMBER, IS_SETTLED, CASH_AMOUNT, MPESA_AMOUNT,
+          TRANS_ID, SERIAL_NUMBER, CREATED_AT, ADJUSTED_TOTAL, GRAND_TOTAL, RECEIPT_NUMBER, IS_SETTLED, CASH_AMOUNT, MPESA_AMOUNT,
           transaction_details (
             QTY, UNIT_PRICE, product (NAME, BRAND, MODEL)
           )
@@ -108,7 +109,7 @@ export default function CustomerLedgerPage({ params }) {
           id: st.TRANS_ID,
           date: new Date(st.CREATED_AT).getTime(),
           dateStr: st.CREATED_AT,
-          description: `Credit Sale #${st.TRANS_ID.substring(0,8).toUpperCase()}`,
+          description: `Credit Sale TRX-${formatTransId(st.SERIAL_NUMBER || st.TRANS_ID)}`,
           debit: total, // Adding to debt
           credit: null,
           settled: st.IS_SETTLED,
