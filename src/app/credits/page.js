@@ -60,8 +60,10 @@ export default function CreditDocketPage() {
   const activeDebtCount = accounts.filter(acc => acc.current_balance > 0).length;
 
   return (
-    <div className="container" style={{ padding: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexShrink: 0 }}>
         <h1 className="heading-1" style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: 0 }}>
           <Wallet size={36} color="var(--primary)" />
           Credit Docket
@@ -69,7 +71,7 @@ export default function CreditDocketPage() {
       </div>
 
       {/* Overview Cards */}
-      <div className="grid-cards" style={{ marginBottom: '2rem', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
+      <div className="grid-cards" style={{ marginBottom: '1.5rem', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', flexShrink: 0 }}>
         <div className="glass" style={{ padding: '1.5rem' }}>
           <p className="text-muted" style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Total Accounts Receivable</p>
           <h2 style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--primary)' }}>
@@ -94,8 +96,8 @@ export default function CreditDocketPage() {
       </div>
 
       {/* Filters & Search */}
-      <div className="glass" style={{ padding: '1.5rem', marginBottom: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '250px' }}>
+      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', flexShrink: 0 }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: '300px' }}>
           <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
           <input 
             type="text" 
@@ -121,17 +123,17 @@ export default function CreditDocketPage() {
       </div>
 
       {/* Table */}
-      <div className="table-wrapper glass">
-        <table className="table">
-          <thead>
+      <div className="table-wrapper glass" style={{ flex: 1, overflowY: 'auto', border: '1px solid var(--border)', minHeight: 0 }}>
+        <table className="table" style={{ margin: 0 }}>
+          <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
             <tr>
-              <th>Customer</th>
-              <th>Phone</th>
-              <th>Credit Limit</th>
-              <th>Current Debt</th>
-              <th>Available Credit</th>
-              <th>Status</th>
-              <th>Actions</th>
+              <th style={{ background: 'var(--background)' }}>Customer</th>
+              <th style={{ background: 'var(--background)' }}>Phone</th>
+              <th style={{ background: 'var(--background)' }}>Credit Limit</th>
+              <th style={{ background: 'var(--background)' }}>Current Debt</th>
+              <th style={{ background: 'var(--background)' }}>Available Credit</th>
+              <th style={{ background: 'var(--background)' }}>Status</th>
+              <th style={{ background: 'var(--background)' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
