@@ -74,7 +74,12 @@ export default function CustomerLedgerPage({ params }) {
       // We only want credit sales from `transaction`
       const { data: salesTrans, error: stErr } = await supabase
         .from('transaction')
-        .select('TRANS_ID, CREATED_AT, ADJUSTED_TOTAL, GRAND_TOTAL, RECEIPT_NUMBER, IS_SETTLED, CASH_AMOUNT, MPESA_AMOUNT')
+        .select(`
+          TRANS_ID, CREATED_AT, ADJUSTED_TOTAL, GRAND_TOTAL, RECEIPT_NUMBER, IS_SETTLED, CASH_AMOUNT, MPESA_AMOUNT,
+          transaction_details (
+            QTY, UNIT_PRICE, product (NAME, BRAND, MODEL)
+          )
+        `)
         .eq('CREDIT_CUSTOMER_ID', customerId)
         .eq('IS_CREDIT', true);
         
@@ -106,7 +111,8 @@ export default function CustomerLedgerPage({ params }) {
           debit: total, // Adding to debt
           credit: null,
           settled: st.IS_SETTLED,
-          paid: paid
+          paid: paid,
+          items: st.transaction_details
         });
       });
 

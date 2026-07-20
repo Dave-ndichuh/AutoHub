@@ -52,13 +52,29 @@ export default function StatementPrint({ account, transactions }) {
         </thead>
         <tbody>
           {transactions.map((tr, idx) => (
-            <tr key={idx}>
-              <td>{new Date(tr.dateStr).toLocaleDateString()}</td>
-              <td>{tr.description}</td>
-              <td style={{ textAlign: 'right' }}>{tr.debit ? `Ksh. ${Number(tr.debit).toLocaleString()}` : '-'}</td>
-              <td style={{ textAlign: 'right' }}>{tr.credit ? `Ksh. ${Number(tr.credit).toLocaleString()}` : '-'}</td>
-              <td style={{ textAlign: 'right' }}><strong>Ksh. {tr.balance.toLocaleString()}</strong></td>
-            </tr>
+            <React.Fragment key={idx}>
+              <tr>
+                <td style={{ verticalAlign: 'top' }}>{new Date(tr.dateStr).toLocaleDateString()}</td>
+                <td style={{ verticalAlign: 'top' }}>
+                  {tr.description}
+                  {tr.items && tr.items.length > 0 && (
+                    <div style={{ marginTop: '2mm', fontSize: '9pt', color: '#4b5563' }}>
+                      <strong>Items included:</strong>
+                      <ul style={{ margin: '1mm 0 0 0', paddingLeft: '4mm' }}>
+                        {tr.items.map((item, i) => (
+                          <li key={i}>
+                            {item.QTY}x {item.product?.NAME} {item.product?.BRAND ? `(${item.product.BRAND})` : ''} @ Ksh. {Number(item.UNIT_PRICE).toLocaleString()}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </td>
+                <td style={{ textAlign: 'right', verticalAlign: 'top' }}>{tr.debit ? `Ksh. ${Number(tr.debit).toLocaleString()}` : '-'}</td>
+                <td style={{ textAlign: 'right', verticalAlign: 'top' }}>{tr.credit ? `Ksh. ${Number(tr.credit).toLocaleString()}` : '-'}</td>
+                <td style={{ textAlign: 'right', verticalAlign: 'top' }}><strong>Ksh. {tr.balance.toLocaleString()}</strong></td>
+              </tr>
+            </React.Fragment>
           ))}
         </tbody>
       </table>
