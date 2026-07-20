@@ -226,7 +226,18 @@ export default function CustomerLedgerPage({ params }) {
                 <tr key={`${tr.id}-${index}`}>
                   <td>{new Date(tr.dateStr).toLocaleDateString()} {new Date(tr.dateStr).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
                   <td>
-                    <div style={{ fontWeight: 500 }}>{tr.description}</div>
+                    <div style={{ fontWeight: 500 }}>
+                      {tr.description.startsWith('Credit Sale') ? (
+                        <button 
+                          style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit' }}
+                          onClick={() => router.push(`/transactions?searchId=${tr.id}`)}
+                        >
+                          {tr.description}
+                        </button>
+                      ) : (
+                        tr.description
+                      )}
+                    </div>
                     {tr.debit && (
                       <div style={{ fontSize: '0.8rem', color: tr.settled ? 'var(--primary)' : 'var(--destructive)' }}>
                         {tr.settled ? 'Settled' : `Pending (Paid: Ksh ${tr.paid?.toLocaleString() || 0})`}
