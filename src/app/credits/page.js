@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthGuard';
 import { useRouter } from 'next/navigation';
-import { Wallet, Search, ArrowRight, User as UserIcon } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Wallet, Search, ArrowRight, User as UserIcon, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CreditDocketPage() {
   const [accounts, setAccounts] = useState([]);
@@ -13,6 +13,13 @@ export default function CreditDocketPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('All'); // All, Active Debt, Over Limit, Blocked
   const router = useRouter();
+
+  // Add Customer Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [allCustomers, setAllCustomers] = useState([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [creditLimit, setCreditLimit] = useState(150000);
+  const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
     fetchAccounts();
@@ -36,6 +43,51 @@ export default function CreditDocketPage() {
       alert('Failed to load credit accounts.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllCustomers = async () => {
+    try {
+      const { data, error } = await supabase.from('customer').select('CUST_ID, FIRST_NAME, LAST_NAME, PHONE_NUMBER').order('FIRST_NAME');
+      if (error) throw error;
+      setAllCustomers(data || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const openAddModal = () => {
+    fetchAllCustomers();
+    setShowAddModal(true);
+  };
+
+  const handleAddAccount = async (e) => {
+    e.preventDefault();
+    if (!selectedCustomerId) { alert('Please select a customer'); return; }
+    
+    if (accounts.some(acc => acc.customer_id === parseInt(selectedCustomerId))) {
+      alert('This customer already has a credit account!');
+      return;
+    }
+
+    setIsAdding(true);
+    try {
+      const { error } = await supabase.from('credit_accounts').insert([{
+        customer_id: parseInt(selectedCustomerId),
+        credit_limit: parseFloat(creditLimit),
+        status: 'active'
+      }]);
+      if (error) throw error;
+      
+      alert('Credit account created successfully!');
+      setShowAddModal(false);
+      setSelectedCustomerId('');
+      fetchAccounts();
+    } catch (err) {
+      console.error(err);
+      alert('Failed to create account: ' + err.message);
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -88,7 +140,7 @@ export default function CreditDocketPage() {
            <button 
              className="btn btn-primary" 
              style={{ width: '100%', padding: '1rem' }}
-             onClick={() => alert("To add a new credit account, create a credit sale for a customer in the POS, or run the onboarding script.")}
+             onClick={openAddModal}
            >
              + New Credit Customer
            </button>
@@ -187,6 +239,88 @@ export default function CreditDocketPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Add Customer Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 100,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)'
+            }}
+            onClick={() => setShowAddModal(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="glass"
+              style={{
+                background: 'var(--background)',
+                padding: '2rem', width: '100%', maxWidth: '450px',
+                borderRadius: '16px', border: '1px solid var(--border)'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h2 className="heading-2" style={{ margin: 0 }}>New Credit Account</h2>
+                <button onClick={() => setShowAddModal(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                  <X size={20} className="text-muted" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleAddAccount} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label className="text-muted" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Select Customer</label>
+                  <select 
+                    className="input" 
+                    required 
+                    value={selectedCustomerId}
+                    onChange={(e) => setSelectedCustomerId(e.target.value)}
+                  >
+                    <option value="">-- Choose Customer --</option>
+                    {allCustomers.map(c => (
+                      <option key={c.CUST_ID} value={c.CUST_ID}>
+                        {c.FIRST_NAME} {c.LAST_NAME} {c.PHONE_NUMBER ? `(${c.PHONE_NUMBER})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="text-muted" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Credit Limit (Ksh)</label>
+                  <input 
+                    type="number" 
+                    required 
+                    min="1"
+                    step="0.01"
+                    className="input" 
+                    value={creditLimit}
+                    onChange={e => setCreditLimit(e.target.value)}
+                  />
+                  <p style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>
+                    Default is Ksh 150,000 as per policy.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                  <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowAddModal(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={isAdding}>
+                    {isAdding ? 'Creating...' : 'Create Account'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
