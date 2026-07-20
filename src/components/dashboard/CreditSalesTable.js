@@ -37,6 +37,7 @@ export default function CreditSalesTable() {
         IS_SETTLED,
         CASH_AMOUNT,
         MPESA_AMOUNT,
+        status,
         credit_customer:customer!transaction_CREDIT_CUSTOMER_ID_fkey(FIRST_NAME, LAST_NAME)
       `)
       .eq('IS_CREDIT', true)
@@ -50,7 +51,8 @@ export default function CreditSalesTable() {
     const { data, error } = await query;
 
     if (!error && data) {
-      setCreditSales(data);
+      // Filter out reversed transactions locally
+      setCreditSales(data.filter(t => t.status !== 'Reversed'));
     }
     setLoading(false);
   };
