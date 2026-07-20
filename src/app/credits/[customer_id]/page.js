@@ -4,7 +4,7 @@ import { useEffect, useState, use } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/components/AuthGuard';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, CreditCard, Printer, Plus } from 'lucide-react';
+import { ArrowLeft, CreditCard, Printer, Plus, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import StatementPrint from '@/components/StatementPrint';
 
@@ -26,6 +26,7 @@ export default function CustomerLedgerPage({ params }) {
   const [paymentNotes, setPaymentNotes] = useState('');
   const [processing, setProcessing] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
+  const [selectedSaleItems, setSelectedSaleItems] = useState(null);
 
   useEffect(() => {
     if (isPrinting) {
@@ -248,7 +249,7 @@ export default function CustomerLedgerPage({ params }) {
                       {tr.description.startsWith('Credit Sale') ? (
                         <button 
                           style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', fontSize: 'inherit' }}
-                          onClick={() => router.push(`/transactions?searchId=${tr.id}`)}
+                          onClick={() => setSelectedSaleItems(tr)}
                         >
                           {tr.description}
                         </button>
@@ -369,6 +370,79 @@ export default function CustomerLedgerPage({ params }) {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* View Items Modal */}
+      <AnimatePresence>
+        {selectedSaleItems && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 100,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)'
+            }}
+            onClick={() => setSelectedSaleItems(null)}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="glass"
+              style={{
+                background: 'var(--background)',
+                padding: '2rem', width: '100%', maxWidth: '600px', maxHeight: '80vh',
+                borderRadius: '16px', border: '1px solid var(--border)',
+                display: 'flex', flexDirection: 'column'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>
+                <h2 className="heading-2" style={{ margin: 0 }}>{selectedSaleItems.description}</h2>
+                <button onClick={() => setSelectedSaleItems(null)} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                  <X size={20} className="text-muted" />
+                </button>
+              </div>
+              
+              <div style={{ overflowY: 'auto', flex: 1 }}>
+                {selectedSaleItems.items && selectedSaleItems.items.length > 0 ? (
+                  <table className="table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th>Item</th>
+                        <th style={{ textAlign: 'center' }}>Qty</th>
+                        <th style={{ textAlign: 'right' }}>Price</th>
+                        <th style={{ textAlign: 'right' }}>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedSaleItems.items.map((item, i) => (
+                        <tr key={i}>
+                          <td>{item.product?.NAME} {item.product?.BRAND ? `(${item.product.BRAND})` : ''}</td>
+                          <td style={{ textAlign: 'center' }}>{item.QTY}</td>
+                          <td style={{ textAlign: 'right' }}>Ksh. {Number(item.UNIT_PRICE).toLocaleString()}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 600 }}>Ksh. {(Number(item.QTY) * Number(item.UNIT_PRICE)).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                    No item details available for this transaction.
+                  </div>
+                )}
+              </div>
+              
+              <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
+                <button className="btn btn-primary" onClick={() => setSelectedSaleItems(null)}>
+                  Close
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
