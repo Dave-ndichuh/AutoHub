@@ -227,15 +227,15 @@ export default function CustomerLedgerPage({ params }) {
       </div>
 
       {/* Ledger Table */}
-      <div className="table-wrapper glass">
+      <div className="table-wrapper glass" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
         <table className="table">
-          <thead>
+          <thead style={{ position: 'sticky', top: 0, background: 'var(--card)', zIndex: 10 }}>
             <tr>
-              <th>Date</th>
-              <th>Description</th>
-              <th style={{ textAlign: 'right' }}>Debit (Increase)</th>
-              <th style={{ textAlign: 'right' }}>Credit (Payment)</th>
-              <th style={{ textAlign: 'right' }}>Balance</th>
+              <th style={{ background: 'var(--card)' }}>Date</th>
+              <th style={{ background: 'var(--card)' }}>Description</th>
+              <th style={{ textAlign: 'right', background: 'var(--card)' }}>Debit (Increase)</th>
+              <th style={{ textAlign: 'right', background: 'var(--card)' }}>Credit (Payment)</th>
+              <th style={{ textAlign: 'right', background: 'var(--card)' }}>Balance</th>
             </tr>
           </thead>
           <tbody>
