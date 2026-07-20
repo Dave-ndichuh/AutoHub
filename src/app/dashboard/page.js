@@ -67,13 +67,20 @@ export default function Dashboard() {
         let arTotal = 0;
         if (accounts) accounts.forEach(a => arTotal += Number(a.current_balance));
 
-        const { data: creditTrans } = await supabase.from('credit_transactions').select('type, amount').gte('date', firstDayOfMonth);
+        const { data: creditTrans } = await supabase.from('credit_transactions').select('type, amount, reference_type').gte('date', firstDayOfMonth);
         let creditSalesMonth = 0;
         let creditPaymentsMonth = 0;
         if (creditTrans) {
            creditTrans.forEach(ct => {
-             if (ct.type === 'debit') creditSalesMonth += Number(ct.amount);
-             if (ct.type === 'credit') creditPaymentsMonth += Number(ct.amount);
+             if (ct.type === 'debit') {
+               creditSalesMonth += Number(ct.amount);
+             } else if (ct.type === 'credit') {
+               if (ct.reference_type === 'adjustment') {
+                 creditSalesMonth -= Number(ct.amount); // Deduct from sales to show NET credit sales
+               } else {
+                 creditPaymentsMonth += Number(ct.amount); // Only count actual payments
+               }
+             }
            });
         }
 
