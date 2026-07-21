@@ -11,6 +11,7 @@ export default function SettingsPage() {
   const router = useRouter();
   
   const [email, setEmail] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   
@@ -65,12 +66,26 @@ export default function SettingsPage() {
       return;
     }
 
+    // Verify current password first by attempting a re-login
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword
+    });
+
+    if (verifyError) {
+      setMessage({ type: 'error', text: 'Incorrect current password.' });
+      setLoadingPassword(false);
+      return;
+    }
+
+    // If verification passes, update to the new password
     const { error } = await supabase.auth.updateUser({ password });
     
     if (error) {
       setMessage({ type: 'error', text: error.message });
     } else {
       setMessage({ type: 'success', text: 'Password updated successfully!' });
+      setCurrentPassword('');
       setPassword('');
       setConfirmPassword('');
     }
@@ -137,6 +152,19 @@ export default function SettingsPage() {
         </div>
         
         <form onSubmit={handleUpdatePassword} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Current Password</label>
+            <input 
+              type="password" 
+              className="input" 
+              value={currentPassword} 
+              onChange={(e) => setCurrentPassword(e.target.value)} 
+              placeholder="Enter current password"
+              required 
+              style={{ maxWidth: '400px' }}
+            />
+          </div>
+          <div style={{ height: '1px', background: 'var(--border)', maxWidth: '400px', margin: '0.5rem 0' }}></div>
           <div>
             <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>New Password</label>
             <input 
