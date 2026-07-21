@@ -161,10 +161,10 @@ export default function ReportsPage() {
     const profitMargin = tSales > 0 ? (grossProfit / tSales) * 100 : 0;
     const atv = tCount > 0 ? tSales / tCount : 0;
 
-    // Top 10 Products by Revenue
+    // Top Products by Revenue
     const sortedProducts = Object.values(productStats)
       .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 10);
+      .slice(0, 50);
 
     // Dead Stock (0 sales, ON_HAND > 10)
     const dead = [];
@@ -193,7 +193,7 @@ export default function ReportsPage() {
       stockValue: totalStockVal
     });
     setTopProducts(sortedProducts);
-    setDeadStock(dead.slice(0, 10)); // Limit to top 10 worst offenders
+    setDeadStock(dead.slice(0, 50)); // Limit to top 50 worst offenders
     setCategoryData(cData);
     
     setLoading(false);
@@ -349,30 +349,33 @@ export default function ReportsPage() {
           </div>
 
           <div className="tables-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', marginTop: '2rem' }}>
-            {/* Top 10 Performing Products */}
-            <div className="glass" style={{ flex: '1 1 450px', padding: '1.5rem', overflowX: 'auto', minWidth: '0' }}>
-              <h3 className="heading-2" style={{ fontSize: '1.25rem', marginBottom: '1.5rem' }}>Top 10 Products (Revenue)</h3>
-              <div className="table-wrapper">
-                <table className="table">
-                <thead>
+            {/* Top Performing Products */}
+            <div className="glass" style={{ flex: '1 1 450px', padding: '1.5rem', minWidth: '0', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                <h3 className="heading-2" style={{ fontSize: '1.25rem', margin: 0 }}>Top Products (Revenue)</h3>
+                <span className="badge badge-primary">Top {topProducts.length}</span>
+              </div>
+              <div className="table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto', flex: 1, border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+                <table className="table" style={{ margin: 0 }}>
+                <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                   <tr>
-                    <th>Product Name</th>
-                    <th>Category</th>
-                    <th style={{ textAlign: 'right' }}>Units</th>
-                    <th style={{ textAlign: 'right' }}>Revenue</th>
-                    <th style={{ textAlign: 'right' }}>Profit</th>
+                    <th style={{ background: 'var(--background)' }}>Product Name</th>
+                    <th style={{ background: 'var(--background)' }}>Category</th>
+                    <th style={{ textAlign: 'right', background: 'var(--background)' }}>Units</th>
+                    <th style={{ textAlign: 'right', background: 'var(--background)' }}>Revenue</th>
+                    <th style={{ textAlign: 'right', background: 'var(--background)' }}>Profit</th>
                   </tr>
                 </thead>
                 <tbody>
                   {topProducts.length === 0 ? (
-                    <tr><td colSpan="5" style={{ textAlign: 'center' }}>No sales data for this period.</td></tr>
+                    <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>No sales data for this period.</td></tr>
                   ) : topProducts.map((p, idx) => (
-                    <tr key={idx}>
+                    <tr key={idx} className="table-row-interactive">
                       <td style={{ fontWeight: 500, whiteSpace: 'pre-line' }}>{p.name}</td>
                       <td className="text-muted" style={{ fontSize: '0.875rem' }}>{p.category}</td>
-                      <td style={{ textAlign: 'right' }}><span className="badge badge-primary">{p.qty}</span></td>
+                      <td style={{ textAlign: 'right' }}><span className="badge badge-primary" style={{ fontSize: '0.875rem' }}>{p.qty}</span></td>
                       <td style={{ textAlign: 'right', fontWeight: 600 }}>Ksh {p.revenue.toLocaleString()}</td>
-                      <td style={{ textAlign: 'right', color: '#10b981', fontWeight: 600 }}>Ksh {p.profit.toLocaleString()}</td>
+                      <td style={{ textAlign: 'right', color: 'var(--success)', fontWeight: 600 }}>Ksh {p.profit.toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -381,34 +384,38 @@ export default function ReportsPage() {
             </div>
 
             {/* Worst Performing Products (Dead Stock) */}
-            <div className="glass" style={{ flex: '1 1 450px', padding: '1.5rem', overflowX: 'auto', minWidth: '0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                <AlertCircle size={20} color="#ef4444" />
-                <h3 className="heading-2" style={{ fontSize: '1.25rem', margin: 0, color: '#ef4444' }}>Dead Stock (0 Sales, &gt;10 Stock)</h3>
+            <div className="glass" style={{ flex: '1 1 450px', padding: '1.5rem', minWidth: '0', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <AlertCircle size={22} color="var(--destructive)" />
+                  <h3 className="heading-2" style={{ fontSize: '1.25rem', margin: 0, color: 'var(--destructive)' }}>Dead Stock Alert</h3>
+                </div>
+                <span className="badge badge-destructive">Top {deadStock.length} Worst</span>
               </div>
-              <div className="table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-                <table className="table" style={{ position: 'relative' }}>
-                <thead style={{ position: 'sticky', top: 0, background: 'var(--card)', zIndex: 1 }}>
+              
+              <div className="table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto', flex: 1, border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
+                <table className="table" style={{ margin: 0 }}>
+                <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                   <tr>
-                    <th>Product Name</th>
-                    <th>Category</th>
-                    <th style={{ textAlign: 'right' }}>In Stock</th>
-                    <th style={{ textAlign: 'right' }}>Capital Tied</th>
+                    <th style={{ background: 'var(--background)' }}>Product Name</th>
+                    <th style={{ background: 'var(--background)' }}>Category</th>
+                    <th style={{ textAlign: 'right', background: 'var(--background)' }}>In Stock</th>
+                    <th style={{ textAlign: 'right', background: 'var(--background)' }}>Capital Tied</th>
                   </tr>
                 </thead>
                 <tbody>
                   {deadStock.length === 0 ? (
-                    <tr><td colSpan="4" style={{ textAlign: 'center' }}>No dead stock detected!</td></tr>
+                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '2rem' }}>No dead stock detected!</td></tr>
                   ) : deadStock.map((p, idx) => {
                     const capital = p.ON_HAND * p.COST_PRICE;
                     return (
-                      <tr key={idx}>
+                      <tr key={idx} className="table-row-interactive">
                         <td style={{ fontWeight: 500, whiteSpace: 'pre-line' }}>{formatItemName(p)}</td>
                         <td className="text-muted" style={{ fontSize: '0.875rem' }}>{p.category?.CNAME || 'N/A'}</td>
                         <td style={{ textAlign: 'right' }}>
-                          <span className="badge badge-destructive">{p.ON_HAND}</span>
+                          <span className="badge badge-destructive" style={{ fontSize: '0.875rem' }}>{p.ON_HAND}</span>
                         </td>
-                        <td style={{ textAlign: 'right', color: '#f59e0b', fontWeight: 600 }}>Ksh {capital.toLocaleString()}</td>
+                        <td style={{ textAlign: 'right', color: 'var(--warning)', fontWeight: 600 }}>Ksh {capital.toLocaleString()}</td>
                       </tr>
                     );
                   })}
