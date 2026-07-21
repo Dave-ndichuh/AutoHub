@@ -77,7 +77,7 @@ export default function CustomerLedgerPage({ params }) {
       const { data: salesTrans, error: stErr } = await supabase
         .from('transaction')
         .select(`
-          TRANS_ID, SERIAL_NUMBER, CREATED_AT, ADJUSTED_TOTAL, GRAND_TOTAL, RECEIPT_NUMBER, IS_SETTLED, CASH_AMOUNT, MPESA_AMOUNT,
+          TRANS_ID, SERIAL_NUMBER, CREATED_AT, ADJUSTED_TOTAL, GRAND_TOTAL, RECEIPT_NUMBER, IS_SETTLED, CASH_AMOUNT, MPESA_AMOUNT, status,
           transaction_details (
             QTY, UNIT_PRICE, product (NAME, BRAND, MODEL)
           )
@@ -114,6 +114,7 @@ export default function CustomerLedgerPage({ params }) {
           credit: null,
           settled: st.IS_SETTLED,
           paid: paid,
+          status: st.status,
           items: st.transaction_details
         });
       });
@@ -233,6 +234,7 @@ export default function CustomerLedgerPage({ params }) {
             <tr>
               <th style={{ background: 'var(--background)' }}>Date</th>
               <th style={{ background: 'var(--background)' }}>Description</th>
+              <th style={{ background: 'var(--background)' }}>Status</th>
               <th style={{ textAlign: 'right', background: 'var(--background)' }}>Debit (Increase)</th>
               <th style={{ textAlign: 'right', background: 'var(--background)' }}>Credit (Payment)</th>
               <th style={{ textAlign: 'right', background: 'var(--background)' }}>Balance</th>
@@ -269,10 +271,19 @@ export default function CustomerLedgerPage({ params }) {
                       </div>
                     )}
                   </td>
-                  <td style={{ textAlign: 'right', color: 'var(--destructive)' }}>
+                  <td>
+                    {tr.status === 'Reversed' ? (
+                      <span className="badge badge-destructive" style={{ fontSize: '0.75rem' }}>Reversed</span>
+                    ) : tr.debit ? (
+                      <span className="badge badge-warning" style={{ fontSize: '0.75rem' }}>Debt</span>
+                    ) : (
+                      <span className="badge badge-success" style={{ fontSize: '0.75rem' }}>Payment</span>
+                    )}
+                  </td>
+                  <td style={{ textAlign: 'right', color: 'var(--destructive)', fontWeight: 600, textDecoration: tr.status === 'Reversed' ? 'line-through' : 'none' }}>
                     {tr.debit ? `Ksh. ${Number(tr.debit).toLocaleString()}` : '-'}
                   </td>
-                  <td style={{ textAlign: 'right', color: 'var(--primary)' }}>
+                  <td style={{ textAlign: 'right', color: 'var(--primary)', fontWeight: 600 }}>
                     {tr.credit ? `Ksh. ${Number(tr.credit).toLocaleString()}` : '-'}
                   </td>
                   <td style={{ textAlign: 'right', fontWeight: 700 }}>

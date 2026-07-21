@@ -54,13 +54,14 @@ export async function POST(req) {
     // 4. FIFO Allocation Logic
     let remainingAmount = Number(amount);
     
-    // Get all unsettled credit sales for this customer, oldest first
+    // Get all unsettled credit sales for this customer, oldest first, ignoring reversed sales
     const { data: unsettledSales, error: salesError } = await supabaseAdmin
       .from('transaction')
       .select('TRANS_ID, ADJUSTED_TOTAL, GRAND_TOTAL, CASH_AMOUNT, MPESA_AMOUNT')
       .eq('CREDIT_CUSTOMER_ID', customer_id)
       .eq('IS_CREDIT', true)
       .eq('IS_SETTLED', false)
+      .neq('status', 'Reversed')
       .order('CREATED_AT', { ascending: true });
 
     if (salesError) throw salesError;
