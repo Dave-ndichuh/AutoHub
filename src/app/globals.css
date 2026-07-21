@@ -26,6 +26,7 @@
   --success: #10b981;
   --success-bg: rgba(16, 185, 129, 0.05);
   --warning: #f59e0b;
+  --zero-debt: #a78bfa; /* Distinct pastel purple for default slate */
 }
 
 /* Ocean Theme */
@@ -41,6 +42,7 @@
   --success: #10b981;
   --success-bg: rgba(16, 185, 129, 0.05);
   --warning: #f59e0b;
+  --zero-debt: #fbbf24; /* Distinct amber/gold for ocean teal */
 }
 
 /* Forest Theme */
@@ -56,6 +58,7 @@
   --success: #059669;
   --success-bg: rgba(5, 150, 105, 0.1);
   --warning: #d97706;
+  --zero-debt: #f472b6; /* Distinct pink for forest green */
 }
 
 /* Sunset Theme */
@@ -71,6 +74,7 @@
   --success: #10b981;
   --success-bg: rgba(16, 185, 129, 0.05);
   --warning: #f59e0b;
+  --zero-debt: #22d3ee; /* Distinct cyan for sunset purple/orange */
 }
 
 * {

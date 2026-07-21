@@ -210,7 +210,7 @@ export default function CreditDocketPage() {
                   <motion.tr 
                     key={acc.id} 
                     className="table-row-interactive"
-                    style={isZeroDebt ? { background: 'var(--success-bg)', borderLeft: '4px solid var(--success)' } : {}}
+                    style={isZeroDebt ? { color: 'var(--zero-debt)' } : {}}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
