@@ -73,12 +73,16 @@ export default function Dashboard() {
         if (creditTrans) {
            creditTrans.forEach(ct => {
              if (ct.type === 'debit') {
-               creditSalesMonth += Number(ct.amount);
+               if (ct.reference_type === 'adjustment') {
+                 creditPaymentsMonth -= Number(ct.amount); // Refund of payment reduces total payments received
+               } else {
+                 creditSalesMonth += Number(ct.amount); // Normal debt/sale increases
+               }
              } else if (ct.type === 'credit') {
                if (ct.reference_type === 'adjustment') {
-                 creditSalesMonth -= Number(ct.amount); // Deduct from sales to show NET credit sales
+                 creditSalesMonth -= Number(ct.amount); // Reversal of sale reduces total credit sales
                } else {
-                 creditPaymentsMonth += Number(ct.amount); // Only count actual payments
+                 creditPaymentsMonth += Number(ct.amount); // Normal payment
                }
              }
            });
