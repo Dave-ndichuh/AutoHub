@@ -108,6 +108,14 @@ export default function CreditDocketPage() {
     return true; // All
   });
 
+  const sortedFilteredAccounts = [...filteredAccounts].sort((a, b) => {
+    const aZero = Number(a.current_balance) <= 0;
+    const bZero = Number(b.current_balance) <= 0;
+    if (aZero && !bZero) return -1;
+    if (!aZero && bZero) return 1;
+    return 0;
+  });
+
   const totalReceivables = accounts.reduce((sum, acc) => sum + Number(acc.current_balance), 0);
   const activeDebtCount = accounts.filter(acc => acc.current_balance > 0).length;
 
@@ -191,16 +199,18 @@ export default function CreditDocketPage() {
           <tbody>
             {loading ? (
               <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>Loading accounts...</td></tr>
-            ) : filteredAccounts.length === 0 ? (
+            ) : sortedFilteredAccounts.length === 0 ? (
               <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem' }}>No accounts found.</td></tr>
             ) : (
-              filteredAccounts.map(acc => {
+              sortedFilteredAccounts.map(acc => {
                 const available = acc.credit_limit - acc.current_balance;
                 const isOverLimit = available <= 0;
+                const isZeroDebt = Number(acc.current_balance) <= 0;
                 return (
                   <motion.tr 
                     key={acc.id} 
                     className="table-row-interactive"
+                    style={isZeroDebt ? { background: 'var(--success-bg)', borderLeft: '4px solid var(--success)' } : {}}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
@@ -212,7 +222,7 @@ export default function CreditDocketPage() {
                     </td>
                     <td>{acc.customer?.PHONE_NUMBER || 'N/A'}</td>
                     <td>Ksh. {Number(acc.credit_limit).toLocaleString()}</td>
-                    <td style={{ fontWeight: 700, color: acc.current_balance > 0 ? 'var(--destructive)' : 'inherit' }}>
+                    <td style={{ fontWeight: 700, color: acc.current_balance > 0 ? 'var(--destructive)' : 'var(--success)' }}>
                       Ksh. {Number(acc.current_balance).toLocaleString()}
                     </td>
                     <td style={{ color: isOverLimit ? 'var(--destructive)' : 'var(--primary)' }}>
