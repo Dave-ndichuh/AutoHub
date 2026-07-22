@@ -19,6 +19,7 @@ export const productRepository = {
       price: 'PRICE',
       costPrice: 'COST_PRICE',
       dateStockIn: 'DATE_STOCK_IN',
+      updatedAt: 'UPDATED_AT',
     };
     const dbSortKey = sortMap[sortKey] || 'PRODUCT_ID';
 

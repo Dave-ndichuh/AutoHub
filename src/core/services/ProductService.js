@@ -27,6 +27,7 @@ export const ProductService = {
     // but preserving the original behavior of the controller.
     if (id) {
       delete payload.DATE_STOCK_IN; // Ensure we don't overwrite creation date on update
+      payload.UPDATED_AT = new Date().toISOString(); // Set UPDATED_AT to current time
       return await productRepository.updateProduct(id, payload);
     } else {
       return await productRepository.createProduct(payload);

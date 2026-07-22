@@ -27,6 +27,7 @@ export const mapToProductEntity = (dbRow) => {
     model: dbRow.MODEL || '',
     weight: dbRow.WEIGHT || '',
     dateStockIn: dbRow.DATE_STOCK_IN,
+    updatedAt: dbRow.UPDATED_AT,
     branchId: dbRow.BRANCH_ID,
     // Keep raw data for backward compatibility during transition
     _raw: dbRow

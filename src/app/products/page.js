@@ -162,6 +162,7 @@ function ProductsContent() {
             >
               <option value="dateStockIn-desc">Recently Added</option>
               <option value="dateStockIn-asc">Oldest Added</option>
+              <option value="updatedAt-desc">Recently Updated</option>
               <option value="name-asc">Name (A-Z)</option>
               <option value="name-desc">Name (Z-A)</option>
               <option value="price-asc">Selling Price (Low to High)</option>
