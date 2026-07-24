@@ -646,7 +646,8 @@ export default function POSPage() {
            created_by: employeeId,
            reference_type: 'sale',
            reference_id: transData.TRANS_ID,
-           notes: `Credit Sale #${transData.TRANS_ID.substring(0,8).toUpperCase()}`
+           notes: `Credit Sale #${transData.TRANS_ID.substring(0,8).toUpperCase()}`,
+           branch_id: branchId === 'ALL' ? '1' : String(branchId)
         }]);
       }
 

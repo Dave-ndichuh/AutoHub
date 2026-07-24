@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export async function POST(req) {
   try {
-    const { customer_id, amount, payment_method, reference_no, notes, employee_id } = await req.json();
+    const { customer_id, amount, payment_method, reference_no, notes, employee_id, branch_id } = await req.json();
 
     if (!customer_id || !amount || amount <= 0) {
       return NextResponse.json({ success: false, error: 'Invalid input' }, { status: 400 });
@@ -44,7 +44,8 @@ export async function POST(req) {
         created_by: employee_id,
         reference_type: 'payment',
         reference_id: reference_no,
-        notes: `Payment via ${payment_method}${notes ? ' - ' + notes : ''}`
+        notes: `Payment via ${payment_method}${notes ? ' - ' + notes : ''}`,
+        branch_id: branch_id
       }])
       .select()
       .single();

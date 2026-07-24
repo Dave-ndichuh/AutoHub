@@ -8,6 +8,7 @@ import { Wallet, Search, ArrowRight, User as UserIcon, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function CreditDocketPage() {
+  const { branchId } = useAuth();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,19 +23,29 @@ export default function CreditDocketPage() {
   const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
-    fetchAccounts();
-  }, []);
+    if (branchId) {
+      fetchAccounts();
+    }
+  }, [branchId]);
 
   const fetchAccounts = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      let query = supabase
         .from('credit_accounts')
         .select(`
           *,
           customer:customer_id (FIRST_NAME, LAST_NAME, PHONE_NUMBER)
-        `)
-        .order('current_balance', { ascending: false });
+        `);
+        
+      if (branchId && branchId !== 'ALL') {
+        query = query.eq('branch_id', branchId);
+      }
+      
+      query = query.order('current_balance', { ascending: false });
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       setAccounts(data || []);
@@ -75,7 +86,8 @@ export default function CreditDocketPage() {
       const { error } = await supabase.from('credit_accounts').insert([{
         customer_id: parseInt(selectedCustomerId),
         credit_limit: parseFloat(creditLimit),
-        status: 'active'
+        status: 'active',
+        branch_id: branchId === 'ALL' ? '1' : String(branchId)
       }]);
       if (error) throw error;
       

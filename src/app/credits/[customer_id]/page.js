@@ -16,7 +16,7 @@ export default function CustomerLedgerPage({ params }) {
   const [account, setAccount] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { employeeId } = useAuth();
+  const { employeeId, branchId } = useAuth();
   const router = useRouter();
 
   // Modal state

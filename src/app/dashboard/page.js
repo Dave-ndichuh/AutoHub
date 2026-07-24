@@ -63,11 +63,20 @@ export default function Dashboard() {
         const { data: products } = await prodQuery;
         
         // Fetch Credit Ledger Data
-        const { data: accounts } = await supabase.from('credit_accounts').select('current_balance');
+        let acctQuery = supabase.from('credit_accounts').select('current_balance');
+        if (branchId && branchId !== 'ALL') {
+          acctQuery = acctQuery.eq('branch_id', branchId);
+        }
+        const { data: accounts } = await acctQuery;
+        
         let arTotal = 0;
         if (accounts) accounts.forEach(a => arTotal += Number(a.current_balance));
 
-        const { data: creditTrans } = await supabase.from('credit_transactions').select('type, amount, reference_type').gte('date', firstDayOfMonth);
+        let ctQuery = supabase.from('credit_transactions').select('type, amount, reference_type').gte('date', firstDayOfMonth);
+        if (branchId && branchId !== 'ALL') {
+          ctQuery = ctQuery.eq('branch_id', branchId);
+        }
+        const { data: creditTrans } = await ctQuery;
         let creditSalesMonth = 0;
         let creditPaymentsMonth = 0;
         if (creditTrans) {
