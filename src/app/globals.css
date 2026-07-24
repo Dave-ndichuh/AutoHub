@@ -232,6 +232,8 @@ button {
 .table-wrapper {
   width: 100%;
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: calc(100vh - 220px);
   border-radius: var(--radius);
   border: 1px solid var(--border);
   -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
@@ -239,18 +241,22 @@ button {
 
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate; /* Required for sticky headers to work correctly with borders */
+  border-spacing: 0;
   text-align: left;
   min-width: 600px; /* Ensure table doesn't crush on small screens */
 }
 
 .table th {
   padding: 1rem;
-  background: rgba(30, 41, 59, 0.8);
+  background: rgba(30, 41, 59, 0.95);
   font-weight: 600;
   color: var(--muted-foreground);
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .table td {
