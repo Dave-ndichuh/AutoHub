@@ -111,94 +111,39 @@ export default function Dashboard() {
       sevenDaysAgo.setDate(today.getDate() - 6); // Last 7 days including today
       
       try {
-        // Fetch metrics via RPC first
-        const { data: rpcMetrics } = await supabase.rpc('get_dashboard_metrics', {
-          start_date: startDate,
-          end_date: endDate,
-          p_branch_id: branchId === 'ALL' ? null : branchId
-        });
+        let trendQuery = supabase
+          .from('transaction')
+          .select('CREATED_AT, ADJUSTED_TOTAL, GRAND_TOTAL, status')
+          .gte('CREATED_AT', sevenDaysAgo.toISOString())
+          .or('IS_CREDIT.eq.false,IS_SETTLED.eq.true')
+          .order('CREATED_AT', { ascending: true });
+          
+        if (branchId && branchId !== 'ALL') trendQuery = trendQuery.eq('BRANCH_ID', branchId);
 
-        // Fetch all products for stock value & low stock
-        let prodQuery = supabase.from('product').select('PRODUCT_ID, NAME, ON_HAND, COST_PRICE');
-        if (branchId && branchId !== 'ALL') {
-          prodQuery = prodQuery.eq('BRANCH_ID', branchId);
-        }
-        const { data: products } = await prodQuery;
+        const branchParam = branchId === 'ALL' ? null : branchId;
+
+        // Concurrent fetching with Promise.all
+        const [
+          { data: rpcMetrics },
+          { data: invMetrics },
+          { data: creditMetrics },
+          { data: trendDataRaw }
+        ] = await Promise.all([
+          supabase.rpc('get_dashboard_metrics', { start_date: startDate, end_date: endDate, p_branch_id: branchParam }),
+          supabase.rpc('get_inventory_metrics', { p_branch_id: branchParam }),
+          supabase.rpc('get_credit_metrics', { start_date: startDate, end_date: endDate, p_branch_id: branchParam }),
+          trendQuery
+        ]);
+
+        let currentMonthTrans = trendDataRaw || [];
         
-        // Fetch Credit Ledger Data
-        let acctQuery = supabase.from('credit_accounts').select('current_balance');
-        if (branchId && branchId !== 'ALL') {
-          acctQuery = acctQuery.eq('branch_id', branchId);
-        }
-        const { data: accounts } = await acctQuery;
+        let stockVal = Number(invMetrics?.stockValue) || 0;
+        let lowStock = Number(invMetrics?.lowStockCount) || 0;
+        let outOfStock = Number(invMetrics?.outOfStockCount) || 0;
         
-        let arTotal = 0;
-        if (accounts) accounts.forEach(a => arTotal += Number(a.current_balance));
-
-        let ctQuery = supabase.from('credit_transactions').select('type, amount, reference_type');
-        if (startDate) ctQuery = ctQuery.gte('date', startDate);
-        if (endDate) ctQuery = ctQuery.lte('date', endDate);
-        if (branchId && branchId !== 'ALL') {
-          ctQuery = ctQuery.eq('branch_id', branchId);
-        }
-        const { data: creditTrans } = await ctQuery;
-        let creditSalesMonth = 0;
-        let creditPaymentsMonth = 0;
-        if (creditTrans) {
-           creditTrans.forEach(ct => {
-             if (ct.type === 'debit') {
-               if (ct.reference_type === 'adjustment') {
-                 creditPaymentsMonth -= Number(ct.amount); // Refund of payment reduces total payments received
-               } else {
-                 creditSalesMonth += Number(ct.amount); // Normal debt/sale increases
-               }
-             } else if (ct.type === 'credit') {
-               if (ct.reference_type === 'adjustment') {
-                 creditSalesMonth -= Number(ct.amount); // Reversal of sale reduces total credit sales
-               } else {
-                 creditPaymentsMonth += Number(ct.amount); // Normal payment
-               }
-             }
-           });
-        }
-
-        let stockVal = 0;
-        let lowStock = 0;
-        let outOfStock = 0;
-        if (products) {
-          products.forEach(p => {
-            const onHand = Number(p.ON_HAND) || 0;
-            const cost = Number(p.COST_PRICE) || 0;
-            if (onHand > 0) stockVal += (onHand * cost);
-            if (onHand <= 5 && onHand > 0) lowStock++;
-            if (onHand <= 0) outOfStock++;
-          });
-        }
-
-        // Fetch transactions for this month WITH details for profit math (ONLY IF NOT ALL TIME, TO SAVE BANDWIDTH)
-        let currentMonthTrans = [];
-        if (timeFilter !== 'all_time') {
-          let transQuery = supabase
-            .from('transaction')
-            .select(`
-              *,
-              transaction_details (
-                PRODUCT_ID,
-                QTY,
-                UNIT_PRICE,
-                product (NAME, COST_PRICE)
-              )
-            `)
-            .or('IS_CREDIT.eq.false,IS_SETTLED.eq.true')
-            .order('CREATED_AT', { ascending: true }); // Ascending helps with trend chart
-
-          if (startDate) transQuery = transQuery.gte('CREATED_AT', startDate);
-          if (endDate) transQuery = transQuery.lte('CREATED_AT', endDate);
-          if (branchId && branchId !== 'ALL') transQuery = transQuery.eq('BRANCH_ID', branchId);
-
-          const { data } = await transQuery;
-          currentMonthTrans = data || [];
-        }
+        let arTotal = Number(creditMetrics?.arTotal) || 0;
+        let creditSalesMonth = Number(creditMetrics?.creditSalesMonth) || 0;
+        let creditPaymentsMonth = Number(creditMetrics?.creditPaymentsMonth) || 0;
 
         let tSales = 0;
         let tCost = 0;
@@ -239,28 +184,7 @@ export default function Dashboard() {
               trendMap[tDate] += saleTotal;
             }
 
-            // Payment Methods
-            if (t.PAYMENT_METHOD === 'Cash') cashTotal += saleTotal;
-            else if (t.PAYMENT_METHOD === 'M-Pesa') mpesaTotal += saleTotal;
-            else if (t.PAYMENT_METHOD === 'Credit') creditTotal += saleTotal;
-            else if (t.PAYMENT_METHOD === 'Hybrid') {
-              cashTotal += Number(t.CASH_AMOUNT) || 0;
-              mpesaTotal += Number(t.MPESA_AMOUNT) || 0;
-            }
-
-            // Details for COGS & Top Product
-            if (t.transaction_details) {
-              t.transaction_details.forEach(d => {
-                const cost = Number(d.product?.COST_PRICE) || 0;
-                const qty = Number(d.QTY) || 0;
-                tCost += (cost * qty);
-
-                if (!productSales[d.PRODUCT_ID]) {
-                  productSales[d.PRODUCT_ID] = { name: d.product?.NAME || 'Unknown Part', qty: 0 };
-                }
-                productSales[d.PRODUCT_ID].qty += qty;
-              });
-            }
+            // Payment methods and top product are now handled by RPC.
           });
         }
 
@@ -269,6 +193,8 @@ export default function Dashboard() {
         let profitMargin = tSales > 0 ? (grossProfit / tSales) * 100 : 0;
         let atv = tCount > 0 ? tSales / tCount : 0;
         
+        let topP = { name: 'N/A', units: 0 };
+        
         // Override with RPC metrics if available
         if (rpcMetrics) {
           tSales = Number(rpcMetrics.totalSales) || 0;
@@ -276,9 +202,14 @@ export default function Dashboard() {
           profitMargin = Number(rpcMetrics.profitMargin) || 0;
           tCount = Number(rpcMetrics.transactionCount) || 0;
           atv = Number(rpcMetrics.atv) || 0;
+          
+          cashTotal = Number(rpcMetrics.cashTotal) || 0;
+          mpesaTotal = Number(rpcMetrics.mpesaTotal) || 0;
+          creditTotal = Number(rpcMetrics.creditTotal) || 0;
+          topP = { name: rpcMetrics.topProductName || 'N/A', qty: Number(rpcMetrics.topProductQty) || 0 };
         }
 
-        const topP = Object.values(productSales).sort((a, b) => b.qty - a.qty)[0] || { name: 'N/A', units: 0 };
+        
 
         // Formatting Chart Data
         const trendData = Object.keys(trendMap).sort().map(date => {
