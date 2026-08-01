@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import { TrendingUp, DollarSign, Activity, ShoppingCart, PackageOpen, Tag, BarChart3, AlertTriangle, Wallet } from 'lucide-react';
+import { TrendingUp, DollarSign, Activity, ShoppingCart, PackageOpen, Tag, BarChart3, AlertTriangle, Wallet, Calendar, CheckCircle2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import MetricCard from '@/components/dashboard/MetricCard';
 import InsightCard from '@/components/dashboard/InsightCard';
@@ -72,7 +72,9 @@ export default function Dashboard() {
         let arTotal = 0;
         if (accounts) accounts.forEach(a => arTotal += Number(a.current_balance));
 
-        let ctQuery = supabase.from('credit_transactions').select('type, amount, reference_type').gte('date', firstDayOfMonth);
+        let ctQuery = supabase.from('credit_transactions').select('type, amount, reference_type');
+        if (startDate) ctQuery = ctQuery.gte('date', startDate);
+        if (endDate) ctQuery = ctQuery.lte('date', endDate);
         if (branchId && branchId !== 'ALL') {
           ctQuery = ctQuery.eq('branch_id', branchId);
         }
@@ -240,7 +242,7 @@ export default function Dashboard() {
     };
 
     fetchDashboardData();
-  }, [router, branchId]);
+  }, [router, branchId, timeFilter, customStart, customEnd]);
 
   // Orchestrator for Animated Numbers
   useEffect(() => {
