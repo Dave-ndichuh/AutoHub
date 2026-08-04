@@ -136,8 +136,12 @@ export default function Dashboard() {
           supabase.rpc('get_inventory_metrics', { p_branch_id: branchParam, start_date: startDate, end_date: endDate })
             .then(res => res.error ? supabase.rpc('get_inventory_metrics', { p_branch_id: branchParam }) : res),
           trendQuery,
-          supabase.from('credit_accounts').select('current_balance'),
-          supabase.from('credit_transactions').select('type, amount, date')
+          branchParam 
+            ? supabase.from('credit_accounts').select('current_balance').eq('branch_id', branchParam)
+            : supabase.from('credit_accounts').select('current_balance'),
+          (branchParam 
+            ? supabase.from('credit_transactions').select('type, amount, date').eq('branch_id', branchParam)
+            : supabase.from('credit_transactions').select('type, amount, date'))
             .gte('date', startDate || '2000-01-01T00:00:00.000Z')
             .lte('date', endDate || new Date().toISOString())
         ]);

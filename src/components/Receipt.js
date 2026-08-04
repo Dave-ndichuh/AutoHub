@@ -20,6 +20,8 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
   const paymentMethod = transaction.PAYMENT_METHOD || 'Cash';
   const cashAmt = Number(transaction.CASH_AMOUNT) || 0;
   const mpesaAmt = Number(transaction.MPESA_AMOUNT) || 0;
+  const bankAmt = Number(transaction.BANK_AMOUNT) || 0;
+  const chequeAmt = Number(transaction.CHEQUE_AMOUNT) || 0;
   
   // NOTE: DISCOUNT_AMOUNT in DB is negative for surcharge, positive for discount
   const discountAmt = Number(transaction.DISCOUNT_AMOUNT) || 0;
@@ -120,14 +122,30 @@ export default function Receipt({ transaction, cart, subtotal, vat, grandTotal }
       {paymentMethod === 'Hybrid' && (
         <div className="receipt-hybrid">
           <div className="receipt-divider" />
-          <div className="meta-row">
-            <span>Paid via Cash:</span>
-            <span>{cashAmt.toLocaleString()}</span>
-          </div>
-          <div className="meta-row">
-            <span>Paid via M-Pesa:</span>
-            <span>{mpesaAmt.toLocaleString()}</span>
-          </div>
+          {cashAmt > 0 && (
+            <div className="meta-row">
+              <span>Paid via Cash:</span>
+              <span>{cashAmt.toLocaleString()}</span>
+            </div>
+          )}
+          {mpesaAmt > 0 && (
+            <div className="meta-row">
+              <span>Paid via M-Pesa:</span>
+              <span>{mpesaAmt.toLocaleString()}</span>
+            </div>
+          )}
+          {bankAmt > 0 && (
+            <div className="meta-row">
+              <span>Paid via Bank:</span>
+              <span>{bankAmt.toLocaleString()}</span>
+            </div>
+          )}
+          {chequeAmt > 0 && (
+            <div className="meta-row">
+              <span>Paid via Cheque:</span>
+              <span>{chequeAmt.toLocaleString()}</span>
+            </div>
+          )}
         </div>
       )}
 

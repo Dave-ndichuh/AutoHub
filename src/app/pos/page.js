@@ -51,6 +51,14 @@ export default function POSPage() {
   // Hybrid State
   const [hybridCash, setHybridCash] = useState('');
   const [hybridMpesa, setHybridMpesa] = useState('');
+  const [hybridBank, setHybridBank] = useState('');
+  const [hybridCheque, setHybridCheque] = useState('');
+  
+  // Bank/Cheque Details State
+  const [payingBank, setPayingBank] = useState('');
+  const [bankBranch, setBankBranch] = useState('');
+  const [chequeNumber, setChequeNumber] = useState('');
+  const [customerDetails, setCustomerDetails] = useState('');
   
   // Credit State
   const [creditCustomerId, setCreditCustomerId] = useState('');
@@ -471,7 +479,9 @@ export default function POSPage() {
   const isHybridValid = () => {
     const cash = Number(hybridCash) || 0;
     const mpesa = Number(hybridMpesa) || 0;
-    return Math.abs((cash + mpesa) - grandTotal) < 0.01;
+    const bank = Number(hybridBank) || 0;
+    const cheque = Number(hybridCheque) || 0;
+    return Math.abs((cash + mpesa + bank + cheque) - grandTotal) < 0.01;
   };
 
   const checkout = async () => {
@@ -480,6 +490,17 @@ export default function POSPage() {
     if (paymentMethod === 'Hybrid' && !isHybridValid()) {
       alert(`Hybrid payments must equal exactly Ksh. ${grandTotal.toLocaleString()}`);
       return;
+    }
+
+    if (paymentMethod === 'Bank') {
+       if (!payingBank || !customerDetails) { alert("Paying Bank and Customer Details are required for Bank payments."); return; }
+    }
+    if (paymentMethod === 'Cheque') {
+       if (!payingBank || !chequeNumber || !customerDetails) { alert("Paying Bank, Cheque Number, and Customer Details are required for Cheque payments."); return; }
+    }
+    if (paymentMethod === 'Hybrid') {
+       if (Number(hybridBank) > 0 && (!payingBank || !customerDetails)) { alert("Paying Bank and Customer Details are required for Bank payments in Hybrid."); return; }
+       if (Number(hybridCheque) > 0 && (!payingBank || !chequeNumber || !customerDetails)) { alert("Paying Bank, Cheque Number, and Customer Details are required for Cheque payments in Hybrid."); return; }
     }
 
     if (paymentMethod === 'Credit' || paymentMethod === 'Invoice') {
@@ -583,13 +604,19 @@ export default function POSPage() {
       // Setup payload based on method
       let cashAmt = 0;
       let mpesaAmt = 0;
+      let bankAmt = 0;
+      let chequeAmt = 0;
       let isCredit = false;
 
       if (paymentMethod === 'Cash') cashAmt = grandTotal;
       if (paymentMethod === 'M-Pesa') mpesaAmt = grandTotal;
+      if (paymentMethod === 'Bank') bankAmt = grandTotal;
+      if (paymentMethod === 'Cheque') chequeAmt = grandTotal;
       if (paymentMethod === 'Hybrid') {
         cashAmt = Number(hybridCash) || 0;
         mpesaAmt = Number(hybridMpesa) || 0;
+        bankAmt = Number(hybridBank) || 0;
+        chequeAmt = Number(hybridCheque) || 0;
       }
       if (paymentMethod === 'Credit') {
         isCredit = true;
@@ -606,6 +633,12 @@ export default function POSPage() {
         PAYMENT_METHOD: paymentMethod,
         CASH_AMOUNT: cashAmt,
         MPESA_AMOUNT: mpesaAmt,
+        BANK_AMOUNT: bankAmt,
+        CHEQUE_AMOUNT: chequeAmt,
+        PAYING_BANK: payingBank || null,
+        BANK_BRANCH: bankBranch || null,
+        CHEQUE_NUMBER: chequeNumber || null,
+        CUSTOMER_DETAILS: customerDetails || null,
         HYBRID_PAYMENT: paymentMethod === 'Hybrid',
         
         IS_CREDIT: isCredit,
@@ -676,6 +709,12 @@ export default function POSPage() {
       setMpesaReceipt('');
       setHybridCash('');
       setHybridMpesa('');
+      setHybridBank('');
+      setHybridCheque('');
+      setPayingBank('');
+      setBankBranch('');
+      setChequeNumber('');
+      setCustomerDetails('');
       setCreditCustomerId('');
       setShowAddCustomer(false);
       setCreditDueDate('');
@@ -1028,6 +1067,8 @@ export default function POSPage() {
           <div className="btn-group-mobile" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '0.5rem', marginBottom: '1.25rem' }}>
             <button className={`btn ${paymentMethod === 'Cash' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('Cash')} style={{ padding: '0.75rem' }}>Cash</button>
             <button className={`btn ${paymentMethod === 'M-Pesa' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('M-Pesa')} style={{ padding: '0.75rem', backgroundColor: paymentMethod === 'M-Pesa' ? '#25D366' : '', color: paymentMethod === 'M-Pesa' ? '#fff' : '' }}>M-Pesa</button>
+            <button className={`btn ${paymentMethod === 'Bank' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('Bank')} style={{ padding: '0.75rem', backgroundColor: paymentMethod === 'Bank' ? '#0ea5e9' : '', color: paymentMethod === 'Bank' ? '#fff' : '' }}>Bank</button>
+            <button className={`btn ${paymentMethod === 'Cheque' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('Cheque')} style={{ padding: '0.75rem', backgroundColor: paymentMethod === 'Cheque' ? '#ec4899' : '', color: paymentMethod === 'Cheque' ? '#fff' : '' }}>Cheque</button>
             <button className={`btn ${paymentMethod === 'Hybrid' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('Hybrid')} style={{ padding: '0.75rem' }}>Hybrid</button>
             <button className={`btn ${paymentMethod === 'Credit' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('Credit')} style={{ padding: '0.75rem', backgroundColor: paymentMethod === 'Credit' ? '#f59e0b' : '', color: paymentMethod === 'Credit' ? '#fff' : '' }}>Credit</button>
             <button className={`btn ${paymentMethod === 'Invoice' ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setPaymentMethod('Invoice')} style={{ padding: '0.75rem', backgroundColor: paymentMethod === 'Invoice' ? '#8b5cf6' : '', color: paymentMethod === 'Invoice' ? '#fff' : '' }}>Invoice</button>
@@ -1039,16 +1080,35 @@ export default function POSPage() {
           )}
 
           {paymentMethod === 'Hybrid' && (
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.25rem' }}>
-              <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{ flex: '1 1 45%' }}>
                 <label style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', display: 'block', marginBottom: '0.25rem' }}>Cash Amount</label>
                 <input type="number" className="input" placeholder="0" style={{ padding: '0.75rem' }} value={hybridCash} onChange={e => setHybridCash(e.target.value)} />
               </div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: '1 1 45%' }}>
                 <label style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', display: 'block', marginBottom: '0.25rem' }}>M-Pesa Amount</label>
                 <input type="number" className="input" placeholder="0" style={{ border: '2px solid #25D366', padding: '0.75rem' }} value={hybridMpesa} onChange={e => setHybridMpesa(e.target.value)} />
               </div>
+              <div style={{ flex: '1 1 45%' }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', display: 'block', marginBottom: '0.25rem' }}>Bank Amount</label>
+                <input type="number" className="input" placeholder="0" style={{ border: '2px solid #0ea5e9', padding: '0.75rem' }} value={hybridBank} onChange={e => setHybridBank(e.target.value)} />
+              </div>
+              <div style={{ flex: '1 1 45%' }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', display: 'block', marginBottom: '0.25rem' }}>Cheque Amount</label>
+                <input type="number" className="input" placeholder="0" style={{ border: '2px solid #ec4899', padding: '0.75rem' }} value={hybridCheque} onChange={e => setHybridCheque(e.target.value)} />
+              </div>
             </div>
+          )}
+
+          {(paymentMethod === 'Bank' || paymentMethod === 'Cheque' || (paymentMethod === 'Hybrid' && (Number(hybridBank) > 0 || Number(hybridCheque) > 0))) && (
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.25rem' }}>
+               <input type="text" className="input" placeholder="Paying Bank (e.g. Equity Bank) *" style={{ padding: '0.75rem' }} value={payingBank} onChange={e => setPayingBank(e.target.value)} />
+               <input type="text" className="input" placeholder="Bank Branch (Optional)" style={{ padding: '0.75rem' }} value={bankBranch} onChange={e => setBankBranch(e.target.value)} />
+               {(paymentMethod === 'Cheque' || (paymentMethod === 'Hybrid' && Number(hybridCheque) > 0)) && (
+                  <input type="text" className="input" placeholder="Cheque Number *" style={{ padding: '0.75rem' }} value={chequeNumber} onChange={e => setChequeNumber(e.target.value)} />
+               )}
+               <textarea className="input" placeholder="Customer Personal Details (Name, Phone, ID) *" style={{ padding: '0.75rem', resize: 'vertical' }} value={customerDetails} onChange={e => setCustomerDetails(e.target.value)} />
+             </div>
           )}
 
           {(paymentMethod === 'Credit' || paymentMethod === 'Invoice') && (

@@ -37,10 +37,16 @@ export default function InvoicesPage() {
 
   // Settlement Modal
   const [settleInvoice, setSettleInvoice] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('Cash'); // Cash, M-Pesa, Hybrid
+  const [paymentMethod, setPaymentMethod] = useState('Cash'); // Cash, M-Pesa, Bank, Cheque, Hybrid
   const [hybridCash, setHybridCash] = useState('');
   const [hybridMpesa, setHybridMpesa] = useState('');
+  const [hybridBank, setHybridBank] = useState('');
+  const [hybridCheque, setHybridCheque] = useState('');
   const [mpesaReceipt, setMpesaReceipt] = useState('');
+  const [payingBank, setPayingBank] = useState('');
+  const [bankBranch, setBankBranch] = useState('');
+  const [chequeNumber, setChequeNumber] = useState('');
+  const [customerDetails, setCustomerDetails] = useState('');
   const [settling, setSettling] = useState(false);
 
   useEffect(() => {
@@ -178,6 +184,12 @@ export default function InvoicesPage() {
     setPaymentMethod('Cash');
     setHybridCash('');
     setHybridMpesa('');
+    setHybridBank('');
+    setHybridCheque('');
+    setPayingBank('');
+    setBankBranch('');
+    setChequeNumber('');
+    setCustomerDetails('');
     setMpesaReceipt('');
   };
 
@@ -185,14 +197,25 @@ export default function InvoicesPage() {
     if (!settleInvoice) return;
     setSettling(true);
 
+    if (paymentMethod === 'Bank') {
+       if (!payingBank || !customerDetails) { alert("Paying Bank and Customer Details are required for Bank payments."); setSettling(false); return; }
+    }
+    if (paymentMethod === 'Cheque') {
+       if (!payingBank || !chequeNumber || !customerDetails) { alert("Paying Bank, Cheque Number, and Customer Details are required for Cheque payments."); setSettling(false); return; }
+    }
+
     if (paymentMethod === 'Hybrid') {
       const cash = Number(hybridCash) || 0;
       const mpesa = Number(hybridMpesa) || 0;
-      if (Math.abs((cash + mpesa) - settleInvoice.GRAND_TOTAL) > 0.01) {
+      const bank = Number(hybridBank) || 0;
+      const cheque = Number(hybridCheque) || 0;
+      if (Math.abs((cash + mpesa + bank + cheque) - settleInvoice.GRAND_TOTAL) > 0.01) {
         alert(`Hybrid payments must equal exactly Ksh. ${settleInvoice.GRAND_TOTAL.toLocaleString()}`);
         setSettling(false);
         return;
       }
+      if (bank > 0 && (!payingBank || !customerDetails)) { alert("Paying Bank and Customer Details are required for Bank payments in Hybrid."); setSettling(false); return; }
+      if (cheque > 0 && (!payingBank || !chequeNumber || !customerDetails)) { alert("Paying Bank, Cheque Number, and Customer Details are required for Cheque payments in Hybrid."); setSettling(false); return; }
     }
 
     // Fetch full invoice details
@@ -215,11 +238,17 @@ export default function InvoicesPage() {
 
     let cashAmt = 0;
     let mpesaAmt = 0;
+    let bankAmt = 0;
+    let chequeAmt = 0;
     if (paymentMethod === 'Cash') cashAmt = inv.GRAND_TOTAL;
     if (paymentMethod === 'M-Pesa') mpesaAmt = inv.GRAND_TOTAL;
+    if (paymentMethod === 'Bank') bankAmt = inv.GRAND_TOTAL;
+    if (paymentMethod === 'Cheque') chequeAmt = inv.GRAND_TOTAL;
     if (paymentMethod === 'Hybrid') {
       cashAmt = Number(hybridCash) || 0;
       mpesaAmt = Number(hybridMpesa) || 0;
+      bankAmt = Number(hybridBank) || 0;
+      chequeAmt = Number(hybridCheque) || 0;
     }
 
     // 3. Create Transaction using exact Invoice math
@@ -233,6 +262,12 @@ export default function InvoicesPage() {
       PAYMENT_METHOD: paymentMethod,
       CASH_AMOUNT: cashAmt,
       MPESA_AMOUNT: mpesaAmt,
+      BANK_AMOUNT: bankAmt,
+      CHEQUE_AMOUNT: chequeAmt,
+      PAYING_BANK: payingBank || null,
+      BANK_BRANCH: bankBranch || null,
+      CHEQUE_NUMBER: chequeNumber || null,
+      CUSTOMER_DETAILS: customerDetails || null,
       HYBRID_PAYMENT: paymentMethod === 'Hybrid',
       IS_CREDIT: false,
       IS_SETTLED: true,
@@ -555,7 +590,9 @@ export default function InvoicesPage() {
               <select className="input" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                 <option value="Cash">Cash</option>
                 <option value="M-Pesa">M-Pesa</option>
-                <option value="Hybrid">Hybrid (Cash + M-Pesa)</option>
+                <option value="Bank">Bank</option>
+                <option value="Cheque">Cheque</option>
+                <option value="Hybrid">Hybrid (Mixed payments)</option>
               </select>
             </div>
 
@@ -570,12 +607,20 @@ export default function InvoicesPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Cash Amount</label>
+                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Cash</label>
                     <input type="number" className="input" value={hybridCash} onChange={e => setHybridCash(e.target.value)} required />
                   </div>
                   <div style={{ flex: 1 }}>
-                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>M-Pesa Amount</label>
+                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>M-Pesa</label>
                     <input type="number" className="input" value={hybridMpesa} onChange={e => setHybridMpesa(e.target.value)} required />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Bank</label>
+                    <input type="number" className="input" value={hybridBank} onChange={e => setHybridBank(e.target.value)} required />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.5rem', color: 'var(--muted-foreground)' }}>Cheque</label>
+                    <input type="number" className="input" value={hybridCheque} onChange={e => setHybridCheque(e.target.value)} required />
                   </div>
                 </div>
                 {Number(hybridMpesa) > 0 && (
@@ -585,6 +630,17 @@ export default function InvoicesPage() {
                   </div>
                 )}
               </div>
+            )}
+
+            {(paymentMethod === 'Bank' || paymentMethod === 'Cheque' || (paymentMethod === 'Hybrid' && (Number(hybridBank) > 0 || Number(hybridCheque) > 0))) && (
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                 <input type="text" className="input" placeholder="Paying Bank (e.g. Equity Bank) *" style={{ padding: '0.75rem' }} value={payingBank} onChange={e => setPayingBank(e.target.value)} />
+                 <input type="text" className="input" placeholder="Bank Branch (Optional)" style={{ padding: '0.75rem' }} value={bankBranch} onChange={e => setBankBranch(e.target.value)} />
+                 {(paymentMethod === 'Cheque' || (paymentMethod === 'Hybrid' && Number(hybridCheque) > 0)) && (
+                    <input type="text" className="input" placeholder="Cheque Number *" style={{ padding: '0.75rem' }} value={chequeNumber} onChange={e => setChequeNumber(e.target.value)} />
+                 )}
+                 <textarea className="input" placeholder="Customer Personal Details (Name, Phone, ID) *" style={{ padding: '0.75rem', resize: 'vertical' }} value={customerDetails} onChange={e => setCustomerDetails(e.target.value)} />
+               </div>
             )}
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>

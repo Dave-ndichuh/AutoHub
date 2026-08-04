@@ -37,6 +37,12 @@ function TransactionsContent() {
   const [paymentMode, setPaymentMode] = useState('Cash');
   const [cashAmount, setCashAmount] = useState('');
   const [mpesaAmount, setMpesaAmount] = useState('');
+  const [bankAmount, setBankAmount] = useState('');
+  const [chequeAmount, setChequeAmount] = useState('');
+  const [payingBank, setPayingBank] = useState('');
+  const [bankBranch, setBankBranch] = useState('');
+  const [chequeNumber, setChequeNumber] = useState('');
+  const [customerDetails, setCustomerDetails] = useState('');
   const [mpesaReceipt, setMpesaReceipt] = useState('');
   
   // Pagination State
@@ -186,6 +192,12 @@ function TransactionsContent() {
     setPaymentMode('Cash');
     setCashAmount(trans.ADJUSTED_TOTAL || trans.GRAND_TOTAL);
     setMpesaAmount(0);
+    setBankAmount(0);
+    setChequeAmount(0);
+    setPayingBank('');
+    setBankBranch('');
+    setChequeNumber('');
+    setCustomerDetails('');
     setMpesaReceipt('');
     setSettleModalOpen(true);
   };
@@ -196,20 +208,28 @@ function TransactionsContent() {
 
     const currentCash = transactionToSettle.CASH_AMOUNT || 0;
     const currentMpesa = transactionToSettle.MPESA_AMOUNT || 0;
+    const currentBank = transactionToSettle.BANK_AMOUNT || 0;
+    const currentCheque = transactionToSettle.CHEQUE_AMOUNT || 0;
 
     let payingCash = 0;
     let payingMpesa = 0;
+    let payingBankAmt = 0;
+    let payingChequeAmt = 0;
     
     if (paymentMode === 'Cash') payingCash = Number(cashAmount) || 0;
     else if (paymentMode === 'M-Pesa') payingMpesa = Number(mpesaAmount) || 0;
+    else if (paymentMode === 'Bank') payingBankAmt = Number(bankAmount) || 0;
+    else if (paymentMode === 'Cheque') payingChequeAmt = Number(chequeAmount) || 0;
     else if (paymentMode === 'Hybrid') {
       payingCash = Number(cashAmount) || 0;
       payingMpesa = Number(mpesaAmount) || 0;
+      payingBankAmt = Number(bankAmount) || 0;
+      payingChequeAmt = Number(chequeAmount) || 0;
     }
 
-    const totalPayingNow = payingCash + payingMpesa;
+    const totalPayingNow = payingCash + payingMpesa + payingBankAmt + payingChequeAmt;
     const totalAmount = transactionToSettle.ADJUSTED_TOTAL || transactionToSettle.GRAND_TOTAL;
-    const amountDue = totalAmount - (currentCash + currentMpesa);
+    const amountDue = totalAmount - (currentCash + currentMpesa + currentBank + currentCheque);
 
     if (totalPayingNow === 0) {
       alert('Please enter a payment amount.');
@@ -221,22 +241,39 @@ function TransactionsContent() {
       return;
     }
 
+    if (paymentMode === 'Bank' && (!payingBank || !customerDetails)) { alert("Paying Bank and Customer Details are required for Bank payments."); return; }
+    if (paymentMode === 'Cheque' && (!payingBank || !chequeNumber || !customerDetails)) { alert("Paying Bank, Cheque Number, and Customer Details are required for Cheque payments."); return; }
+    if (paymentMode === 'Hybrid') {
+       if (payingBankAmt > 0 && (!payingBank || !customerDetails)) { alert("Paying Bank and Customer Details are required for Bank payments in Hybrid."); return; }
+       if (payingChequeAmt > 0 && (!payingBank || !chequeNumber || !customerDetails)) { alert("Paying Bank, Cheque Number, and Customer Details are required for Cheque payments in Hybrid."); return; }
+    }
+
     const isFullySettled = Math.abs(totalPayingNow - amountDue) <= 1;
     const newCash = currentCash + payingCash;
     const newMpesa = currentMpesa + payingMpesa;
+    const newBank = currentBank + payingBankAmt;
+    const newCheque = currentCheque + payingChequeAmt;
 
     let determinedPaymentMethod = 'Hybrid';
-    if (newCash > 0 && newMpesa === 0) determinedPaymentMethod = 'Cash';
-    if (newMpesa > 0 && newCash === 0) determinedPaymentMethod = 'M-Pesa';
+    if (newCash > 0 && newMpesa === 0 && newBank === 0 && newCheque === 0) determinedPaymentMethod = 'Cash';
+    if (newMpesa > 0 && newCash === 0 && newBank === 0 && newCheque === 0) determinedPaymentMethod = 'M-Pesa';
+    if (newBank > 0 && newCash === 0 && newMpesa === 0 && newCheque === 0) determinedPaymentMethod = 'Bank';
+    if (newCheque > 0 && newCash === 0 && newMpesa === 0 && newBank === 0) determinedPaymentMethod = 'Cheque';
 
     const { error } = await supabase.from('transaction').update({
       PAYMENT_METHOD: determinedPaymentMethod,
       CASH_AMOUNT: newCash,
       MPESA_AMOUNT: newMpesa,
-      HYBRID_PAYMENT: (newCash > 0 && newMpesa > 0),
+      BANK_AMOUNT: newBank,
+      CHEQUE_AMOUNT: newCheque,
+      PAYING_BANK: payingBank || transactionToSettle.PAYING_BANK,
+      BANK_BRANCH: bankBranch || transactionToSettle.BANK_BRANCH,
+      CHEQUE_NUMBER: chequeNumber || transactionToSettle.CHEQUE_NUMBER,
+      CUSTOMER_DETAILS: customerDetails || transactionToSettle.CUSTOMER_DETAILS,
+      HYBRID_PAYMENT: (newCash > 0 ? 1 : 0) + (newMpesa > 0 ? 1 : 0) + (newBank > 0 ? 1 : 0) + (newCheque > 0 ? 1 : 0) > 1,
       IS_SETTLED: isFullySettled,
       CASH_TENDERED: totalAmount,
-      RECEIPT_NUMBER: ((paymentMode === 'M-Pesa' && payingMpesa > 0) || (paymentMode === 'Hybrid' && payingMpesa > 0)) ? mpesaReceipt : null
+      RECEIPT_NUMBER: ((paymentMode === 'M-Pesa' && payingMpesa > 0) || (paymentMode === 'Hybrid' && payingMpesa > 0)) ? mpesaReceipt : transactionToSettle.RECEIPT_NUMBER
     }).eq('TRANS_ID', transactionToSettle.TRANS_ID);
 
     if (error) {
@@ -247,7 +284,8 @@ function TransactionsContent() {
       // Quickly update local state to avoid full refetch
       setTransactions(prev => prev.map(t => {
         if (t.TRANS_ID === transactionToSettle.TRANS_ID) {
-          return { ...t, PAYMENT_METHOD: paymentMode, CASH_AMOUNT: finalCash, MPESA_AMOUNT: finalMpesa, HYBRID_PAYMENT: isHybrid, IS_SETTLED: true, CASH_TENDERED: totalDue, RECEIPT_NUMBER: (paymentMode === 'M-Pesa' || (paymentMode === 'Hybrid' && finalMpesa > 0)) ? mpesaReceipt : null };
+          const isHybrid = (newCash > 0 ? 1 : 0) + (newMpesa > 0 ? 1 : 0) + (newBank > 0 ? 1 : 0) + (newCheque > 0 ? 1 : 0) > 1;
+          return { ...t, PAYMENT_METHOD: determinedPaymentMethod, CASH_AMOUNT: newCash, MPESA_AMOUNT: newMpesa, BANK_AMOUNT: newBank, CHEQUE_AMOUNT: newCheque, HYBRID_PAYMENT: isHybrid, IS_SETTLED: isFullySettled, CASH_TENDERED: totalAmount };
         }
         return t;
       }));
@@ -432,7 +470,14 @@ function TransactionsContent() {
                   </td>
                   <td className="text-muted">
                     {trans.PAYMENT_METHOD}
-                    {trans.HYBRID_PAYMENT && <div style={{ fontSize: '0.75rem' }}>Cash: {trans.CASH_AMOUNT} | M-Pesa: {trans.MPESA_AMOUNT}</div>}
+                    {trans.HYBRID_PAYMENT && (
+                      <div style={{ fontSize: '0.75rem', display: 'flex', flexDirection: 'column' }}>
+                        {Number(trans.CASH_AMOUNT) > 0 && <span>Cash: Ksh {trans.CASH_AMOUNT?.toLocaleString()}</span>}
+                        {Number(trans.MPESA_AMOUNT) > 0 && <span>M-Pesa: Ksh {trans.MPESA_AMOUNT?.toLocaleString()}</span>}
+                        {Number(trans.BANK_AMOUNT) > 0 && <span>Bank: Ksh {trans.BANK_AMOUNT?.toLocaleString()}</span>}
+                        {Number(trans.CHEQUE_AMOUNT) > 0 && <span>Cheque: Ksh {trans.CHEQUE_AMOUNT?.toLocaleString()}</span>}
+                      </div>
+                    )}
                   </td>
                   <td style={{ fontWeight: 600, color: 'var(--primary)' }}>
                     Ksh {trans.ADJUSTED_TOTAL ? trans.ADJUSTED_TOTAL.toLocaleString() : trans.GRAND_TOTAL?.toLocaleString()}
@@ -539,8 +584,8 @@ function TransactionsContent() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Payment Mode</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.5rem' }}>
-                  {['Cash', 'M-Pesa', 'Hybrid'].map(mode => (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '0.5rem' }}>
+                  {['Cash', 'M-Pesa', 'Bank', 'Cheque', 'Hybrid'].map(mode => (
                     <button
                       key={mode}
                       type="button"
@@ -582,16 +627,38 @@ function TransactionsContent() {
                 </div>
               )}
 
+              {paymentMode === 'Bank' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Amount Paying</label>
+                  <input type="number" className="input" value={bankAmount} onChange={e => setBankAmount(e.target.value)} required />
+                </div>
+              )}
+
+              {paymentMode === 'Cheque' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Amount Paying</label>
+                  <input type="number" className="input" value={chequeAmount} onChange={e => setChequeAmount(e.target.value)} required />
+                </div>
+              )}
+
               {paymentMode === 'Hybrid' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div style={{ flex: '1 1 45%' }}>
                       <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Cash Amount</label>
                       <input type="number" className="input" min="0" value={cashAmount} onChange={e => setCashAmount(e.target.value)} required />
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: '1 1 45%' }}>
                       <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>M-Pesa Amount</label>
                       <input type="number" className="input" min="0" value={mpesaAmount} onChange={e => setMpesaAmount(e.target.value)} required />
+                    </div>
+                    <div style={{ flex: '1 1 45%' }}>
+                      <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Bank Amount</label>
+                      <input type="number" className="input" min="0" value={bankAmount} onChange={e => setBankAmount(e.target.value)} required />
+                    </div>
+                    <div style={{ flex: '1 1 45%' }}>
+                      <label style={{ display: 'block', fontSize: '0.875rem', marginBottom: '0.25rem', color: 'var(--muted-foreground)' }}>Cheque Amount</label>
+                      <input type="number" className="input" min="0" value={chequeAmount} onChange={e => setChequeAmount(e.target.value)} required />
                     </div>
                   </div>
                   {Number(mpesaAmount) > 0 && (
@@ -600,6 +667,17 @@ function TransactionsContent() {
                       <input type="text" className="input" placeholder="e.g. QWE123RTYA" style={{ border: '2px solid #25D366' }} value={mpesaReceipt} onChange={(e) => setMpesaReceipt(e.target.value.toUpperCase())} minLength={10} maxLength={10} pattern="[A-Z0-9]{10}" title="M-Pesa code must be exactly 10 characters" />
                     </div>
                   )}
+                </div>
+              )}
+
+              {(paymentMode === 'Bank' || paymentMode === 'Cheque' || (paymentMode === 'Hybrid' && (Number(bankAmount) > 0 || Number(chequeAmount) > 0))) && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <input type="text" className="input" placeholder="Paying Bank (e.g. Equity Bank) *" style={{ padding: '0.75rem' }} value={payingBank} onChange={e => setPayingBank(e.target.value)} />
+                  <input type="text" className="input" placeholder="Bank Branch (Optional)" style={{ padding: '0.75rem' }} value={bankBranch} onChange={e => setBankBranch(e.target.value)} />
+                  {(paymentMode === 'Cheque' || (paymentMode === 'Hybrid' && Number(chequeAmount) > 0)) && (
+                     <input type="text" className="input" placeholder="Cheque Number *" style={{ padding: '0.75rem' }} value={chequeNumber} onChange={e => setChequeNumber(e.target.value)} />
+                  )}
+                  <textarea className="input" placeholder="Customer Personal Details (Name, Phone, ID) *" style={{ padding: '0.75rem', resize: 'vertical' }} value={customerDetails} onChange={e => setCustomerDetails(e.target.value)} />
                 </div>
               )}
 
