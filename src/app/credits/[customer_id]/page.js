@@ -159,7 +159,8 @@ export default function CustomerLedgerPage({ params }) {
           payment_method: paymentMethod,
           reference_no: paymentRef,
           notes: paymentNotes,
-          employee_id: employeeId
+          employee_id: employeeId,
+          branch_id: branchId === 'ALL' ? '1' : branchId
         })
       });
 

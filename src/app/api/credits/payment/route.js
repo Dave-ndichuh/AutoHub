@@ -45,7 +45,7 @@ export async function POST(req) {
         reference_type: 'payment',
         reference_id: reference_no,
         notes: `Payment via ${payment_method}${notes ? ' - ' + notes : ''}`,
-        branch_id: branch_id
+        branch_id: branch_id || '1'
       }])
       .select()
       .single();
@@ -118,7 +118,8 @@ export async function POST(req) {
       await supabaseAdmin.from('transaction').update({ 
         IS_SETTLED: true,
         CASH_AMOUNT: s.cash,
-        MPESA_AMOUNT: s.mpesa 
+        MPESA_AMOUNT: s.mpesa,
+        PAYMENT_METHOD: payment_method
       }).eq('TRANS_ID', s.id);
     }
     
@@ -126,7 +127,8 @@ export async function POST(req) {
     for (const s of salesToUpdatePartial) {
       await supabaseAdmin.from('transaction').update({
         CASH_AMOUNT: s.cash,
-        MPESA_AMOUNT: s.mpesa
+        MPESA_AMOUNT: s.mpesa,
+        PAYMENT_METHOD: payment_method
       }).eq('TRANS_ID', s.id);
     }
 
