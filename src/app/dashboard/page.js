@@ -105,45 +105,68 @@ export default function Dashboard() {
       } else if (timeFilter === 'custom') {
         if (customStart) startDate = new Date(customStart).toISOString();
         if (customEnd) endDate = new Date(customEnd + 'T23:59:59.999Z').toISOString();
+      } else if (timeFilter === 'all_time') {
+        startDate = new Date('2000-01-01T00:00:00.000Z').toISOString();
+        endDate = new Date().toISOString();
       }
-      
-      const sevenDaysAgo = new Date(today);
-      sevenDaysAgo.setDate(today.getDate() - 6); // Last 7 days including today
       
       try {
         let trendQuery = supabase
           .from('transaction')
           .select('CREATED_AT, ADJUSTED_TOTAL, GRAND_TOTAL, status')
-          .gte('CREATED_AT', sevenDaysAgo.toISOString())
           .or('IS_CREDIT.eq.false,IS_SETTLED.eq.true')
           .order('CREATED_AT', { ascending: true });
           
+        if (startDate) trendQuery = trendQuery.gte('CREATED_AT', startDate);
+        if (endDate) trendQuery = trendQuery.lte('CREATED_AT', endDate);
         if (branchId && branchId !== 'ALL') trendQuery = trendQuery.eq('BRANCH_ID', branchId);
 
         const branchParam = branchId === 'ALL' ? null : branchId;
 
         // Concurrent fetching with Promise.all
+        // Catch individual errors so one failure doesn't break everything
         const [
-          { data: rpcMetrics },
-          { data: invMetrics },
-          { data: creditMetrics },
-          { data: trendDataRaw }
+          rpcMetricsRes,
+          invMetricsRes,
+          trendDataRawRes,
+          creditAccountsRes,
+          creditTransRes
         ] = await Promise.all([
           supabase.rpc('get_dashboard_metrics', { start_date: startDate, end_date: endDate, p_branch_id: branchParam }),
-          supabase.rpc('get_inventory_metrics', { p_branch_id: branchParam }),
-          supabase.rpc('get_credit_metrics', { start_date: startDate, end_date: endDate, p_branch_id: branchParam }),
-          trendQuery
+          supabase.rpc('get_inventory_metrics', { p_branch_id: branchParam, start_date: startDate, end_date: endDate })
+            .then(res => res.error ? supabase.rpc('get_inventory_metrics', { p_branch_id: branchParam }) : res),
+          trendQuery,
+          supabase.from('credit_accounts').select('current_balance'),
+          supabase.from('credit_transactions').select('type, amount, date')
+            .gte('date', startDate || '2000-01-01T00:00:00.000Z')
+            .lte('date', endDate || new Date().toISOString())
         ]);
 
+        const rpcMetrics = rpcMetricsRes?.data;
+        const invMetrics = invMetricsRes?.data;
+        const trendDataRaw = trendDataRawRes?.data;
+        
         let currentMonthTrans = trendDataRaw || [];
         
         let stockVal = Number(invMetrics?.stockValue) || 0;
         let lowStock = Number(invMetrics?.lowStockCount) || 0;
         let outOfStock = Number(invMetrics?.outOfStockCount) || 0;
         
-        let arTotal = Number(creditMetrics?.arTotal) || 0;
-        let creditSalesMonth = Number(creditMetrics?.creditSalesMonth) || 0;
-        let creditPaymentsMonth = Number(creditMetrics?.creditPaymentsMonth) || 0;
+        let arTotal = 0;
+        let creditSalesMonth = 0;
+        let creditPaymentsMonth = 0;
+        
+        if (creditAccountsRes?.data) {
+          arTotal = creditAccountsRes.data.reduce((sum, acc) => sum + (Number(acc.current_balance) || 0), 0);
+        }
+        
+        if (creditTransRes?.data) {
+          creditTransRes.data.forEach(t => {
+             // Assuming 'debit' or 'sale' adds to AR (Credit Sales), and 'credit' or 'payment' reduces AR
+             if (t.type === 'debit') creditSalesMonth += Number(t.amount) || 0;
+             if (t.type === 'credit') creditPaymentsMonth += Number(t.amount) || 0;
+          });
+        }
 
         let tSales = 0;
         let tCost = 0;
@@ -155,16 +178,8 @@ export default function Dashboard() {
         let mpesaTotal = 0;
         let creditTotal = 0;
 
-        // For Sales Trend Line Chart (Last 7 Days)
+        // For Sales Trend Line Chart (Dynamic period)
         const trendMap = {};
-        for(let i=0; i<7; i++) {
-          const d = new Date(sevenDaysAgo);
-          d.setDate(d.getDate() + i);
-          const yyyy = d.getFullYear();
-          const mm = String(d.getMonth() + 1).padStart(2, '0');
-          const dd = String(d.getDate()).padStart(2, '0');
-          trendMap[`${yyyy}-${mm}-${dd}`] = 0;
-        }
 
         if (currentMonthTrans) {
           currentMonthTrans.forEach(t => {
@@ -180,9 +195,10 @@ export default function Dashboard() {
             const tD = new Date(t.CREATED_AT);
             const tDate = `${tD.getFullYear()}-${String(tD.getMonth() + 1).padStart(2, '0')}-${String(tD.getDate()).padStart(2, '0')}`;
             
-            if (trendMap[tDate] !== undefined) {
-              trendMap[tDate] += saleTotal;
+            if (trendMap[tDate] === undefined) {
+                trendMap[tDate] = 0;
             }
+            trendMap[tDate] += saleTotal;
 
             // Payment methods and top product are now handled by RPC.
           });
@@ -555,7 +571,11 @@ export default function Dashboard() {
           <div className="col-8 glass stagger-3 card-lift" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', color: 'var(--muted-foreground)' }}>
               <BarChart3 size={18} className="text-primary" /> 
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Sales Trend (Last 7 Days)</h3>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {timeFilter === 'all_time' ? 'Sales Trend (All Time)' : 
+                 timeFilter === 'this_month' ? 'Sales Trend (This Month)' : 
+                 timeFilter === 'previous_month' ? 'Sales Trend (Previous Month)' : 'Sales Trend (Custom Period)'}
+              </h3>
             </div>
             <div className="chart-container" style={{ flex: 1 }}>
               <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
