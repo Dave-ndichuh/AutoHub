@@ -129,9 +129,6 @@ export default function Sidebar() {
 
       <div style={{ padding: '1rem 1.5rem', fontSize: '0.75rem', color: 'var(--muted-foreground)', textAlign: 'center', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
         <span>&copy; {new Date().getFullYear()} Jobea Autos</span>
-        <span>
-          System by: <a href="https://machariandichu.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 500 }}>Nexus Solutions</a>
-        </span>
       </div>
     </aside>
   );

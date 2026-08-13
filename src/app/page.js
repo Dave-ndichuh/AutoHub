@@ -305,10 +305,6 @@ export default function LandingPage() {
         width: '100%'
       }}>
         <span style={{ fontWeight: 500 }}>&copy; {new Date().getFullYear()} Jobea Autospares</span>
-        <span>&bull;</span>
-        <span>
-          System by <a href="https://machariandichu.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ color: '#e2e8f0', textDecoration: 'none', fontWeight: 600, transition: 'color 0.2s' }} onMouseOver={(e) => e.target.style.color = '#ffffff'} onMouseOut={(e) => e.target.style.color = '#e2e8f0'}>Nexus Solutions</a>
-        </span>
       </footer>
       
       <style dangerouslySetInnerHTML={{__html: `

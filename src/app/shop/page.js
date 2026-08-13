@@ -508,7 +508,6 @@ export default function ShopPage() {
           
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', color: 'var(--hf-muted)', fontSize: '0.875rem' }}>
             <span>&copy; {new Date().getFullYear()} Jobea Autospares</span>
-            <span>Developed by <a href="https://nexussolutions.co.ke" target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', textDecoration: 'none', fontWeight: 600 }}>Nexus Solutions</a></span>
           </div>
           
         </div>
