@@ -106,7 +106,7 @@ export default function AuthProvider({ children }) {
         inactivityTimer = setTimeout(() => {
           setShowLogoutPrompt(true);
           setCountdown(60);
-        }, 4 * 60 * 1000); // 4 minutes
+        }, 9 * 60 * 1000); // 9 minutes
       }
     };
 
