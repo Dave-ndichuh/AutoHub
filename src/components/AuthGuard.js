@@ -151,26 +151,27 @@ export default function AuthProvider({ children }) {
       {children}
       {showLogoutPrompt && (
         <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
-          alignItems: 'center', justifyContent: 'center', zIndex: 9999
+          position: 'fixed', inset: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
         }}>
-          <div style={{
-            background: 'var(--card-bg, white)', padding: '2rem', borderRadius: '8px',
-            textAlign: 'center', color: 'var(--text-color, black)', maxWidth: '400px', width: '90%',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          <div className="glass" style={{
+            padding: '2.5rem 2rem',
+            textAlign: 'center',
+            maxWidth: '400px', width: '90%',
+            color: 'var(--foreground)',
+            display: 'flex', flexDirection: 'column', gap: '1.5rem'
           }}>
-            <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: 'bold' }}>Are you still there?</h2>
-            <p style={{ marginBottom: '1.5rem' }}>
-              You have been inactive for a while. You will be automatically logged out in <strong>{countdown}</strong> seconds.
+            <h2 className="heading-2" style={{ margin: 0 }}>Are you still there?</h2>
+            <p className="text-muted" style={{ margin: 0, fontSize: '1rem' }}>
+              You have been inactive for a while. You will be automatically logged out in <strong style={{ color: 'var(--primary)', fontSize: '1.125rem' }}>{countdown}</strong> seconds.
             </p>
             <button 
+              className="btn btn-primary"
               onClick={handleStayLoggedIn}
-              style={{
-                background: '#3b82f6', color: 'white', border: 'none',
-                padding: '0.75rem 1.5rem', borderRadius: '4px', cursor: 'pointer',
-                fontWeight: 'bold', width: '100%', fontSize: '1rem'
-              }}
+              style={{ width: '100%', marginTop: '0.5rem', fontSize: '1.05rem', padding: '0.875rem' }}
             >
               I'm still here
             </button>
