@@ -17,6 +17,8 @@ export default function AuthProvider({ children }) {
   const [role, setRole] = useState(null);
   const [employeeId, setEmployeeId] = useState(null);
   const [branchId, setBranchId] = useState(null);
+  const [showLogoutPrompt, setShowLogoutPrompt] = useState(false);
+  const [countdown, setCountdown] = useState(60);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -93,6 +95,51 @@ export default function AuthProvider({ children }) {
     };
   }, [pathname, router, branchId]);
 
+  useEffect(() => {
+    let inactivityTimer;
+
+    const resetTimer = () => {
+      if (showLogoutPrompt) return; // Don't reset if prompt is active
+      if (inactivityTimer) clearTimeout(inactivityTimer);
+      
+      if (user) {
+        inactivityTimer = setTimeout(() => {
+          setShowLogoutPrompt(true);
+          setCountdown(60);
+        }, 4 * 60 * 1000); // 4 minutes
+      }
+    };
+
+    if (user) {
+      const events = ['mousemove', 'keydown', 'mousedown', 'scroll', 'touchstart'];
+      events.forEach((e) => window.addEventListener(e, resetTimer));
+      resetTimer();
+
+      return () => {
+        if (inactivityTimer) clearTimeout(inactivityTimer);
+        events.forEach((e) => window.removeEventListener(e, resetTimer));
+      };
+    }
+  }, [user, showLogoutPrompt]);
+
+  useEffect(() => {
+    let interval;
+    if (showLogoutPrompt && countdown > 0) {
+      interval = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    } else if (showLogoutPrompt && countdown === 0) {
+      supabase.auth.signOut();
+      setShowLogoutPrompt(false);
+    }
+    return () => clearInterval(interval);
+  }, [showLogoutPrompt, countdown]);
+
+  const handleStayLoggedIn = () => {
+    setShowLogoutPrompt(false);
+    setCountdown(60);
+  };
+
   if (loading) {
     return <div style={{ minHeight: '100vh', background: 'var(--background)' }} />;
   }
@@ -102,6 +149,34 @@ export default function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{ user, role, employeeId, branchId, setBranchId, loading }}>
       {children}
+      {showLogoutPrompt && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 9999
+        }}>
+          <div style={{
+            background: 'var(--card-bg, white)', padding: '2rem', borderRadius: '8px',
+            textAlign: 'center', color: 'var(--text-color, black)', maxWidth: '400px', width: '90%',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+          }}>
+            <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem', fontWeight: 'bold' }}>Are you still there?</h2>
+            <p style={{ marginBottom: '1.5rem' }}>
+              You have been inactive for a while. You will be automatically logged out in <strong>{countdown}</strong> seconds.
+            </p>
+            <button 
+              onClick={handleStayLoggedIn}
+              style={{
+                background: '#3b82f6', color: 'white', border: 'none',
+                padding: '0.75rem 1.5rem', borderRadius: '4px', cursor: 'pointer',
+                fontWeight: 'bold', width: '100%', fontSize: '1rem'
+              }}
+            >
+              I'm still here
+            </button>
+          </div>
+        </div>
+      )}
     </AuthContext.Provider>
   );
 }
