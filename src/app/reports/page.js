@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { BarChart3, TrendingUp, AlertCircle, PackageSearch, Download, DollarSign, Calendar, RefreshCcw, Phone, CreditCard, FileText } from 'lucide-react';
+import { BarChart3, TrendingUp, AlertCircle, PackageSearch, Download, DollarSign, Calendar, RefreshCcw, Phone, CreditCard, FileText, Search } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import { formatItemName } from '@/utils/formatters';
 import { useAuth } from '@/components/AuthGuard';
@@ -35,6 +35,7 @@ export default function ReportsPage() {
   const [creditAccounts, setCreditAccounts] = useState([]);
   const [selectedCustomerHistory, setSelectedCustomerHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [creditSearchTerm, setCreditSearchTerm] = useState('');
 
   // Handle Preset changes
   useEffect(() => {
@@ -461,22 +462,39 @@ export default function ReportsPage() {
                     })()}
                   </div>
                   
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <select 
-                      className="input" 
-                      style={{ minWidth: '250px' }}
-                      value={selectedCreditCustomerId}
-                      onChange={(e) => setSelectedCreditCustomerId(e.target.value)}
-                    >
-                      <option value="">-- Select Account --</option>
-                      {creditAccounts.map(ca => {
-                        const cust = ca.customer;
-                        const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim() : 'Unknown';
-                        return (
-                          <option key={ca.customer_id} value={ca.customer_id}>{name} (Owes Ksh {ca.current_balance?.toLocaleString()})</option>
-                        );
-                      })}
-                    </select>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-end', width: '100%', maxWidth: '350px' }}>
+                    <div style={{ position: 'relative', width: '100%' }}>
+                      <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
+                      <input 
+                        type="text" 
+                        placeholder="Search customer account..." 
+                        className="input" 
+                        style={{ width: '100%', paddingLeft: '34px' }}
+                        value={creditSearchTerm}
+                        onChange={(e) => setCreditSearchTerm(e.target.value)}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', width: '100%' }}>
+                      <select 
+                        className="input" 
+                        style={{ flex: 1 }}
+                        value={selectedCreditCustomerId}
+                        onChange={(e) => setSelectedCreditCustomerId(e.target.value)}
+                      >
+                        <option value="">-- Select Account --</option>
+                        {creditAccounts.filter(ca => {
+                          if (!creditSearchTerm) return true;
+                          const cust = ca.customer;
+                          const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.toLowerCase() : 'unknown';
+                          return name.includes(creditSearchTerm.toLowerCase());
+                        }).map(ca => {
+                          const cust = ca.customer;
+                          const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim() : 'Unknown';
+                          return (
+                            <option key={ca.customer_id} value={ca.customer_id}>{name} (Owes Ksh {ca.current_balance?.toLocaleString()})</option>
+                          );
+                        })}
+                      </select>
                     
                     {(() => {
                       if (!selectedCreditCustomerId) return null;
@@ -523,6 +541,7 @@ export default function ReportsPage() {
                         </a>
                       );
                     })()}
+                    </div>
                   </div>
                 </div>
 
