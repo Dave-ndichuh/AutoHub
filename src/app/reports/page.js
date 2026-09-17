@@ -587,7 +587,11 @@ export default function ReportsPage() {
                       
                       msg += `Please let us know when you plan to clear your outstanding debt. Thank you!`;
                       
-                      const waUrl = cust.PHONE_NUMBER ? `https://wa.me/${cust.PHONE_NUMBER.replace(/\+/g,'')}?text=${encodeURIComponent(msg)}` : null;
+                      let formattedPhone = cust.PHONE_NUMBER ? cust.PHONE_NUMBER.replace(/\D/g, '') : '';
+                      if (formattedPhone.startsWith('0')) {
+                        formattedPhone = '254' + formattedPhone.substring(1);
+                      }
+                      const waUrl = formattedPhone ? `https://wa.me/${formattedPhone}?text=${encodeURIComponent(msg)}` : null;
 
                       return (
                         <a 
@@ -738,6 +742,64 @@ export default function ReportsPage() {
               </div>
               
         </>
+      )}
+      {/* Product Details Modal */}
+      {selectedProductForModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: 'var(--card)', padding: '2rem', borderRadius: '16px', width: '100%', maxWidth: '500px', border: '1px solid var(--border)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+            {selectedProductForModal.loading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', padding: '2rem' }}>
+                <div style={{ width: '32px', height: '32px', border: '3px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                <span style={{ color: 'var(--muted-foreground)' }}>Loading details...</span>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--foreground)', margin: 0 }}>
+                    {selectedProductForModal.NAME}
+                  </h3>
+                  <button onClick={() => setSelectedProductForModal(null)} style={{ background: 'transparent', border: 'none', color: 'var(--muted-foreground)', cursor: 'pointer' }}>
+                    <X size={24} />
+                  </button>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Part Number</div>
+                    <div style={{ fontWeight: 500 }}>{selectedProductForModal.PART_NUMBER || 'N/A'}</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Category</div>
+                    <div style={{ fontWeight: 500 }}>{selectedProductForModal.CATEGORY || 'N/A'}</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Current Stock</div>
+                    <div style={{ fontWeight: 600, color: selectedProductForModal.ON_HAND > 0 ? 'var(--primary)' : '#ef4444' }}>
+                      {selectedProductForModal.ON_HAND} units
+                    </div>
+                  </div>
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Selling Price</div>
+                    <div style={{ fontWeight: 600 }}>Ksh {selectedProductForModal.PRICE?.toLocaleString()}</div>
+                  </div>
+                </div>
+                
+                {selectedProductForModal.DESCRIPTION && (
+                  <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Description</div>
+                    <div style={{ fontSize: '0.875rem' }}>{selectedProductForModal.DESCRIPTION}</div>
+                  </div>
+                )}
+                
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <button className="btn btn-secondary" onClick={() => setSelectedProductForModal(null)}>
+                    Close
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
