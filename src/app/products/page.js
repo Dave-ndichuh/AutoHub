@@ -15,8 +15,9 @@ function ProductsContent() {
   const filterParam = searchParams.get('filter');
   const { branchId } = useAuth();
 
-  const [searchInput, setSearchInput] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const searchQuery = searchParams.get('search');
+  const [searchInput, setSearchInput] = useState(searchQuery || '');
+  const [searchTerm, setSearchTerm] = useState(searchQuery || '');
   
   // Sorting and Pagination State
   const [sortConfig, setSortConfig] = useState({ key: 'dateStockIn', direction: 'desc' });

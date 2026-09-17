@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { BarChart3, TrendingUp, AlertCircle, PackageSearch, Download, DollarSign, Calendar, RefreshCcw, Phone, CreditCard, FileText, Search, ChevronDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -627,7 +628,11 @@ export default function ReportsPage() {
                                 {selectedCustomerHistory.map((it, i) => (
                                   <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <td style={{ padding: '1rem', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>{new Date(it.date).toLocaleDateString()}</td>
-                                    <td style={{ padding: '1rem', fontWeight: 500 }}>{it.name}</td>
+                                    <td style={{ padding: '1rem', fontWeight: 500 }}>
+                                      <Link href={`/products?search=${encodeURIComponent(it.name)}`} style={{ color: 'var(--primary)', textDecoration: 'underline' }}>
+                                        {it.name}
+                                      </Link>
+                                    </td>
                                     <td style={{ padding: '1rem', textAlign: 'right' }}>{it.qty}</td>
                                     <td style={{ padding: '1rem', textAlign: 'right' }}>Ksh {it.price.toLocaleString()}</td>
                                     <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--primary)', fontWeight: 600 }}>Ksh {it.total.toLocaleString()}</td>
