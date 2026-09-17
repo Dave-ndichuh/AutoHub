@@ -392,60 +392,6 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* Data Tables */}
-              <div className="tables-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-                {/* Top Products */}
-                <div className="glass" style={{ display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <TrendingUp className="text-success" size={24} />
-                    <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Top Movers (Revenue)</h3>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
-                    {topProducts.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)' }}>No data for this period.</div>
-                    ) : topProducts.map((p, idx) => (
-                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', transition: 'background 0.2s' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{idx + 1}</div>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>{p.name}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>{p.qty} units sold</div>
-                          </div>
-                        </div>
-                        <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>Ksh {p.revenue.toLocaleString()}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Dead Stock */}
-                <div className="glass" style={{ display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <AlertCircle className="text-destructive" size={24} />
-                    <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Dead Stock Risk</h3>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
-                    {deadStock.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)' }}>No dead stock detected!</div>
-                    ) : deadStock.map((p, idx) => {
-                      const capital = p.ON_HAND * p.COST_PRICE;
-                      return (
-                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(220,38,38,0.05)', borderLeft: '3px solid #dc2626', borderRadius: '4px' }}>
-                          <div>
-                            <div style={{ fontWeight: 600 }}>{formatItemName(p)}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>{p.category?.CNAME || 'Uncategorized'} &bull; {p.ON_HAND} in stock</div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Capital Tied</div>
-                            <div style={{ fontWeight: 'bold', color: '#dc2626' }}>Ksh {capital.toLocaleString()}</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-              
               {/* Daily Credit Sales Card */}
               <div className="glass" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -577,6 +523,60 @@ export default function ReportsPage() {
                   </div>
                 )}
               </div>
+              {/* Data Tables */}
+              <div className="tables-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                {/* Top Products */}
+                <div className="glass" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <TrendingUp className="text-success" size={24} />
+                    <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Top Movers (Revenue)</h3>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
+                    {topProducts.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)' }}>No data for this period.</div>
+                    ) : topProducts.map((p, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', transition: 'background 0.2s' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{idx + 1}</div>
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{p.name}</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>{p.qty} units sold</div>
+                          </div>
+                        </div>
+                        <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>Ksh {p.revenue.toLocaleString()}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Dead Stock */}
+                <div className="glass" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <AlertCircle className="text-destructive" size={24} />
+                    <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Dead Stock Risk</h3>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
+                    {deadStock.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)' }}>No dead stock detected!</div>
+                    ) : deadStock.map((p, idx) => {
+                      const capital = p.ON_HAND * p.COST_PRICE;
+                      return (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(220,38,38,0.05)', borderLeft: '3px solid #dc2626', borderRadius: '4px' }}>
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{formatItemName(p)}</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>{p.category?.CNAME || 'Uncategorized'} &bull; {p.ON_HAND} in stock</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Capital Tied</div>
+                            <div style={{ fontWeight: 'bold', color: '#dc2626' }}>Ksh {capital.toLocaleString()}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              
         </>
       )}
     </div>
