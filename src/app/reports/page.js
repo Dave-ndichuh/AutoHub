@@ -699,34 +699,46 @@ export default function ReportsPage() {
                           </div>
                         </div>
 
-                        <div>
-                          <h4 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--foreground)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <TrendingUp size={20} className="text-destructive" /> Top 5 Highest Balances
+                        <div style={{ overflow: 'hidden', position: 'relative', paddingBottom: '0.5rem' }}>
+                          <style>{`
+                            @keyframes marqueeRight {
+                              0% { transform: translateX(-50%); }
+                              100% { transform: translateX(0); }
+                            }
+                            .marquee-container {
+                              display: flex;
+                              gap: 1rem;
+                              width: max-content;
+                              animation: marqueeRight 30s linear infinite;
+                            }
+                            .marquee-container:hover {
+                              animation-play-state: paused;
+                            }
+                          `}</style>
+                          <h4 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--foreground)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <TrendingUp size={16} className="text-destructive" /> Top 5 Highest Balances
                           </h4>
                           {totalDebtors === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--muted-foreground)' }}>No active credit accounts found. Excellent!</div>
+                            <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--muted-foreground)' }}>No active credit accounts found. Excellent!</div>
                           ) : (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                              {topDebtors.map((debtor, idx) => {
+                            <div className="marquee-container">
+                              {/* Duplicate the list to create a seamless infinite scroll */}
+                              {[...topDebtors, ...topDebtors].map((debtor, idx) => {
+                                const realIdx = idx % topDebtors.length;
                                 const cust = debtor.customer;
                                 const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim() : 'Unknown';
                                 return (
                                   <div 
-                                    key={debtor.customer_id} 
-                                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', transition: 'background 0.2s', cursor: 'pointer' }}
+                                    key={idx} 
+                                    style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '30px', transition: 'background 0.2s', cursor: 'pointer', whiteSpace: 'nowrap' }}
                                     onClick={() => setSelectedCreditCustomerId(debtor.customer_id)}
-                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.08)'}
                                     onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                                   >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.875rem' }}>
-                                        #{idx + 1}
-                                      </div>
-                                      <div>
-                                        <div style={{ fontWeight: 500, color: 'var(--foreground)' }}>{name}</div>
-                                        {cust?.PHONE_NUMBER && <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{cust.PHONE_NUMBER}</div>}
-                                      </div>
+                                    <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.75rem' }}>
+                                      #{realIdx + 1}
                                     </div>
+                                    <div style={{ fontWeight: 500, color: 'var(--foreground)' }}>{name}</div>
                                     <div style={{ fontWeight: 600, color: 'var(--primary)' }}>
                                       Ksh {debtor.current_balance?.toLocaleString()}
                                     </div>
