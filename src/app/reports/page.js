@@ -493,6 +493,9 @@ export default function ReportsPage() {
                       ) : (
                         <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
                           Select an account to view their credit history and outstanding balances.
+                          <div style={{ marginTop: '0.25rem', color: 'var(--muted-foreground)' }}>
+                            You can also send a WhatsApp message to follow up on the outstanding balance.
+                          </div>
                         </div>
                       );
                     })()}
