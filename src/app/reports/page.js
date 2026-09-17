@@ -32,6 +32,7 @@ export default function ReportsPage() {
   
   const [selectedCreditCustomerId, setSelectedCreditCustomerId] = useState('');
   const [dailyCreditSales, setDailyCreditSales] = useState([]);
+  const [creditAccounts, setCreditAccounts] = useState([]);
 
   // Handle Preset changes
   useEffect(() => {
@@ -256,9 +257,22 @@ export default function ReportsPage() {
     }
   };
 
+  const fetchCreditAccounts = async () => {
+    let query = supabase.from('credit_accounts').select(`
+      customer_id,
+      customer:customer_id (FIRST_NAME, LAST_NAME, PHONE_NUMBER)
+    `);
+    if (branchId && branchId !== 'ALL') {
+      query = query.eq('branch_id', branchId);
+    }
+    const { data } = await query;
+    if (data) setCreditAccounts(data);
+  };
+
   useEffect(() => {
     fetchAnalytics();
     fetchDailyCreditSales();
+    fetchCreditAccounts();
   }, [startDate, endDate, branchId]);
 
   const exportCSV = () => {
@@ -440,7 +454,7 @@ export default function ReportsPage() {
                       <CreditCard size={24} className="text-warning" /> Daily Credit Sales Summary
                     </h3>
                     {(() => {
-                      const cust = dailyCreditSales.find(c => c.customerId === selectedCreditCustomerId)?.customer;
+                      const cust = creditAccounts.find(c => c.customer_id === selectedCreditCustomerId)?.customer;
                       return cust ? (
                         <div style={{ fontSize: '1rem', color: 'var(--muted-foreground)' }}>
                           Account: <strong style={{ color: 'var(--foreground)' }}>{cust.FIRST_NAME} {cust.LAST_NAME}</strong>
@@ -461,28 +475,35 @@ export default function ReportsPage() {
                       onChange={(e) => setSelectedCreditCustomerId(e.target.value)}
                     >
                       <option value="">-- Select Credit Account --</option>
-                      {dailyCreditSales.map(c => {
-                        const name = c.customer ? `${c.customer.FIRST_NAME || ''} ${c.customer.LAST_NAME || ''}`.trim() : 'Unknown';
+                      {creditAccounts.map(ca => {
+                        const cust = ca.customer;
+                        const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim() : 'Unknown';
+                        const record = dailyCreditSales.find(c => c.customerId === ca.customer_id);
+                        const todayTotal = record ? ` (Ksh ${record.totalCredit.toLocaleString()} today)` : '';
                         return (
-                          <option key={c.customerId} value={c.customerId}>{name} (Ksh {c.totalCredit.toLocaleString()})</option>
+                          <option key={ca.customer_id} value={ca.customer_id}>{name}{todayTotal}</option>
                         );
                       })}
                     </select>
                     
                     {(() => {
-                      const record = dailyCreditSales.find(c => c.customerId === selectedCreditCustomerId);
-                      const cust = record?.customer;
+                      const cust = creditAccounts.find(c => c.customer_id === selectedCreditCustomerId)?.customer;
                       if (!cust) return null;
+                      const record = dailyCreditSales.find(c => c.customerId === selectedCreditCustomerId);
 
                       const name = `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim();
                       const hr = new Date().getHours();
                       const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
-                      let msg = `*${greeting} ${name},*\n\nThis is Jobea Auto Spares. Here is a summary of your credit purchases today:\n\n`;
+                      let msg = `*${greeting} ${name},*\n\nThis is Jobea Auto Spares. `;
                       
-                      record.items.forEach((item, i) => {
-                        msg += `${i+1}. *${item.name}*\n   ${item.qty} units @ Ksh ${item.price.toLocaleString()} = Ksh ${item.total.toLocaleString()}\n`;
-                      });
-                      msg += `\n*Total Credit Today:* Ksh ${record.totalCredit.toLocaleString()}\n\nPlease let us know when you plan to clear the debt. Thank you!`;
+                      if (record && record.items.length > 0) {
+                        msg += `Here is a summary of your credit purchases today:\n\n`;
+                        record.items.forEach((item, i) => {
+                          msg += `${i+1}. *${item.name}*\n   ${item.qty} units @ Ksh ${item.price.toLocaleString()} = Ksh ${item.total.toLocaleString()}\n`;
+                        });
+                        msg += `\n*Total Credit Today:* Ksh ${record.totalCredit.toLocaleString()}\n\n`;
+                      }
+                      msg += `Please let us know when you plan to clear your outstanding debt. Thank you!`;
                       
                       const waUrl = cust.PHONE_NUMBER ? `https://wa.me/${cust.PHONE_NUMBER.replace(/\+/g,'')}?text=${encodeURIComponent(msg)}` : null;
 
@@ -508,7 +529,15 @@ export default function ReportsPage() {
                 {/* Selected Record Details */}
                 {selectedCreditCustomerId ? (() => {
                   const record = dailyCreditSales.find(c => c.customerId === selectedCreditCustomerId);
-                  if (!record) return null;
+                  if (!record) {
+                    return (
+                      <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--muted-foreground)', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border)' }}>
+                        <FileText size={48} style={{ opacity: 0.2, margin: '0 auto 1rem' }} />
+                        <div style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>No Credit Purchases Today</div>
+                        <div style={{ fontSize: '0.875rem' }}>This customer has not made any credit purchases today.</div>
+                      </div>
+                    );
+                  }
                   
                   return (
                     <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
