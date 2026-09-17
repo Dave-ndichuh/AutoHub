@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { BarChart3, TrendingUp, AlertCircle, PackageSearch, Download, DollarSign, Calendar, RefreshCcw } from 'lucide-react';
+import { BarChart3, TrendingUp, AlertCircle, PackageSearch, Download, DollarSign, Calendar, RefreshCcw, Phone, CreditCard, FileText } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import { formatItemName } from '@/utils/formatters';
 import { useAuth } from '@/components/AuthGuard';
@@ -30,7 +30,7 @@ export default function ReportsPage() {
   const [categoryData, setCategoryData] = useState([]);
   const [rawTransactions, setRawTransactions] = useState([]);
   
-  const [activeTab, setActiveTab] = useState('Analytics'); // 'Analytics' or 'CreditSales'
+  const [selectedCreditCustomerId, setSelectedCreditCustomerId] = useState('');
   const [dailyCreditSales, setDailyCreditSales] = useState([]);
 
   // Handle Preset changes
@@ -336,27 +336,11 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
-        <button 
-          onClick={() => setActiveTab('Analytics')}
-          style={{ padding: '0.75rem 1rem', background: 'transparent', border: 'none', borderBottom: activeTab === 'Analytics' ? '2px solid var(--primary)' : '2px solid transparent', color: activeTab === 'Analytics' ? 'var(--foreground)' : 'var(--muted-foreground)', fontWeight: activeTab === 'Analytics' ? 600 : 400, cursor: 'pointer' }}
-        >
-          General Analytics
-        </button>
-        <button 
-          onClick={() => setActiveTab('CreditSales')}
-          style={{ padding: '0.75rem 1rem', background: 'transparent', border: 'none', borderBottom: activeTab === 'CreditSales' ? '2px solid var(--primary)' : '2px solid transparent', color: activeTab === 'CreditSales' ? 'var(--foreground)' : 'var(--muted-foreground)', fontWeight: activeTab === 'CreditSales' ? 600 : 400, cursor: 'pointer' }}
-        >
-          Daily Credit Sales
-        </button>
-      </div>
-
-      {loading ? (
         <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>Calculating data...</div>
       ) : (
-        <>
-          {activeTab === 'Analytics' && (
-            <>
+
+
+
               {/* Metrics Cards */}
               <div className="reports-grid" style={{ display: 'grid', gap: '1rem' }}>
                 <style jsx>{`
@@ -397,149 +381,177 @@ export default function ReportsPage() {
               </div>
 
               {/* Data Tables */}
-              <div className="tables-grid">
+              <div className="tables-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                 {/* Top Products */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div className="glass" style={{ flex: 1, padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                      <TrendingUp className="text-success" size={24} />
-                      <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Top Movers (Revenue)</h3>
-                    </div>
-                    <div style={{ overflowX: 'auto' }}>
-                    <table className="table" style={{ width: '100%', minWidth: '400px' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ background: 'var(--background)' }}>Product</th>
-                          <th style={{ textAlign: 'right', background: 'var(--background)' }}>Units</th>
-                          <th style={{ textAlign: 'right', background: 'var(--background)' }}>Revenue</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {topProducts.length === 0 ? (
-                          <tr><td colSpan="3" style={{ textAlign: 'center', padding: '2rem' }}>No data for this period.</td></tr>
-                        ) : topProducts.map((p, idx) => (
-                          <tr key={idx} className="table-row-interactive">
-                            <td style={{ fontWeight: 500, whiteSpace: 'pre-line' }}>{p.name}</td>
-                            <td style={{ textAlign: 'right' }}>
-                              <span className="badge badge-success" style={{ fontSize: '0.875rem' }}>{p.qty}</span>
-                            </td>
-                            <td style={{ textAlign: 'right', color: 'var(--primary)', fontWeight: 600 }}>Ksh {p.revenue.toLocaleString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    </div>
+                <div className="glass" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <TrendingUp className="text-success" size={24} />
+                    <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Top Movers (Revenue)</h3>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem' }}>
+                    {topProducts.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)' }}>No data for this period.</div>
+                    ) : topProducts.map((p, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', transition: 'background 0.2s' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(16,185,129,0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>{idx + 1}</div>
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{p.name}</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>{p.qty} units sold</div>
+                          </div>
+                        </div>
+                        <div style={{ fontWeight: 'bold', color: 'var(--success)' }}>Ksh {p.revenue.toLocaleString()}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 {/* Dead Stock */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div className="glass" style={{ flex: 1, padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                      <AlertCircle className="text-destructive" size={24} />
-                      <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Dead Stock Risk</h3>
-                    </div>
-                    <div style={{ overflowX: 'auto' }}>
-                    <table className="table" style={{ width: '100%', minWidth: '400px' }}>
-                      <thead>
-                        <tr>
-                          <th style={{ background: 'var(--background)' }}>Product</th>
-                          <th style={{ background: 'var(--background)' }}>Category</th>
-                          <th style={{ textAlign: 'right', background: 'var(--background)' }}>In Stock</th>
-                          <th style={{ textAlign: 'right', background: 'var(--background)' }}>Capital Tied</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {deadStock.length === 0 ? (
-                          <tr><td colSpan="4" style={{ textAlign: 'center', padding: '2rem' }}>No dead stock detected!</td></tr>
-                        ) : deadStock.map((p, idx) => {
-                          const capital = p.ON_HAND * p.COST_PRICE;
-                          return (
-                            <tr key={idx} className="table-row-interactive">
-                              <td style={{ fontWeight: 500, whiteSpace: 'pre-line' }}>{formatItemName(p)}</td>
-                              <td className="text-muted" style={{ fontSize: '0.875rem' }}>{p.category?.CNAME || 'N/A'}</td>
-                              <td style={{ textAlign: 'right' }}>
-                                <span className="badge badge-destructive" style={{ fontSize: '0.875rem' }}>{p.ON_HAND}</span>
-                              </td>
-                              <td style={{ textAlign: 'right', color: 'var(--warning)', fontWeight: 600 }}>Ksh {capital.toLocaleString()}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                    </div>
+                <div className="glass" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <AlertCircle className="text-destructive" size={24} />
+                    <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Dead Stock Risk</h3>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem' }}>
+                    {deadStock.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)' }}>No dead stock detected!</div>
+                    ) : deadStock.map((p, idx) => {
+                      const capital = p.ON_HAND * p.COST_PRICE;
+                      return (
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(220,38,38,0.05)', borderLeft: '3px solid #dc2626', borderRadius: '4px' }}>
+                          <div>
+                            <div style={{ fontWeight: 600 }}>{formatItemName(p)}</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--muted-foreground)' }}>{p.category?.CNAME || 'Uncategorized'} &bull; {p.ON_HAND} in stock</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Capital Tied</div>
+                            <div style={{ fontWeight: 'bold', color: '#dc2626' }}>Ksh {capital.toLocaleString()}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
-            </>
-          )}
-
-          {activeTab === 'CreditSales' && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-              {dailyCreditSales.length === 0 ? (
-                <div style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
-                  No credit sales recorded today.
-                </div>
-              ) : dailyCreditSales.map((custRecord, idx) => {
-                const cust = custRecord.customer;
-                const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim() : 'Unknown Customer';
-                
-                // Construct WhatsApp Message
-                const hr = new Date().getHours();
-                const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
-                let msg = `*${greeting} ${name},*\n\nThis is Jobea Auto Spares. Here is a summary of your credit purchases today:\n\n`;
-                
-                custRecord.items.forEach((item, i) => {
-                  msg += `${i+1}. *${item.name}*\n   ${item.qty} units @ Ksh ${item.price.toLocaleString()} = Ksh ${item.total.toLocaleString()}\n`;
-                });
-                msg += `\n*Total Credit Today:* Ksh ${custRecord.totalCredit.toLocaleString()}`;
-                
-                const waUrl = cust?.PHONE_NUMBER ? `https://wa.me/${cust.PHONE_NUMBER.replace(/\+/g,'')}?text=${encodeURIComponent(msg)}` : null;
-
-                return (
-                  <div key={idx} className="glass" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                      <div>
-                        <h4 style={{ margin: 0, fontSize: '1.125rem', color: 'var(--foreground)' }}>{name}</h4>
-                        <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{cust?.PHONE_NUMBER || 'No phone number'}</div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Total Today</div>
-                        <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: '1.125rem' }}>Ksh {custRecord.totalCredit.toLocaleString()}</div>
-                      </div>
-                    </div>
-                    
-                    <div style={{ flex: 1, background: 'rgba(0,0,0,0.1)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
-                      <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>Items:</div>
-                      {custRecord.items.map((it, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                          <span style={{ color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '0.5rem' }}>{it.qty}x {it.name}</span>
-                          <span style={{ color: 'var(--muted-foreground)' }}>Ksh {it.total.toLocaleString()}</span>
+              
+              {/* Daily Credit Sales Card */}
+              <div className="glass" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                      <CreditCard size={24} className="text-warning" /> Daily Credit Sales Summary
+                    </h3>
+                    {(() => {
+                      const cust = dailyCreditSales.find(c => c.customerId === selectedCreditCustomerId)?.customer;
+                      return cust ? (
+                        <div style={{ fontSize: '1rem', color: 'var(--muted-foreground)' }}>
+                          Account: <strong style={{ color: 'var(--foreground)' }}>{cust.FIRST_NAME} {cust.LAST_NAME}</strong>
                         </div>
-                      ))}
-                    </div>
-
-                    <a 
-                      href={waUrl || '#'} 
-                      target={waUrl ? "_blank" : "_self"}
-                      onClick={e => !waUrl && e.preventDefault()}
-                      className="btn" 
-                      style={{ 
-                        background: waUrl ? '#25D366' : 'var(--card)', 
-                        color: waUrl ? 'white' : 'var(--muted-foreground)', 
-                        display: 'flex', justifyContent: 'center', width: '100%', textDecoration: 'none'
-                      }}
-                      title={waUrl ? "Send WhatsApp Reminder" : "No phone number available"}
-                    >
-                      Send WhatsApp Reminder
-                    </a>
+                      ) : (
+                        <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
+                          Select a customer account to view today&apos;s credit transactions.
+                        </div>
+                      );
+                    })()}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      )}
+                  
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <select 
+                      className="input" 
+                      style={{ minWidth: '250px' }}
+                      value={selectedCreditCustomerId}
+                      onChange={(e) => setSelectedCreditCustomerId(e.target.value)}
+                    >
+                      <option value="">-- Select Credit Account --</option>
+                      {dailyCreditSales.map(c => {
+                        const name = c.customer ? `${c.customer.FIRST_NAME || ''} ${c.customer.LAST_NAME || ''}`.trim() : 'Unknown';
+                        return (
+                          <option key={c.customerId} value={c.customerId}>{name} (Ksh {c.totalCredit.toLocaleString()})</option>
+                        );
+                      })}
+                    </select>
+                    
+                    {(() => {
+                      const record = dailyCreditSales.find(c => c.customerId === selectedCreditCustomerId);
+                      const cust = record?.customer;
+                      if (!cust) return null;
+
+                      const name = `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim();
+                      const hr = new Date().getHours();
+                      const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+                      let msg = `*${greeting} ${name},*\n\nThis is Jobea Auto Spares. Here is a summary of your credit purchases today:\n\n`;
+                      
+                      record.items.forEach((item, i) => {
+                        msg += `${i+1}. *${item.name}*\n   ${item.qty} units @ Ksh ${item.price.toLocaleString()} = Ksh ${item.total.toLocaleString()}\n`;
+                      });
+                      msg += `\n*Total Credit Today:* Ksh ${record.totalCredit.toLocaleString()}\n\nPlease let us know when you plan to clear the debt. Thank you!`;
+                      
+                      const waUrl = cust.PHONE_NUMBER ? `https://wa.me/${cust.PHONE_NUMBER.replace(/\+/g,'')}?text=${encodeURIComponent(msg)}` : null;
+
+                      return (
+                        <a 
+                          href={waUrl || '#'} 
+                          target={waUrl ? "_blank" : "_self"}
+                          onClick={e => { if (!waUrl) { e.preventDefault(); alert('Customer has no phone number on record.'); } }}
+                          className="btn" 
+                          style={{ 
+                            background: waUrl ? '#25D366' : 'var(--card)', 
+                            color: waUrl ? 'white' : 'var(--muted-foreground)', 
+                            textDecoration: 'none'
+                          }}
+                        >
+                          <Phone size={18} /> Send WhatsApp Reminder
+                        </a>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                {/* Selected Record Details */}
+                {selectedCreditCustomerId ? (() => {
+                  const record = dailyCreditSales.find(c => c.customerId === selectedCreditCustomerId);
+                  if (!record) return null;
+                  
+                  return (
+                    <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                      <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead>
+                          <tr>
+                            <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Product</th>
+                            <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Units</th>
+                            <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Price</th>
+                            <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {record.items.map((it, i) => (
+                            <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                              <td style={{ padding: '1rem', fontWeight: 500 }}>{it.name}</td>
+                              <td style={{ padding: '1rem', textAlign: 'right' }}>{it.qty}</td>
+                              <td style={{ padding: '1rem', textAlign: 'right' }}>Ksh {it.price.toLocaleString()}</td>
+                              <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--primary)', fontWeight: 600 }}>Ksh {it.total.toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr>
+                            <td colSpan="3" style={{ padding: '1.5rem 1rem 0', textAlign: 'right', color: 'var(--muted-foreground)' }}>Total Accrued Debt Today:</td>
+                            <td style={{ padding: '1.5rem 1rem 0', textAlign: 'right', fontWeight: 'bold', color: 'var(--destructive)', fontSize: '1.25rem' }}>Ksh {record.totalCredit.toLocaleString()}</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  );
+                })() : (
+                  <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--muted-foreground)', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border)' }}>
+                    <FileText size={48} style={{ opacity: 0.2, margin: '0 auto 1rem' }} />
+                    <div style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>No Account Selected</div>
+                    <div style={{ fontSize: '0.875rem' }}>Please select a customer from the dropdown above to view their credit transactions for today.</div>
+                  </div>
+                )}
+              </div>
+
+
 
     </div>
   );
