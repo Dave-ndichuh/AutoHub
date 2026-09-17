@@ -613,12 +613,20 @@ button {
   z-index: 1;
 }
 .image-hover-zoom:hover {
-  transform: scale(6);
-  z-index: 999;
+  transform: scale(5);
+  z-index: 999999;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255,255,255,0.1);
   background: var(--card);
   border-radius: 4px;
   border: 2px solid var(--border);
+  position: relative;
+}
+
+/* Ensure the parent card also comes to the front so the image isn't trapped under sibling cards */
+.glass:has(.image-hover-zoom:hover),
+tr:has(.image-hover-zoom:hover) {
+  z-index: 50;
+  position: relative;
 }
 
 /* Liveness Animations */
