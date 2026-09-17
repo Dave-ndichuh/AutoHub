@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { BarChart3, TrendingUp, AlertCircle, PackageSearch, Download, DollarSign, Calendar, RefreshCcw, Phone, CreditCard, FileText, Search, ChevronDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -37,6 +37,17 @@ export default function ReportsPage() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [creditSearchTerm, setCreditSearchTerm] = useState('');
   const [isCreditDropdownOpen, setIsCreditDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsCreditDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Handle Preset changes
   useEffect(() => {
@@ -464,7 +475,7 @@ export default function ReportsPage() {
                   </div>
                   
                   <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', width: '100%', maxWidth: '450px', justifyContent: 'flex-end' }}>
-                    <div style={{ position: 'relative', flex: 1, zIndex: 50 }}>
+                    <div ref={dropdownRef} style={{ position: 'relative', flex: 1, zIndex: 50 }}>
                       <div 
                         className="input" 
                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: 'var(--card)' }}

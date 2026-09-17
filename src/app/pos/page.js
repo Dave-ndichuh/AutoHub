@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
@@ -73,6 +73,18 @@ export default function POSPage() {
   const [newCustomer, setNewCustomer] = useState({ FIRST_NAME: '', LAST_NAME: '', PHONE_NUMBER: '', EMAIL: '', ADDRESS: '', credit_limit: 0 });
   const [savingCustomer, setSavingCustomer] = useState(false);
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const customerDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (customerDropdownRef.current && !customerDropdownRef.current.contains(event.target)) {
+        setIsCustomerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const [lastTransaction, setLastTransaction] = useState(null);
   const [printData, setPrintData] = useState(null);
@@ -1131,37 +1143,90 @@ export default function POSPage() {
           {(paymentMethod === 'Credit' || paymentMethod === 'Invoice') && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.25rem' }}>
               
-              {!showAddCustomer && (
-                <input 
-                  type="text" 
+              <div ref={customerDropdownRef} style={{ position: 'relative', zIndex: 60 }}>
+                <div 
                   className="input" 
-                  placeholder="Search Customers..." 
-                  value={customerSearchTerm}
-                  onChange={(e) => setCustomerSearchTerm(e.target.value)}
-                  style={{ padding: '0.75rem', marginBottom: '-0.5rem' }}
-                />
-              )}
-
-              <select 
-                className="input" 
-                style={{ padding: '0.75rem' }} 
-                value={showAddCustomer ? 'new' : creditCustomerId} 
-                onChange={e => {
-                  if (e.target.value === 'new') {
-                    setShowAddCustomer(true);
-                    setCreditCustomerId('');
-                  } else {
-                    setShowAddCustomer(false);
-                    setCreditCustomerId(e.target.value);
-                  }
-                }}
-              >
-                <option value="" disabled>Select Customer...</option>
-                <option value="new" style={{ fontWeight: 600, color: 'var(--primary)' }}>+ Add New Customer...</option>
-                {customers
-                  .filter(c => !customerSearchTerm || c.FIRST_NAME?.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.LAST_NAME?.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.PHONE_NUMBER?.includes(customerSearchTerm))
-                  .map(c => <option key={c.CUST_ID} value={c.CUST_ID}>{c.FIRST_NAME} {c.LAST_NAME}</option>)}
-              </select>
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', padding: '0.75rem', background: 'var(--card)' }}
+                  onClick={() => setIsCustomerDropdownOpen(!isCustomerDropdownOpen)}
+                >
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {showAddCustomer ? (
+                      <span style={{ color: 'var(--primary)', fontWeight: 600 }}>+ Adding New Customer...</span>
+                    ) : creditCustomerId ? (
+                      (() => {
+                        const c = customers.find(c => String(c.CUST_ID) === String(creditCustomerId));
+                        return c ? `${c.FIRST_NAME} ${c.LAST_NAME}` : 'Select Customer...';
+                      })()
+                    ) : (
+                      <span style={{ color: 'var(--muted-foreground)' }}>Select Customer...</span>
+                    )}
+                  </span>
+                  <ChevronDown size={16} style={{ color: 'var(--muted-foreground)', marginLeft: '0.5rem', flexShrink: 0 }} />
+                </div>
+                
+                {isCustomerDropdownOpen && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', overflow: 'hidden', zIndex: 100 }}>
+                    <div style={{ padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <div style={{ position: 'relative' }}>
+                        <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
+                        <input 
+                          autoFocus
+                          type="text" 
+                          placeholder="Search customer by name or phone..." 
+                          className="input" 
+                          style={{ width: '100%', paddingLeft: '32px', height: '36px', fontSize: '0.875rem' }}
+                          value={customerSearchTerm}
+                          onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                      <div 
+                        style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: '0.875rem', fontWeight: 600, color: 'var(--primary)' }}
+                        onClick={() => { 
+                          setShowAddCustomer(true); 
+                          setCreditCustomerId(''); 
+                          setIsCustomerDropdownOpen(false); 
+                          setCustomerSearchTerm(''); 
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        + Add New Customer...
+                      </div>
+                      
+                      {customers
+                        .filter(c => !customerSearchTerm || c.FIRST_NAME?.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.LAST_NAME?.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.PHONE_NUMBER?.includes(customerSearchTerm))
+                        .map(c => {
+                          const isSelected = !showAddCustomer && String(c.CUST_ID) === String(creditCustomerId);
+                          return (
+                            <div 
+                              key={c.CUST_ID}
+                              style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: '0.875rem', background: isSelected ? 'rgba(255,255,255,0.05)' : 'transparent' }}
+                              onClick={() => { 
+                                setShowAddCustomer(false); 
+                                setCreditCustomerId(c.CUST_ID); 
+                                setIsCustomerDropdownOpen(false); 
+                                setCustomerSearchTerm(''); 
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = isSelected ? 'rgba(255,255,255,0.05)' : 'transparent'}
+                            >
+                              <div style={{ fontWeight: isSelected ? 600 : 400, color: isSelected ? 'var(--primary)' : 'var(--foreground)' }}>
+                                {c.FIRST_NAME} {c.LAST_NAME}
+                              </div>
+                              {c.PHONE_NUMBER && (
+                                <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>
+                                  {c.PHONE_NUMBER}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {customerOutstandingCredit !== null && customerOutstandingCredit > 0 && (
                 <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '0.75rem 1rem', borderRadius: '8px', color: '#b45309', fontSize: '0.875rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
