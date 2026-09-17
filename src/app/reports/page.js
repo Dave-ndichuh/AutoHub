@@ -33,6 +33,8 @@ export default function ReportsPage() {
   const [selectedCreditCustomerId, setSelectedCreditCustomerId] = useState('');
   const [dailyCreditSales, setDailyCreditSales] = useState([]);
   const [creditAccounts, setCreditAccounts] = useState([]);
+  const [selectedCustomerHistory, setSelectedCustomerHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Handle Preset changes
   useEffect(() => {
@@ -277,6 +279,48 @@ export default function ReportsPage() {
     fetchCreditAccounts();
   }, [startDate, endDate, branchId]);
 
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!selectedCreditCustomerId) {
+        setSelectedCustomerHistory([]);
+        return;
+      }
+      setLoadingHistory(true);
+      const { data } = await supabase
+        .from('transaction')
+        .select(`
+          CREATED_AT,
+          transaction_details (
+            QTY,
+            UNIT_PRICE,
+            product (NAME)
+          )
+        `)
+        .eq('IS_CREDIT', true)
+        .eq('CREDIT_CUSTOMER_ID', selectedCreditCustomerId)
+        .order('CREATED_AT', { ascending: false })
+        .limit(20);
+        
+      if (data) {
+        const items = [];
+        data.forEach(t => {
+          t.transaction_details?.forEach(d => {
+            items.push({
+              date: t.CREATED_AT,
+              name: formatItemName(d.product),
+              qty: d.QTY,
+              price: d.UNIT_PRICE,
+              total: d.QTY * d.UNIT_PRICE
+            });
+          });
+        });
+        setSelectedCustomerHistory(items);
+      }
+      setLoadingHistory(false);
+    };
+    fetchHistory();
+  }, [selectedCreditCustomerId]);
+
   const exportCSV = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
     csvContent += `Report Period: ${startDate} to ${endDate}\n\n`;
@@ -410,7 +454,7 @@ export default function ReportsPage() {
                         </div>
                       ) : (
                         <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
-                          Select an account to view outstanding balances and today&apos;s activity.
+                          Select an account to view their credit history and outstanding balances.
                         </div>
                       );
                     })()}
@@ -434,12 +478,11 @@ export default function ReportsPage() {
                     </select>
                     
                     {(() => {
+                      if (!selectedCreditCustomerId) return null;
                       const ca = creditAccounts.find(c => c.customer_id === selectedCreditCustomerId);
                       if (!ca) return null;
                       const cust = ca.customer;
                       if (!cust) return null;
-                      
-                      const record = dailyCreditSales.find(c => c.customerId === selectedCreditCustomerId);
 
                       const name = `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim();
                       const hr = new Date().getHours();
@@ -447,9 +490,10 @@ export default function ReportsPage() {
                       
                       let msg = `*${greeting} ${name},*\n\nThis is Jobea Auto Spares. This is a polite reminder that your current outstanding credit balance is *Ksh ${ca.current_balance?.toLocaleString()}*.\n\n`;
                       
-                      if (record && record.items.length > 0) {
-                        msg += `As part of this balance, here is a summary of your credit purchases today:\n`;
-                        record.items.forEach((item, i) => {
+                      if (selectedCustomerHistory && selectedCustomerHistory.length > 0) {
+                        msg += `Here is a summary of your recent unpaid credit purchases:\n`;
+                        // only include up to 10 in message so it's not too huge
+                        selectedCustomerHistory.slice(0, 10).forEach((item, i) => {
                           msg += `${i+1}. *${item.name}*\n   ${item.qty} units @ Ksh ${item.price.toLocaleString()} = Ksh ${item.total.toLocaleString()}\n`;
                         });
                         msg += `\n`;
@@ -464,14 +508,17 @@ export default function ReportsPage() {
                           href={waUrl || '#'} 
                           target={waUrl ? "_blank" : "_self"}
                           onClick={e => { if (!waUrl) { e.preventDefault(); alert('Customer has no phone number on record.'); } }}
-                          className="btn" 
+                          className="btn btn-primary" 
                           style={{ 
                             background: waUrl ? '#25D366' : 'var(--card)', 
                             color: waUrl ? 'white' : 'var(--muted-foreground)', 
-                            textDecoration: 'none'
+                            textDecoration: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
                           }}
                         >
-                          <Phone size={18} /> Send WhatsApp Reminder
+                          <Phone size={18} /> Send WhatsApp
                         </a>
                       );
                     })()}
@@ -482,7 +529,6 @@ export default function ReportsPage() {
                 {selectedCreditCustomerId ? (() => {
                   const ca = creditAccounts.find(c => c.customer_id === selectedCreditCustomerId);
                   if (!ca) return null;
-                  const record = dailyCreditSales.find(c => c.customerId === selectedCreditCustomerId);
                   
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -497,42 +543,42 @@ export default function ReportsPage() {
                         </div>
                       </div>
                       
-                      {record && record.items.length > 0 ? (
-                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                          <h4 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem' }}>Purchases Today</h4>
-                          <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                              <tr>
-                                <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Product</th>
-                                <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Units</th>
-                                <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Price</th>
-                                <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Total</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {record.items.map((it, i) => (
-                                <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                  <td style={{ padding: '1rem', fontWeight: 500 }}>{it.name}</td>
-                                  <td style={{ padding: '1rem', textAlign: 'right' }}>{it.qty}</td>
-                                  <td style={{ padding: '1rem', textAlign: 'right' }}>Ksh {it.price.toLocaleString()}</td>
-                                  <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--primary)', fontWeight: 600 }}>Ksh {it.total.toLocaleString()}</td>
+                      <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                        <h4 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem' }}>Recent Credit Purchases</h4>
+                        
+                        {loadingHistory ? (
+                          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>Loading history...</div>
+                        ) : selectedCustomerHistory && selectedCustomerHistory.length > 0 ? (
+                          <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                            <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                              <thead>
+                                <tr>
+                                  <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Date</th>
+                                  <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Product</th>
+                                  <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Units</th>
+                                  <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Price</th>
+                                  <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Total</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                            <tfoot>
-                              <tr>
-                                <td colSpan="3" style={{ padding: '1.5rem 1rem 0', textAlign: 'right', color: 'var(--muted-foreground)' }}>Added to Debt Today:</td>
-                                <td style={{ padding: '1.5rem 1rem 0', textAlign: 'right', fontWeight: 'bold', color: 'var(--warning)', fontSize: '1.125rem' }}>+ Ksh {record.totalCredit.toLocaleString()}</td>
-                              </tr>
-                            </tfoot>
-                          </table>
-                        </div>
-                      ) : (
-                        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border)' }}>
-                          <FileText size={32} style={{ opacity: 0.2, margin: '0 auto 1rem' }} />
-                          <div style={{ fontSize: '1rem' }}>No Credit Purchases Today</div>
-                        </div>
-                      )}
+                              </thead>
+                              <tbody>
+                                {selectedCustomerHistory.map((it, i) => (
+                                  <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <td style={{ padding: '1rem', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>{new Date(it.date).toLocaleDateString()}</td>
+                                    <td style={{ padding: '1rem', fontWeight: 500 }}>{it.name}</td>
+                                    <td style={{ padding: '1rem', textAlign: 'right' }}>{it.qty}</td>
+                                    <td style={{ padding: '1rem', textAlign: 'right' }}>Ksh {it.price.toLocaleString()}</td>
+                                    <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--primary)', fontWeight: 600 }}>Ksh {it.total.toLocaleString()}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)' }}>
+                            No recent credit purchases found.
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })() : (
@@ -542,6 +588,7 @@ export default function ReportsPage() {
                     <div style={{ fontSize: '0.875rem' }}>Please select an active credit account from the dropdown above.</div>
                   </div>
                 )}
+
               </div>
               {/* Data Tables */}
               <div className="tables-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
