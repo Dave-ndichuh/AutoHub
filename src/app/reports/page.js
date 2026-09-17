@@ -260,8 +260,10 @@ export default function ReportsPage() {
   const fetchCreditAccounts = async () => {
     let query = supabase.from('credit_accounts').select(`
       customer_id,
+      current_balance,
+      credit_limit,
       customer:customer_id (FIRST_NAME, LAST_NAME, PHONE_NUMBER)
-    `);
+    `).gt('current_balance', 0).order('current_balance', { ascending: false });
     if (branchId && branchId !== 'ALL') {
       query = query.eq('branch_id', branchId);
     }
@@ -392,22 +394,23 @@ export default function ReportsPage() {
                 </div>
               </div>
 
-              {/* Daily Credit Sales Card */}
+              {/* Active Credit Accounts Card */}
               <div className="glass" style={{ padding: '1.5rem', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
                   <div>
                     <h3 style={{ margin: 0, fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                      <CreditCard size={24} className="text-warning" /> Daily Credit Sales Summary
+                      <CreditCard size={24} className="text-warning" /> Active Credit Accounts
                     </h3>
                     {(() => {
-                      const cust = creditAccounts.find(c => c.customer_id === selectedCreditCustomerId)?.customer;
+                      const ca = creditAccounts.find(c => c.customer_id === selectedCreditCustomerId);
+                      const cust = ca?.customer;
                       return cust ? (
                         <div style={{ fontSize: '1rem', color: 'var(--muted-foreground)' }}>
                           Account: <strong style={{ color: 'var(--foreground)' }}>{cust.FIRST_NAME} {cust.LAST_NAME}</strong>
                         </div>
                       ) : (
                         <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>
-                          Select a customer account to view today&apos;s credit transactions.
+                          Select an account to view outstanding balances and today&apos;s activity.
                         </div>
                       );
                     })()}
@@ -420,35 +423,38 @@ export default function ReportsPage() {
                       value={selectedCreditCustomerId}
                       onChange={(e) => setSelectedCreditCustomerId(e.target.value)}
                     >
-                      <option value="">-- Select Credit Account --</option>
+                      <option value="">-- Select Account --</option>
                       {creditAccounts.map(ca => {
                         const cust = ca.customer;
                         const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim() : 'Unknown';
-                        const record = dailyCreditSales.find(c => c.customerId === ca.customer_id);
-                        const todayTotal = record ? ` (Ksh ${record.totalCredit.toLocaleString()} today)` : '';
                         return (
-                          <option key={ca.customer_id} value={ca.customer_id}>{name}{todayTotal}</option>
+                          <option key={ca.customer_id} value={ca.customer_id}>{name} (Owes Ksh {ca.current_balance?.toLocaleString()})</option>
                         );
                       })}
                     </select>
                     
                     {(() => {
-                      const cust = creditAccounts.find(c => c.customer_id === selectedCreditCustomerId)?.customer;
+                      const ca = creditAccounts.find(c => c.customer_id === selectedCreditCustomerId);
+                      if (!ca) return null;
+                      const cust = ca.customer;
                       if (!cust) return null;
+                      
                       const record = dailyCreditSales.find(c => c.customerId === selectedCreditCustomerId);
 
                       const name = `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim();
                       const hr = new Date().getHours();
                       const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
-                      let msg = `*${greeting} ${name},*\n\nThis is Jobea Auto Spares. `;
+                      
+                      let msg = `*${greeting} ${name},*\n\nThis is Jobea Auto Spares. This is a polite reminder that your current outstanding credit balance is *Ksh ${ca.current_balance?.toLocaleString()}*.\n\n`;
                       
                       if (record && record.items.length > 0) {
-                        msg += `Here is a summary of your credit purchases today:\n\n`;
+                        msg += `As part of this balance, here is a summary of your credit purchases today:\n`;
                         record.items.forEach((item, i) => {
                           msg += `${i+1}. *${item.name}*\n   ${item.qty} units @ Ksh ${item.price.toLocaleString()} = Ksh ${item.total.toLocaleString()}\n`;
                         });
-                        msg += `\n*Total Credit Today:* Ksh ${record.totalCredit.toLocaleString()}\n\n`;
+                        msg += `\n`;
                       }
+                      
                       msg += `Please let us know when you plan to clear your outstanding debt. Thank you!`;
                       
                       const waUrl = cust.PHONE_NUMBER ? `https://wa.me/${cust.PHONE_NUMBER.replace(/\+/g,'')}?text=${encodeURIComponent(msg)}` : null;
@@ -474,52 +480,66 @@ export default function ReportsPage() {
 
                 {/* Selected Record Details */}
                 {selectedCreditCustomerId ? (() => {
+                  const ca = creditAccounts.find(c => c.customer_id === selectedCreditCustomerId);
+                  if (!ca) return null;
                   const record = dailyCreditSales.find(c => c.customerId === selectedCreditCustomerId);
-                  if (!record) {
-                    return (
-                      <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--muted-foreground)', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border)' }}>
-                        <FileText size={48} style={{ opacity: 0.2, margin: '0 auto 1rem' }} />
-                        <div style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>No Credit Purchases Today</div>
-                        <div style={{ fontSize: '0.875rem' }}>This customer has not made any credit purchases today.</div>
-                      </div>
-                    );
-                  }
                   
                   return (
-                    <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                      <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr>
-                            <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Product</th>
-                            <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Units</th>
-                            <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Price</th>
-                            <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {record.items.map((it, i) => (
-                            <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                              <td style={{ padding: '1rem', fontWeight: 500 }}>{it.name}</td>
-                              <td style={{ padding: '1rem', textAlign: 'right' }}>{it.qty}</td>
-                              <td style={{ padding: '1rem', textAlign: 'right' }}>Ksh {it.price.toLocaleString()}</td>
-                              <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--primary)', fontWeight: 600 }}>Ksh {it.total.toLocaleString()}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                        <tfoot>
-                          <tr>
-                            <td colSpan="3" style={{ padding: '1.5rem 1rem 0', textAlign: 'right', color: 'var(--muted-foreground)' }}>Total Accrued Debt Today:</td>
-                            <td style={{ padding: '1.5rem 1rem 0', textAlign: 'right', fontWeight: 'bold', color: 'var(--destructive)', fontSize: '1.25rem' }}>Ksh {record.totalCredit.toLocaleString()}</td>
-                          </tr>
-                        </tfoot>
-                      </table>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, background: 'rgba(220,38,38,0.1)', padding: '1.5rem', borderRadius: '8px', border: '1px solid rgba(220,38,38,0.2)' }}>
+                          <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Total Outstanding Debt</div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#ef4444' }}>Ksh {ca.current_balance?.toLocaleString() || 0}</div>
+                        </div>
+                        <div style={{ flex: 1, background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                          <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)', marginBottom: '0.5rem' }}>Credit Limit</div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--foreground)' }}>Ksh {ca.credit_limit?.toLocaleString() || 0}</div>
+                        </div>
+                      </div>
+                      
+                      {record && record.items.length > 0 ? (
+                        <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                          <h4 style={{ margin: '0 0 1rem 0', fontSize: '1.125rem' }}>Purchases Today</h4>
+                          <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                              <tr>
+                                <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Product</th>
+                                <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Units</th>
+                                <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Price</th>
+                                <th style={{ padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', textAlign: 'right', borderBottom: '1px solid var(--border)' }}>Total</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {record.items.map((it, i) => (
+                                <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                  <td style={{ padding: '1rem', fontWeight: 500 }}>{it.name}</td>
+                                  <td style={{ padding: '1rem', textAlign: 'right' }}>{it.qty}</td>
+                                  <td style={{ padding: '1rem', textAlign: 'right' }}>Ksh {it.price.toLocaleString()}</td>
+                                  <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--primary)', fontWeight: 600 }}>Ksh {it.total.toLocaleString()}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot>
+                              <tr>
+                                <td colSpan="3" style={{ padding: '1.5rem 1rem 0', textAlign: 'right', color: 'var(--muted-foreground)' }}>Added to Debt Today:</td>
+                                <td style={{ padding: '1.5rem 1rem 0', textAlign: 'right', fontWeight: 'bold', color: 'var(--warning)', fontSize: '1.125rem' }}>+ Ksh {record.totalCredit.toLocaleString()}</td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border)' }}>
+                          <FileText size={32} style={{ opacity: 0.2, margin: '0 auto 1rem' }} />
+                          <div style={{ fontSize: '1rem' }}>No Credit Purchases Today</div>
+                        </div>
+                      )}
                     </div>
                   );
                 })() : (
                   <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--muted-foreground)', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border)' }}>
                     <FileText size={48} style={{ opacity: 0.2, margin: '0 auto 1rem' }} />
                     <div style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>No Account Selected</div>
-                    <div style={{ fontSize: '0.875rem' }}>Please select a customer from the dropdown above to view their credit transactions for today.</div>
+                    <div style={{ fontSize: '0.875rem' }}>Please select an active credit account from the dropdown above.</div>
                   </div>
                 )}
               </div>
