@@ -239,6 +239,7 @@ export default function ReportsPage() {
         if (!custId) return;
         if (!grouped[custId]) {
           grouped[custId] = {
+            customerId: custId,
             customer: t.customer,
             totalCredit: 0,
             items: []
@@ -446,7 +447,7 @@ export default function ReportsPage() {
                       <CreditCard size={24} className="text-warning" /> Active Credit Accounts
                     </h3>
                     {(() => {
-                      const ca = creditAccounts.find(c => c.customer_id === selectedCreditCustomerId);
+                      const ca = creditAccounts.find(c => String(c.customer_id) === String(selectedCreditCustomerId));
                       const cust = ca?.customer;
                       return cust ? (
                         <div style={{ fontSize: '1rem', color: 'var(--muted-foreground)' }}>
@@ -479,7 +480,7 @@ export default function ReportsPage() {
                     
                     {(() => {
                       if (!selectedCreditCustomerId) return null;
-                      const ca = creditAccounts.find(c => c.customer_id === selectedCreditCustomerId);
+                      const ca = creditAccounts.find(c => String(c.customer_id) === String(selectedCreditCustomerId));
                       if (!ca) return null;
                       const cust = ca.customer;
                       if (!cust) return null;
@@ -527,7 +528,7 @@ export default function ReportsPage() {
 
                 {/* Selected Record Details */}
                 {selectedCreditCustomerId ? (() => {
-                  const ca = creditAccounts.find(c => c.customer_id === selectedCreditCustomerId);
+                  const ca = creditAccounts.find(c => String(c.customer_id) === String(selectedCreditCustomerId));
                   if (!ca) return null;
                   
                   return (
