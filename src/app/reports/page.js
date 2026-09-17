@@ -336,12 +336,10 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      {loading ? (
         <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>Calculating data...</div>
       ) : (
-
-
-
-              {/* Metrics Cards */}
+        <>              {/* Metrics Cards */}
               <div className="reports-grid" style={{ display: 'grid', gap: '1rem' }}>
                 <style jsx>{`
                   .reports-grid { grid-template-columns: repeat(6, 1fr); }
@@ -388,7 +386,7 @@ export default function ReportsPage() {
                     <TrendingUp className="text-success" size={24} />
                     <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Top Movers (Revenue)</h3>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
                     {topProducts.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)' }}>No data for this period.</div>
                     ) : topProducts.map((p, idx) => (
@@ -412,7 +410,7 @@ export default function ReportsPage() {
                     <AlertCircle className="text-destructive" size={24} />
                     <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Dead Stock Risk</h3>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', maxHeight: '400px', overflowY: 'auto' }}>
                     {deadStock.length === 0 ? (
                       <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--muted-foreground)' }}>No dead stock detected!</div>
                     ) : deadStock.map((p, idx) => {
@@ -550,9 +548,8 @@ export default function ReportsPage() {
                   </div>
                 )}
               </div>
-
-
-
+        </>
+      )}
     </div>
   );
 }
