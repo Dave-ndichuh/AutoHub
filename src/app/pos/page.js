@@ -70,8 +70,9 @@ export default function POSPage() {
   
   // New Customer State
   const [showAddCustomer, setShowAddCustomer] = useState(false);
-  const [newCustomer, setNewCustomer] = useState({ FIRST_NAME: '', LAST_NAME: '', PHONE_NUMBER: '', EMAIL: '', ADDRESS: '' });
+  const [newCustomer, setNewCustomer] = useState({ FIRST_NAME: '', LAST_NAME: '', PHONE_NUMBER: '', EMAIL: '', ADDRESS: '', credit_limit: 0 });
   const [savingCustomer, setSavingCustomer] = useState(false);
+  const [customerSearchTerm, setCustomerSearchTerm] = useState('');
 
   const [lastTransaction, setLastTransaction] = useState(null);
   const [printData, setPrintData] = useState(null);
@@ -172,7 +173,7 @@ export default function POSPage() {
 
       const [catRes, custRes] = await Promise.all([
         supabase.from('category').select('*').order('CNAME', { ascending: true }),
-        supabase.from('customer').select('*')
+        supabase.from('customer').select('*').order('FIRST_NAME', { ascending: true })
       ]);
       
       if (catRes.error) throw catRes.error;
@@ -460,10 +461,21 @@ export default function POSPage() {
     try {
       const { data, error } = await supabase.from('customer').insert([newCustomer]).select().single();
       if (error) throw error;
-      setCustomers([...customers, data]);
+      
+      // Handle credit limit
+      if (parseFloat(newCustomer.credit_limit) > 0) {
+        await supabase.from('credit_accounts').insert([{
+          customer_id: data.CUST_ID,
+          credit_limit: parseFloat(newCustomer.credit_limit),
+          status: 'active',
+          branch_id: '1'
+        }]);
+      }
+      
+      setCustomers([...customers, data].sort((a, b) => a.FIRST_NAME.localeCompare(b.FIRST_NAME)));
       setCreditCustomerId(String(data.CUST_ID));
       setShowAddCustomer(false);
-      setNewCustomer({ FIRST_NAME: '', LAST_NAME: '', PHONE_NUMBER: '', EMAIL: '', ADDRESS: '' });
+      setNewCustomer({ FIRST_NAME: '', LAST_NAME: '', PHONE_NUMBER: '', EMAIL: '', ADDRESS: '', credit_limit: 0 });
     } catch (error) {
       alert("Failed to save customer: " + error.message);
     } finally {
@@ -1113,6 +1125,18 @@ export default function POSPage() {
 
           {(paymentMethod === 'Credit' || paymentMethod === 'Invoice') && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.25rem' }}>
+              
+              {!showAddCustomer && (
+                <input 
+                  type="text" 
+                  className="input" 
+                  placeholder="Search Customers..." 
+                  value={customerSearchTerm}
+                  onChange={(e) => setCustomerSearchTerm(e.target.value)}
+                  style={{ padding: '0.75rem', marginBottom: '-0.5rem' }}
+                />
+              )}
+
               <select 
                 className="input" 
                 style={{ padding: '0.75rem' }} 
@@ -1129,7 +1153,9 @@ export default function POSPage() {
               >
                 <option value="" disabled>Select Customer...</option>
                 <option value="new" style={{ fontWeight: 600, color: 'var(--primary)' }}>+ Add New Customer...</option>
-                {customers.map(c => <option key={c.CUST_ID} value={c.CUST_ID}>{c.FIRST_NAME} {c.LAST_NAME}</option>)}
+                {customers
+                  .filter(c => !customerSearchTerm || c.FIRST_NAME?.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.LAST_NAME?.toLowerCase().includes(customerSearchTerm.toLowerCase()) || c.PHONE_NUMBER?.includes(customerSearchTerm))
+                  .map(c => <option key={c.CUST_ID} value={c.CUST_ID}>{c.FIRST_NAME} {c.LAST_NAME}</option>)}
               </select>
 
               {customerOutstandingCredit !== null && customerOutstandingCredit > 0 && (
@@ -1150,6 +1176,8 @@ export default function POSPage() {
                     <input type="text" className="input" placeholder="Last Name *" value={newCustomer.LAST_NAME} onChange={e => setNewCustomer({...newCustomer, LAST_NAME: e.target.value})} style={{ flex: 1, padding: '0.5rem' }} />
                   </div>
                   <input type="text" className="input" placeholder="Phone Number" value={newCustomer.PHONE_NUMBER} onChange={e => setNewCustomer({...newCustomer, PHONE_NUMBER: e.target.value})} style={{ padding: '0.5rem' }} />
+                  <input type="number" step="0.01" className="input" placeholder="Credit Limit (Ksh)" value={newCustomer.credit_limit || ''} onChange={e => setNewCustomer({...newCustomer, credit_limit: e.target.value})} style={{ padding: '0.5rem' }} />
+                  
                   <button className="btn btn-secondary" onClick={handleSaveCustomer} disabled={savingCustomer} style={{ padding: '0.5rem', background: 'var(--primary)', color: 'white', border: 'none' }}>
                     {savingCustomer ? 'Saving...' : 'Save & Select Customer'}
                   </button>

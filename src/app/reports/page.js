@@ -29,6 +29,9 @@ export default function ReportsPage() {
   const [deadStock, setDeadStock] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
   const [rawTransactions, setRawTransactions] = useState([]);
+  
+  const [activeTab, setActiveTab] = useState('Analytics'); // 'Analytics' or 'CreditSales'
+  const [dailyCreditSales, setDailyCreditSales] = useState([]);
 
   // Handle Preset changes
   useEffect(() => {
@@ -199,8 +202,63 @@ export default function ReportsPage() {
     setLoading(false);
   };
 
+  const fetchDailyCreditSales = async () => {
+    // Fetch today's credit transactions
+    const todayStr = new Date().toISOString().split('T')[0];
+    const startDateTime = new Date(`${todayStr}T00:00:00`).toISOString();
+    const endDateTime = new Date(`${todayStr}T23:59:59.999`).toISOString();
+
+    let query = supabase
+      .from('transaction')
+      .select(`
+        *,
+        customer (FIRST_NAME, LAST_NAME, PHONE_NUMBER),
+        transaction_details (
+          QTY,
+          UNIT_PRICE,
+          product (NAME, BRAND)
+        )
+      `)
+      .eq('IS_CREDIT', true)
+      .gte('CREATED_AT', startDateTime)
+      .lte('CREATED_AT', endDateTime);
+      
+    if (branchId && branchId !== 'ALL') {
+      query = query.eq('BRANCH_ID', branchId);
+    }
+
+    const { data } = await query;
+    if (data) {
+      // Group by customer
+      const grouped = {};
+      data.forEach(t => {
+        const custId = t.CREDIT_CUSTOMER_ID;
+        if (!custId) return;
+        if (!grouped[custId]) {
+          grouped[custId] = {
+            customer: t.customer,
+            totalCredit: 0,
+            items: []
+          };
+        }
+        grouped[custId].totalCredit += (Number(t.ADJUSTED_TOTAL) || Number(t.GRAND_TOTAL) || 0);
+        
+        t.transaction_details?.forEach(d => {
+          grouped[custId].items.push({
+            name: formatItemName(d.product),
+            price: d.UNIT_PRICE,
+            qty: d.QTY,
+            total: (d.UNIT_PRICE * d.QTY)
+          });
+        });
+      });
+      setDailyCreditSales(Object.values(grouped));
+    }
+  };
+
   useEffect(() => {
     fetchAnalytics();
+    fetchDailyCreditSales();
   }, [startDate, endDate, branchId]);
 
   const exportCSV = () => {
@@ -278,153 +336,208 @@ export default function ReportsPage() {
         </div>
       </div>
 
+      <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border)', marginBottom: '1rem' }}>
+        <button 
+          onClick={() => setActiveTab('Analytics')}
+          style={{ padding: '0.75rem 1rem', background: 'transparent', border: 'none', borderBottom: activeTab === 'Analytics' ? '2px solid var(--primary)' : '2px solid transparent', color: activeTab === 'Analytics' ? 'var(--foreground)' : 'var(--muted-foreground)', fontWeight: activeTab === 'Analytics' ? 600 : 400, cursor: 'pointer' }}
+        >
+          General Analytics
+        </button>
+        <button 
+          onClick={() => setActiveTab('CreditSales')}
+          style={{ padding: '0.75rem 1rem', background: 'transparent', border: 'none', borderBottom: activeTab === 'CreditSales' ? '2px solid var(--primary)' : '2px solid transparent', color: activeTab === 'CreditSales' ? 'var(--foreground)' : 'var(--muted-foreground)', fontWeight: activeTab === 'CreditSales' ? 600 : 400, cursor: 'pointer' }}
+        >
+          Daily Credit Sales
+        </button>
+      </div>
+
       {loading ? (
-        <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>Calculating financial data...</div>
+        <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>Calculating data...</div>
       ) : (
         <>
-          {/* Metrics Cards */}
-          <div className="reports-grid" style={{ display: 'grid', gap: '1rem' }}>
-            <style jsx>{`
-              .reports-grid { grid-template-columns: repeat(6, 1fr); }
-              .tables-grid { display: flex; gap: 2rem; }
-              @media (max-width: 1024px) {
-                .reports-grid { grid-template-columns: repeat(3, 1fr); }
-                .tables-grid { flex-direction: column; }
-              }
-              @media (max-width: 640px) {
-                .reports-grid { grid-template-columns: 1fr; }
-              }
-            `}</style>
-            <div className="glass" style={{ padding: '1.25rem', borderLeft: '3px solid var(--primary)' }}>
-              <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Total Sales</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>Ksh {(metrics.totalSales/1000).toFixed(1)}k</div>
-            </div>
-            <div className="glass" style={{ padding: '1.25rem', borderLeft: '3px solid #10b981' }}>
-              <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Gross Profit</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#10b981' }}>Ksh {(metrics.grossProfit/1000).toFixed(1)}k</div>
-            </div>
-            <div className="glass" style={{ padding: '1.25rem', borderLeft: '3px solid #8b5cf6' }}>
-              <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Profit Margin</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#8b5cf6' }}>{metrics.profitMargin.toFixed(1)}%</div>
-            </div>
-            <div className="glass" style={{ padding: '1.25rem' }}>
-              <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Transactions</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{metrics.transactionCount}</div>
-            </div>
-            <div className="glass" style={{ padding: '1.25rem' }}>
-              <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Avg. Transaction</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>Ksh {metrics.atv.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
-            </div>
-            <div className="glass" style={{ padding: '1.25rem', borderLeft: '3px solid #f59e0b' }}>
-              <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Stock Value Risk</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f59e0b' }}>Ksh {(metrics.stockValue/1000).toFixed(1)}k</div>
-            </div>
-          </div>
-
-          {/* Visual Analytics */}
-          <div className="glass" style={{ padding: '1.5rem' }}>
-            <h3 className="heading-2" style={{ fontSize: '1.125rem', marginBottom: '1.5rem' }}>Revenue by Category (Top 10)</h3>
-            <div className="chart-container" style={{ height: '300px' }}>
-              {categoryData.length === 0 ? (
-                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted-foreground)' }}>No Data</div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
-                  <BarChart data={categoryData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={11} tick={{ fill: 'var(--muted-foreground)' }} />
-                    <YAxis stroke="var(--muted-foreground)" fontSize={11} tickFormatter={(value) => `${value / 1000}k`} />
-                    <RechartsTooltip 
-                      contentStyle={{ backgroundColor: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px' }}
-                      formatter={(value) => [`Ksh ${value.toLocaleString()}`, 'Revenue']}
-                    />
-                    <Bar dataKey="Revenue" fill="var(--primary)" radius={[4, 4, 0, 0]}>
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={index % 2 === 0 ? 'var(--primary)' : '#8b5cf6'} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </div>
-
-          <div className="tables-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', marginTop: '2rem' }}>
-            {/* Top Performing Products */}
-            <div className="glass" style={{ flex: '1 1 450px', padding: '1.5rem', minWidth: '0', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                <h3 className="heading-2" style={{ fontSize: '1.25rem', margin: 0 }}>Top Products (Revenue)</h3>
-                <span className="badge badge-primary">Top {topProducts.length}</span>
-              </div>
-              <div className="table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto', flex: 1, border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-                <table className="table" style={{ margin: 0 }}>
-                <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-                  <tr>
-                    <th style={{ background: 'var(--background)' }}>Product Name</th>
-                    <th style={{ background: 'var(--background)' }}>Category</th>
-                    <th style={{ textAlign: 'right', background: 'var(--background)' }}>Units</th>
-                    <th style={{ textAlign: 'right', background: 'var(--background)' }}>Revenue</th>
-                    <th style={{ textAlign: 'right', background: 'var(--background)' }}>Profit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topProducts.length === 0 ? (
-                    <tr><td colSpan="5" style={{ textAlign: 'center', padding: '2rem' }}>No sales data for this period.</td></tr>
-                  ) : topProducts.map((p, idx) => (
-                    <tr key={idx} className="table-row-interactive">
-                      <td style={{ fontWeight: 500, whiteSpace: 'pre-line' }}>{p.name}</td>
-                      <td className="text-muted" style={{ fontSize: '0.875rem' }}>{p.category}</td>
-                      <td style={{ textAlign: 'right' }}><span className="badge badge-primary" style={{ fontSize: '0.875rem' }}>{p.qty}</span></td>
-                      <td style={{ textAlign: 'right', fontWeight: 600 }}>Ksh {p.revenue.toLocaleString()}</td>
-                      <td style={{ textAlign: 'right', color: 'var(--success)', fontWeight: 600 }}>Ksh {p.profit.toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              </div>
-            </div>
-
-            {/* Worst Performing Products (Dead Stock) */}
-            <div className="glass" style={{ flex: '1 1 450px', padding: '1.5rem', minWidth: '0', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <AlertCircle size={22} color="var(--destructive)" />
-                  <h3 className="heading-2" style={{ fontSize: '1.25rem', margin: 0, color: 'var(--destructive)' }}>Dead Stock Alert</h3>
+          {activeTab === 'Analytics' && (
+            <>
+              {/* Metrics Cards */}
+              <div className="reports-grid" style={{ display: 'grid', gap: '1rem' }}>
+                <style jsx>{`
+                  .reports-grid { grid-template-columns: repeat(6, 1fr); }
+                  .tables-grid { display: flex; gap: 2rem; }
+                  @media (max-width: 1024px) {
+                    .reports-grid { grid-template-columns: repeat(3, 1fr); }
+                    .tables-grid { flex-direction: column; }
+                  }
+                  @media (max-width: 640px) {
+                    .reports-grid { grid-template-columns: 1fr; }
+                  }
+                `}</style>
+                <div className="glass" style={{ padding: '1.25rem', borderLeft: '3px solid var(--primary)' }}>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Total Sales</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>Ksh {(metrics.totalSales/1000).toFixed(1)}k</div>
                 </div>
-                <span className="badge badge-destructive">Top {deadStock.length} Worst</span>
+                <div className="glass" style={{ padding: '1.25rem', borderLeft: '3px solid #10b981' }}>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Gross Profit</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#10b981' }}>Ksh {(metrics.grossProfit/1000).toFixed(1)}k</div>
+                </div>
+                <div className="glass" style={{ padding: '1.25rem', borderLeft: '3px solid #f59e0b' }}>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Profit Margin</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{metrics.profitMargin.toFixed(1)}%</div>
+                </div>
+                <div className="glass" style={{ padding: '1.25rem', borderLeft: '3px solid #8b5cf6' }}>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Transactions</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>{metrics.transactionCount}</div>
+                </div>
+                <div className="glass" style={{ padding: '1.25rem', borderLeft: '3px solid #ec4899' }}>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Avg Trans Value</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700 }}>Ksh {(metrics.atv/1000).toFixed(1)}k</div>
+                </div>
+                <div className="glass" style={{ padding: '1.25rem', borderLeft: '3px solid #6366f1' }}>
+                  <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>Est. Stock Value</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#6366f1' }}>Ksh {(metrics.stockValue/1000).toFixed(1)}k</div>
+                </div>
               </div>
-              
-              <div className="table-wrapper" style={{ maxHeight: '400px', overflowY: 'auto', flex: 1, border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-                <table className="table" style={{ margin: 0 }}>
-                <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-                  <tr>
-                    <th style={{ background: 'var(--background)' }}>Product Name</th>
-                    <th style={{ background: 'var(--background)' }}>Category</th>
-                    <th style={{ textAlign: 'right', background: 'var(--background)' }}>In Stock</th>
-                    <th style={{ textAlign: 'right', background: 'var(--background)' }}>Capital Tied</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {deadStock.length === 0 ? (
-                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '2rem' }}>No dead stock detected!</td></tr>
-                  ) : deadStock.map((p, idx) => {
-                    const capital = p.ON_HAND * p.COST_PRICE;
-                    return (
-                      <tr key={idx} className="table-row-interactive">
-                        <td style={{ fontWeight: 500, whiteSpace: 'pre-line' }}>{formatItemName(p)}</td>
-                        <td className="text-muted" style={{ fontSize: '0.875rem' }}>{p.category?.CNAME || 'N/A'}</td>
-                        <td style={{ textAlign: 'right' }}>
-                          <span className="badge badge-destructive" style={{ fontSize: '0.875rem' }}>{p.ON_HAND}</span>
-                        </td>
-                        <td style={{ textAlign: 'right', color: 'var(--warning)', fontWeight: 600 }}>Ksh {capital.toLocaleString()}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              </div>
-            </div>
-          </div>
 
+              {/* Data Tables */}
+              <div className="tables-grid">
+                {/* Top Products */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="glass" style={{ flex: 1, padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                      <TrendingUp className="text-success" size={24} />
+                      <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Top Movers (Revenue)</h3>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                    <table className="table" style={{ width: '100%', minWidth: '400px' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ background: 'var(--background)' }}>Product</th>
+                          <th style={{ textAlign: 'right', background: 'var(--background)' }}>Units</th>
+                          <th style={{ textAlign: 'right', background: 'var(--background)' }}>Revenue</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topProducts.length === 0 ? (
+                          <tr><td colSpan="3" style={{ textAlign: 'center', padding: '2rem' }}>No data for this period.</td></tr>
+                        ) : topProducts.map((p, idx) => (
+                          <tr key={idx} className="table-row-interactive">
+                            <td style={{ fontWeight: 500, whiteSpace: 'pre-line' }}>{p.name}</td>
+                            <td style={{ textAlign: 'right' }}>
+                              <span className="badge badge-success" style={{ fontSize: '0.875rem' }}>{p.qty}</span>
+                            </td>
+                            <td style={{ textAlign: 'right', color: 'var(--primary)', fontWeight: 600 }}>Ksh {p.revenue.toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dead Stock */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div className="glass" style={{ flex: 1, padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                      <AlertCircle className="text-destructive" size={24} />
+                      <h3 style={{ margin: 0, fontSize: '1.125rem' }}>Dead Stock Risk</h3>
+                    </div>
+                    <div style={{ overflowX: 'auto' }}>
+                    <table className="table" style={{ width: '100%', minWidth: '400px' }}>
+                      <thead>
+                        <tr>
+                          <th style={{ background: 'var(--background)' }}>Product</th>
+                          <th style={{ background: 'var(--background)' }}>Category</th>
+                          <th style={{ textAlign: 'right', background: 'var(--background)' }}>In Stock</th>
+                          <th style={{ textAlign: 'right', background: 'var(--background)' }}>Capital Tied</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {deadStock.length === 0 ? (
+                          <tr><td colSpan="4" style={{ textAlign: 'center', padding: '2rem' }}>No dead stock detected!</td></tr>
+                        ) : deadStock.map((p, idx) => {
+                          const capital = p.ON_HAND * p.COST_PRICE;
+                          return (
+                            <tr key={idx} className="table-row-interactive">
+                              <td style={{ fontWeight: 500, whiteSpace: 'pre-line' }}>{formatItemName(p)}</td>
+                              <td className="text-muted" style={{ fontSize: '0.875rem' }}>{p.category?.CNAME || 'N/A'}</td>
+                              <td style={{ textAlign: 'right' }}>
+                                <span className="badge badge-destructive" style={{ fontSize: '0.875rem' }}>{p.ON_HAND}</span>
+                              </td>
+                              <td style={{ textAlign: 'right', color: 'var(--warning)', fontWeight: 600 }}>Ksh {capital.toLocaleString()}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {activeTab === 'CreditSales' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+              {dailyCreditSales.length === 0 ? (
+                <div style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center', color: 'var(--muted-foreground)' }}>
+                  No credit sales recorded today.
+                </div>
+              ) : dailyCreditSales.map((custRecord, idx) => {
+                const cust = custRecord.customer;
+                const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim() : 'Unknown Customer';
+                
+                // Construct WhatsApp Message
+                const hr = new Date().getHours();
+                const greeting = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+                let msg = `*${greeting} ${name},*\n\nThis is Jobea Auto Spares. Here is a summary of your credit purchases today:\n\n`;
+                
+                custRecord.items.forEach((item, i) => {
+                  msg += `${i+1}. *${item.name}*\n   ${item.qty} units @ Ksh ${item.price.toLocaleString()} = Ksh ${item.total.toLocaleString()}\n`;
+                });
+                msg += `\n*Total Credit Today:* Ksh ${custRecord.totalCredit.toLocaleString()}`;
+                
+                const waUrl = cust?.PHONE_NUMBER ? `https://wa.me/${cust.PHONE_NUMBER.replace(/\+/g,'')}?text=${encodeURIComponent(msg)}` : null;
+
+                return (
+                  <div key={idx} className="glass" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '1.125rem', color: 'var(--foreground)' }}>{name}</h4>
+                        <div style={{ fontSize: '0.875rem', color: 'var(--muted-foreground)' }}>{cust?.PHONE_NUMBER || 'No phone number'}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>Total Today</div>
+                        <div style={{ fontWeight: 700, color: '#f59e0b', fontSize: '1.125rem' }}>Ksh {custRecord.totalCredit.toLocaleString()}</div>
+                      </div>
+                    </div>
+                    
+                    <div style={{ flex: 1, background: 'rgba(0,0,0,0.1)', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+                      <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: 'var(--primary)' }}>Items:</div>
+                      {custRecord.items.map((it, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                          <span style={{ color: 'var(--foreground)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', paddingRight: '0.5rem' }}>{it.qty}x {it.name}</span>
+                          <span style={{ color: 'var(--muted-foreground)' }}>Ksh {it.total.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <a 
+                      href={waUrl || '#'} 
+                      target={waUrl ? "_blank" : "_self"}
+                      onClick={e => !waUrl && e.preventDefault()}
+                      className="btn" 
+                      style={{ 
+                        background: waUrl ? '#25D366' : 'var(--card)', 
+                        color: waUrl ? 'white' : 'var(--muted-foreground)', 
+                        display: 'flex', justifyContent: 'center', width: '100%', textDecoration: 'none'
+                      }}
+                      title={waUrl ? "Send WhatsApp Reminder" : "No phone number available"}
+                    >
+                      Send WhatsApp Reminder
+                    </a>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
 

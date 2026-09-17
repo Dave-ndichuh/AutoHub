@@ -21,7 +21,8 @@ import {
   FileSpreadsheet,
   Truck,
   BarChart3,
-  Wallet
+  Wallet,
+  ExternalLink
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -69,6 +70,7 @@ export default function Sidebar() {
   let navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Point of Sale', path: '/pos', icon: ShoppingCart },
+    { name: 'Outsourced Products', path: '/outsourced', icon: ExternalLink },
     { name: 'Products', path: '/products', icon: Package },
     { name: 'Invoices', path: '/invoices', icon: FileSpreadsheet },
     { name: 'Customers', path: '/customers', icon: Users },
@@ -85,6 +87,7 @@ export default function Sidebar() {
   if (role === 'employee') {
     navItems = [
       { name: 'Point of Sale', path: '/pos', icon: ShoppingCart },
+      { name: 'Outsourced Products', path: '/outsourced', icon: ExternalLink },
       { name: 'Invoices', path: '/invoices', icon: FileSpreadsheet },
       { name: 'Customers', path: '/customers', icon: Users },
       { name: 'Credit Docket', path: '/credits', icon: Wallet },

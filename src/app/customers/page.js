@@ -23,7 +23,7 @@ export default function CustomersPage() {
     const { data, error } = await supabase
       .from('customer')
       .select('*')
-      .order('CUST_ID', { ascending: false });
+      .order('FIRST_NAME', { ascending: true });
 
     if (!error && data) {
       setCustomers(data);
@@ -57,14 +57,15 @@ export default function CustomersPage() {
         LOYALTY_STATUS: customer.LOYALTY_STATUS || 'Standard',
         PREFERRED_CONTACT: customer.PREFERRED_CONTACT || 'Phone',
         TAX_ID: customer.TAX_ID || '',
-        SECONDARY_PHONE: customer.SECONDARY_PHONE || ''
+        SECONDARY_PHONE: customer.SECONDARY_PHONE || '',
+        credit_limit: customer.credit_limit || 0
       });
     } else {
       setEditingId(null);
       setFormData({ 
         FIRST_NAME: '', LAST_NAME: '', PHONE_NUMBER: '', EMAIL: '', ADDRESS: '', CITY: '',
         COMPANY_NAME: '', NOTES: '', CUSTOMER_TYPE: 'Retail', LOYALTY_STATUS: 'Standard',
-        PREFERRED_CONTACT: 'Phone', TAX_ID: '', SECONDARY_PHONE: ''
+        PREFERRED_CONTACT: 'Phone', TAX_ID: '', SECONDARY_PHONE: '', credit_limit: 0
       });
     }
     setShowModal(true);
@@ -72,11 +73,32 @@ export default function CustomersPage() {
 
   const saveCustomer = async (e) => {
     e.preventDefault();
+    let savedCustomerId = editingId;
+    
     if (editingId) {
       await supabase.from('customer').update(formData).eq('CUST_ID', editingId);
     } else {
-      await supabase.from('customer').insert([formData]);
+      const { data } = await supabase.from('customer').insert([formData]).select().single();
+      if (data) savedCustomerId = data.CUST_ID;
     }
+    
+    // Sync to credit_accounts if credit_limit > 0 or they already have an account
+    if (savedCustomerId) {
+      const { data: existingAccounts } = await supabase.from('credit_accounts').select('id').eq('customer_id', savedCustomerId);
+      if (existingAccounts && existingAccounts.length > 0) {
+        // Update existing credit account's limit
+        await supabase.from('credit_accounts').update({ credit_limit: parseFloat(formData.credit_limit) || 0 }).eq('id', existingAccounts[0].id);
+      } else if (parseFloat(formData.credit_limit) > 0) {
+        // Create new credit account
+        await supabase.from('credit_accounts').insert([{
+          customer_id: savedCustomerId,
+          credit_limit: parseFloat(formData.credit_limit) || 0,
+          status: 'active',
+          branch_id: '1'
+        }]);
+      }
+    }
+
     setShowModal(false);
     fetchCustomers();
   };
@@ -226,6 +248,11 @@ export default function CustomersPage() {
 
                   <input type="text" className="input" placeholder="Company Name" value={formData.COMPANY_NAME} onChange={e => setFormData({...formData, COMPANY_NAME: e.target.value})} />
                   <input type="text" className="input" placeholder="Tax ID / Business ID" value={formData.TAX_ID} onChange={e => setFormData({...formData, TAX_ID: e.target.value})} />
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <label style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--muted-foreground)' }}>Credit Limit (Ksh)</label>
+                    <input type="number" step="0.01" className="input" placeholder="0.00" value={formData.credit_limit} onChange={e => setFormData({...formData, credit_limit: e.target.value})} />
+                  </div>
                   
                   <textarea className="input" placeholder="Notes or Internal Comments..." rows={4} value={formData.NOTES} onChange={e => setFormData({...formData, NOTES: e.target.value})} style={{ resize: 'vertical', flex: 1 }} />
                 </div>
