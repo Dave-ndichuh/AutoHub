@@ -680,11 +680,65 @@ export default function ReportsPage() {
                     </div>
                   );
                 })() : (
-                  <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--muted-foreground)', background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border)' }}>
-                    <FileText size={48} style={{ opacity: 0.2, margin: '0 auto 1rem' }} />
-                    <div style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>No Account Selected</div>
-                    <div style={{ fontSize: '0.875rem' }}>Please select an active credit account from the dropdown above.</div>
-                  </div>
+                  (() => {
+                    const totalGlobalCredit = creditAccounts.reduce((sum, acc) => sum + (Number(acc.current_balance) || 0), 0);
+                    const totalDebtors = creditAccounts.length;
+                    const topDebtors = [...creditAccounts].sort((a, b) => (b.current_balance || 0) - (a.current_balance || 0)).slice(0, 5);
+
+                    return (
+                      <div style={{ background: 'rgba(255,255,255,0.01)', borderRadius: '8px', border: '1px dashed var(--border)', padding: '2rem' }}>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
+                          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '12px', borderLeft: '4px solid var(--primary)' }}>
+                            <div style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Total Outstanding Credit</div>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--foreground)' }}>Ksh {totalGlobalCredit.toLocaleString()}</div>
+                          </div>
+                          <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '12px', borderLeft: '4px solid #ef4444' }}>
+                            <div style={{ color: 'var(--muted-foreground)', fontSize: '0.875rem', marginBottom: '0.5rem' }}>Active Debtors</div>
+                            <div style={{ fontSize: '1.75rem', fontWeight: 'bold', color: 'var(--foreground)' }}>{totalDebtors} <span style={{ fontSize: '0.875rem', fontWeight: 400, color: 'var(--muted-foreground)' }}>customers</span></div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 style={{ fontSize: '1.125rem', fontWeight: 600, color: 'var(--foreground)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <TrendingUp size={20} className="text-destructive" /> Top 5 Highest Balances
+                          </h4>
+                          {totalDebtors === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--muted-foreground)' }}>No active credit accounts found. Excellent!</div>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              {topDebtors.map((debtor, idx) => {
+                                const cust = debtor.customer;
+                                const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim() : 'Unknown';
+                                return (
+                                  <div 
+                                    key={debtor.customer_id} 
+                                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', transition: 'background 0.2s', cursor: 'pointer' }}
+                                    onClick={() => setSelectedCreditCustomerId(debtor.customer_id)}
+                                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.875rem' }}>
+                                        #{idx + 1}
+                                      </div>
+                                      <div>
+                                        <div style={{ fontWeight: 500, color: 'var(--foreground)' }}>{name}</div>
+                                        {cust?.PHONE_NUMBER && <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)' }}>{cust.PHONE_NUMBER}</div>}
+                                      </div>
+                                    </div>
+                                    <div style={{ fontWeight: 600, color: 'var(--primary)' }}>
+                                      Ksh {debtor.current_balance?.toLocaleString()}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()
                 )}
 
               </div>
