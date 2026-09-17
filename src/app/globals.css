@@ -232,9 +232,6 @@ button {
 /* Table Styles - Responsive Wrapper */
 .table-wrapper {
   width: 100%;
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: calc(100vh - 220px);
   border-radius: var(--radius);
   border: 1px solid var(--border);
   -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
@@ -246,6 +243,12 @@ button {
   border-spacing: 0;
   text-align: left;
   min-width: 600px; /* Ensure table doesn't crush on small screens */
+}
+
+@media (max-width: 768px) {
+  .table-wrapper {
+    overflow-x: auto;
+  }
 }
 
 .table th {
@@ -426,7 +429,7 @@ button {
   gap: 1rem;
   position: sticky;
   top: 0;
-  z-index: 40;
+  z-index: 70;
 }
 
 /* Topbar Responsive Utilities */
@@ -622,8 +625,12 @@ button {
 /* Ensure the parent card also comes to the front so the image isn't trapped under sibling cards */
 .glass:has(.image-hover-zoom:hover),
 tr:has(.image-hover-zoom:hover) {
-  z-index: 50;
+  z-index: 99999;
   position: relative;
+}
+
+.product-table-zoom:hover {
+  transform: scale(10) !important;
 }
 
 /* Liveness Animations */

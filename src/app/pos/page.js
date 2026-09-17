@@ -821,6 +821,11 @@ export default function POSPage() {
             flex-direction: column;
             gap: 1.5rem;
             min-width: 0;
+            position: relative;
+            z-index: 10;
+          }
+          .left-panel:has(.image-hover-zoom:hover) {
+            z-index: 80;
           }
           .left-content {
             flex: 1;
