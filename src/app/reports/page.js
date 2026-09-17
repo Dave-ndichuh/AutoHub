@@ -742,3 +742,5 @@ export default function ReportsPage() {
     </div>
   );
 }
+
+// Trigger hot reload
