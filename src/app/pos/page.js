@@ -813,7 +813,6 @@ export default function POSPage() {
           .pos-wrapper {
             display: flex;
             gap: 2rem;
-            height: calc(100vh - 120px);
             position: relative;
           }
           .left-panel {
@@ -821,17 +820,18 @@ export default function POSPage() {
             display: flex;
             flex-direction: column;
             gap: 1.5rem;
-            overflow: hidden;
             min-width: 0;
           }
           .left-content {
             flex: 1;
-            overflow-y: auto;
             padding-right: 0.5rem;
           }
           .cart-panel { 
             flex: 0 0 450px; 
             max-width: 100%; 
+            position: sticky;
+            top: 90px;
+            height: calc(100vh - 120px);
             overflow: hidden;
           }
           .mobile-close-btn { display: none; }

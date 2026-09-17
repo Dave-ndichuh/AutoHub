@@ -335,10 +335,8 @@ button {
 /* Layout structural classes */
 .app-layout {
   display: flex;
-  height: 100vh;
-  max-height: 100vh;
+  min-height: 100vh;
   position: relative;
-  overflow: hidden;
 }
 
 /* Custom Scrollbar */
@@ -415,8 +413,6 @@ button {
   flex-direction: column;
   min-width: 0;
   width: 100%;
-  height: 100vh;
-  overflow: hidden;
 }
 
 .topbar {
@@ -428,6 +424,9 @@ button {
   padding: 0 2rem;
   background: var(--glass-panel);
   gap: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 40;
 }
 
 /* Topbar Responsive Utilities */
@@ -459,8 +458,6 @@ button {
 .page-content {
   padding: 2rem;
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
   width: 100%;
 }
 
