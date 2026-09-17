@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { BarChart3, TrendingUp, AlertCircle, PackageSearch, Download, DollarSign, Calendar, RefreshCcw, Phone, CreditCard, FileText, Search, ChevronDown } from 'lucide-react';
+import { BarChart3, TrendingUp, AlertCircle, PackageSearch, Download, DollarSign, Calendar, RefreshCcw, Phone, CreditCard, FileText, Search, ChevronDown, X } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import { formatItemName } from '@/utils/formatters';
 import { useAuth } from '@/components/AuthGuard';
@@ -38,6 +38,8 @@ export default function ReportsPage() {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [creditSearchTerm, setCreditSearchTerm] = useState('');
   const [isCreditDropdownOpen, setIsCreditDropdownOpen] = useState(false);
+  const [selectedProductForModal, setSelectedProductForModal] = useState(null);
+  const [loadingProductDetails, setLoadingProductDetails] = useState(false);
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -49,6 +51,25 @@ export default function ReportsPage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+
+  const fetchAndShowProduct = async (productId) => {
+    if (!productId) return;
+    setSelectedProductForModal({ loading: true });
+    setLoadingProductDetails(true);
+    const { data } = await supabase
+      .from('product')
+      .select('*')
+      .eq('PRODUCT_ID', productId)
+      .single();
+      
+    if (data) {
+      setSelectedProductForModal(data);
+    } else {
+      setSelectedProductForModal(null);
+    }
+    setLoadingProductDetails(false);
+  };
 
   // Handle Preset changes
   useEffect(() => {
@@ -308,6 +329,7 @@ export default function ReportsPage() {
           transaction_details (
             QTY,
             UNIT_PRICE,
+            PRODUCT_ID,
             product (NAME)
           )
         `)
@@ -629,9 +651,12 @@ export default function ReportsPage() {
                                   <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                                     <td style={{ padding: '1rem', color: 'var(--muted-foreground)', fontSize: '0.875rem' }}>{new Date(it.date).toLocaleDateString()}</td>
                                     <td style={{ padding: '1rem', fontWeight: 500 }}>
-                                      <Link href={`/products?search=${encodeURIComponent(it.name)}`} style={{ color: 'var(--primary)', textDecoration: 'underline' }}>
+                                      <span 
+                                        onClick={() => fetchAndShowProduct(it.productId)}
+                                        style={{ color: 'var(--primary)', textDecoration: 'underline', cursor: 'pointer' }}
+                                      >
                                         {it.name}
-                                      </Link>
+                                      </span>
                                     </td>
                                     <td style={{ padding: '1rem', textAlign: 'right' }}>{it.qty}</td>
                                     <td style={{ padding: '1rem', textAlign: 'right' }}>Ksh {it.price.toLocaleString()}</td>
