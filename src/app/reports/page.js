@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { BarChart3, TrendingUp, AlertCircle, PackageSearch, Download, DollarSign, Calendar, RefreshCcw, Phone, CreditCard, FileText, Search } from 'lucide-react';
+import { BarChart3, TrendingUp, AlertCircle, PackageSearch, Download, DollarSign, Calendar, RefreshCcw, Phone, CreditCard, FileText, Search, ChevronDown } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from 'recharts';
 import { formatItemName } from '@/utils/formatters';
 import { useAuth } from '@/components/AuthGuard';
@@ -36,6 +36,7 @@ export default function ReportsPage() {
   const [selectedCustomerHistory, setSelectedCustomerHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [creditSearchTerm, setCreditSearchTerm] = useState('');
+  const [isCreditDropdownOpen, setIsCreditDropdownOpen] = useState(false);
 
   // Handle Preset changes
   useEffect(() => {
@@ -462,39 +463,71 @@ export default function ReportsPage() {
                     })()}
                   </div>
                   
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'flex-end', width: '100%', maxWidth: '350px' }}>
-                    <div style={{ position: 'relative', width: '100%' }}>
-                      <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
-                      <input 
-                        type="text" 
-                        placeholder="Search customer account..." 
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', width: '100%', maxWidth: '450px', justifyContent: 'flex-end' }}>
+                    <div style={{ position: 'relative', flex: 1, zIndex: 50 }}>
+                      <div 
                         className="input" 
-                        style={{ width: '100%', paddingLeft: '34px' }}
-                        value={creditSearchTerm}
-                        onChange={(e) => setCreditSearchTerm(e.target.value)}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', width: '100%' }}>
-                      <select 
-                        className="input" 
-                        style={{ flex: 1 }}
-                        value={selectedCreditCustomerId}
-                        onChange={(e) => setSelectedCreditCustomerId(e.target.value)}
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: 'var(--card)' }}
+                        onClick={() => setIsCreditDropdownOpen(!isCreditDropdownOpen)}
                       >
-                        <option value="">-- Select Account --</option>
-                        {creditAccounts.filter(ca => {
-                          if (!creditSearchTerm) return true;
-                          const cust = ca.customer;
-                          const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.toLowerCase() : 'unknown';
-                          return name.includes(creditSearchTerm.toLowerCase());
-                        }).map(ca => {
-                          const cust = ca.customer;
-                          const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim() : 'Unknown';
-                          return (
-                            <option key={ca.customer_id} value={ca.customer_id}>{name} (Owes Ksh {ca.current_balance?.toLocaleString()})</option>
-                          );
-                        })}
-                      </select>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {selectedCreditCustomerId ? (() => {
+                            const ca = creditAccounts.find(c => String(c.customer_id) === String(selectedCreditCustomerId));
+                            return ca?.customer ? `${ca.customer.FIRST_NAME} ${ca.customer.LAST_NAME} (Owes Ksh ${ca.current_balance?.toLocaleString()})` : '-- Select Account --';
+                          })() : '-- Select Account --'}
+                        </span>
+                        <ChevronDown size={16} style={{ color: 'var(--muted-foreground)', marginLeft: '0.5rem', flexShrink: 0 }} />
+                      </div>
+                      
+                      {isCreditDropdownOpen && (
+                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)', overflow: 'hidden', zIndex: 100 }}>
+                          <div style={{ padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ position: 'relative' }}>
+                              <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted-foreground)' }} />
+                              <input 
+                                autoFocus
+                                type="text" 
+                                placeholder="Search customer..." 
+                                className="input" 
+                                style={{ width: '100%', paddingLeft: '32px', height: '36px', fontSize: '0.875rem' }}
+                                value={creditSearchTerm}
+                                onChange={(e) => setCreditSearchTerm(e.target.value)}
+                              />
+                            </div>
+                          </div>
+                          <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                            <div 
+                              style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: '0.875rem', color: selectedCreditCustomerId === '' ? 'var(--primary)' : 'var(--muted-foreground)' }}
+                              onClick={() => { setSelectedCreditCustomerId(''); setIsCreditDropdownOpen(false); setCreditSearchTerm(''); }}
+                            >
+                              -- Clear Selection --
+                            </div>
+                            {creditAccounts.filter(ca => {
+                              if (!creditSearchTerm) return true;
+                              const cust = ca.customer;
+                              const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.toLowerCase() : 'unknown';
+                              return name.includes(creditSearchTerm.toLowerCase());
+                            }).map(ca => {
+                              const cust = ca.customer;
+                              const name = cust ? `${cust.FIRST_NAME || ''} ${cust.LAST_NAME || ''}`.trim() : 'Unknown';
+                              const isSelected = String(ca.customer_id) === String(selectedCreditCustomerId);
+                              return (
+                                <div 
+                                  key={ca.customer_id}
+                                  style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.02)', fontSize: '0.875rem', background: isSelected ? 'rgba(255,255,255,0.05)' : 'transparent' }}
+                                  onClick={() => { setSelectedCreditCustomerId(ca.customer_id); setIsCreditDropdownOpen(false); setCreditSearchTerm(''); }}
+                                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                  onMouseLeave={(e) => e.currentTarget.style.background = isSelected ? 'rgba(255,255,255,0.05)' : 'transparent'}
+                                >
+                                  <div style={{ fontWeight: isSelected ? 600 : 400, color: isSelected ? 'var(--primary)' : 'var(--foreground)' }}>{name}</div>
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginTop: '0.25rem' }}>Owes Ksh {ca.current_balance?.toLocaleString()}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     
                     {(() => {
                       if (!selectedCreditCustomerId) return null;
@@ -541,7 +574,6 @@ export default function ReportsPage() {
                         </a>
                       );
                     })()}
-                    </div>
                   </div>
                 </div>
 
