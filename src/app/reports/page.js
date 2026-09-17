@@ -59,7 +59,7 @@ export default function ReportsPage() {
     setLoadingProductDetails(true);
     const { data } = await supabase
       .from('product')
-      .select('*')
+      .select('*, category(CNAME)')
       .eq('PRODUCT_ID', productId)
       .single();
       
@@ -766,12 +766,12 @@ export default function ReportsPage() {
                 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Part Number</div>
-                    <div style={{ fontWeight: 500 }}>{selectedProductForModal.PART_NUMBER || 'N/A'}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Product Code / SKU</div>
+                    <div style={{ fontWeight: 500 }}>{selectedProductForModal.PRODUCT_CODE || 'N/A'}</div>
                   </div>
                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px' }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Category</div>
-                    <div style={{ fontWeight: 500 }}>{selectedProductForModal.CATEGORY || 'N/A'}</div>
+                    <div style={{ fontWeight: 500 }}>{selectedProductForModal.category?.CNAME || 'N/A'}</div>
                   </div>
                   <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px' }}>
                     <div style={{ fontSize: '0.75rem', color: 'var(--muted-foreground)', marginBottom: '0.25rem' }}>Current Stock</div>
