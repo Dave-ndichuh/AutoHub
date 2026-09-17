@@ -344,6 +344,7 @@ export default function ReportsPage() {
           t.transaction_details?.forEach(d => {
             items.push({
               date: t.CREATED_AT,
+              productId: d.PRODUCT_ID,
               name: formatItemName(d.product),
               qty: d.QTY,
               price: d.UNIT_PRICE,
